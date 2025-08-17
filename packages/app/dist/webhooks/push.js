@@ -63,10 +63,11 @@ logger) {
             owner: context.payload.repository.owner.login,
             repo: context.payload.repository.name,
             path: planPath,
-            ref: context.payload.head_commit?.id,
+            ref: context.payload.head_commit?.id || context.payload.after,
         });
         if (Array.isArray(fileContent.data) || fileContent.data.type !== "file") {
-            throw new errors_js_1.HachikoError(`Expected file but got ${fileContent.data.type}`, "INVALID_FILE_TYPE");
+            const dataType = Array.isArray(fileContent.data) ? "array" : fileContent.data.type;
+            throw new errors_js_1.HachikoError(`Expected file but got ${dataType}`, "INVALID_FILE_TYPE");
         }
         // Decode base64 content
         const content = Buffer.from(fileContent.data.content, "base64").toString("utf-8");

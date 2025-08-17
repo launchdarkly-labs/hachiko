@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from "vitest"
+import { beforeEach, describe, expect, it, vi } from "vitest"
 
 // Mock the logger before importing modules that use it
 vi.mock("../../../src/utils/logger.js", () => ({
@@ -18,8 +18,8 @@ vi.mock("../../../src/utils/logger.js", () => ({
 
 import { loadHachikoConfig, validateConfig } from "../../../src/services/config.js"
 import { ConfigurationError } from "../../../src/utils/errors.js"
-import { createMockContext, mockGitHubResponses } from "../../mocks/github.js"
 import { loadFixture } from "../../helpers/test-utils.js"
+import { createMockContext, mockGitHubResponses } from "../../mocks/github.js"
 
 describe("loadHachikoConfig", () => {
   let mockContext: any
@@ -31,19 +31,21 @@ describe("loadHachikoConfig", () => {
         getContent: vi.fn(),
       },
     }
-    mockContext = createMockContext("push", {
-      repository: {
-        owner: { login: "test-owner" },
-        name: "test-repo",
+    mockContext = createMockContext(
+      "push",
+      {
+        repository: {
+          owner: { login: "test-owner" },
+          name: "test-repo",
+        },
       },
-    }, mockOctokit)
+      mockOctokit
+    )
   })
 
   it("should load and validate a valid configuration file", async () => {
     const validConfig = loadFixture("configs/valid-hachiko-config.yml")
-    mockOctokit.repos.getContent.mockResolvedValue(
-      mockGitHubResponses.getContent.file(validConfig)
-    )
+    mockOctokit.repos.getContent.mockResolvedValue(mockGitHubResponses.getContent.file(validConfig))
 
     const result = await loadHachikoConfig(mockContext)
 
@@ -59,9 +61,7 @@ describe("loadHachikoConfig", () => {
   })
 
   it("should return default configuration when .hachiko.yml does not exist", async () => {
-    mockOctokit.repos.getContent.mockRejectedValue(
-      mockGitHubResponses.getContent.notFound()
-    )
+    mockOctokit.repos.getContent.mockRejectedValue(mockGitHubResponses.getContent.notFound())
 
     const result = await loadHachikoConfig(mockContext)
 

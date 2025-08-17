@@ -1,16 +1,16 @@
 import { promises as fs } from "node:fs"
 import { join, resolve } from "node:path"
 import { minimatch } from "minimatch"
-import type { 
-  AgentAdapter, 
-  AgentInput, 
-  AgentResult, 
-  PolicyConfig, 
-  PolicyViolation, 
-  PolicyEnforcementResult 
-} from "../types.js"
 import { AgentExecutionError } from "../../utils/errors.js"
 import { createLogger } from "../../utils/logger.js"
+import type {
+  AgentAdapter,
+  AgentInput,
+  AgentResult,
+  PolicyConfig,
+  PolicyEnforcementResult,
+  PolicyViolation,
+} from "../types.js"
 
 const logger = createLogger("agent-adapter")
 
@@ -19,10 +19,8 @@ const logger = createLogger("agent-adapter")
  */
 export abstract class BaseAgentAdapter implements AgentAdapter {
   abstract readonly name: string
-  
-  constructor(
-    protected readonly policyConfig: PolicyConfig
-  ) {}
+
+  constructor(protected readonly policyConfig: PolicyConfig) {}
 
   abstract execute(input: AgentInput): Promise<AgentResult>
   abstract validate(): Promise<boolean>
@@ -31,13 +29,16 @@ export abstract class BaseAgentAdapter implements AgentAdapter {
   /**
    * Enforce policy restrictions on file access
    */
-  protected async enforceFilePolicy(files: string[], repoPath: string): Promise<PolicyEnforcementResult> {
+  protected async enforceFilePolicy(
+    files: string[],
+    repoPath: string
+  ): Promise<PolicyEnforcementResult> {
     const violations: PolicyViolation[] = []
     let allowed = true
 
     for (const file of files) {
       const relativePath = this.getRelativePath(file, repoPath)
-      
+
       // Check against blocked paths
       for (const blockedPattern of this.policyConfig.blockedPaths) {
         if (minimatch(relativePath, blockedPattern)) {
@@ -53,10 +54,10 @@ export abstract class BaseAgentAdapter implements AgentAdapter {
 
       // Check against allowed paths (if any are specified)
       if (this.policyConfig.allowedPaths.length > 0) {
-        const isAllowed = this.policyConfig.allowedPaths.some(pattern => 
+        const isAllowed = this.policyConfig.allowedPaths.some((pattern) =>
           minimatch(relativePath, pattern)
         )
-        
+
         if (!isAllowed) {
           violations.push({
             type: "file_access",
@@ -80,7 +81,7 @@ export abstract class BaseAgentAdapter implements AgentAdapter {
           })
           allowed = false
         }
-      } catch (error) {
+      } catch (_error) {
         // File doesn't exist yet (might be created by agent) - that's okay
       }
     }
@@ -116,11 +117,11 @@ export abstract class BaseAgentAdapter implements AgentAdapter {
   protected getRelativePath(filePath: string, repoPath: string): string {
     const absoluteFilePath = resolve(filePath)
     const absoluteRepoPath = resolve(repoPath)
-    
+
     if (absoluteFilePath.startsWith(absoluteRepoPath)) {
       return absoluteFilePath.slice(absoluteRepoPath.length + 1)
     }
-    
+
     return filePath
   }
 
@@ -129,23 +130,23 @@ export abstract class BaseAgentAdapter implements AgentAdapter {
    */
   protected async prepareSafeWorkspace(input: AgentInput): Promise<string> {
     const { repoPath, files } = input
-    
+
     // Create temporary workspace
     const workspaceId = `hachiko-${input.planId}-${input.stepId}-${Date.now()}`
     const workspacePath = join("/tmp", workspaceId)
-    
+
     try {
       await fs.mkdir(workspacePath, { recursive: true })
-      
+
       // Copy allowed files to workspace
       for (const file of files) {
         const relativePath = this.getRelativePath(file, repoPath)
         const sourcePath = resolve(repoPath, relativePath)
         const targetPath = join(workspacePath, relativePath)
-        
+
         // Ensure target directory exists
         await fs.mkdir(join(targetPath, ".."), { recursive: true })
-        
+
         try {
           await fs.copyFile(sourcePath, targetPath)
           logger.debug({ sourcePath, targetPath }, "Copied file to workspace")
@@ -154,7 +155,7 @@ export abstract class BaseAgentAdapter implements AgentAdapter {
           logger.debug({ sourcePath, error }, "File not found, skipping copy")
         }
       }
-      
+
       return workspacePath
     } catch (error) {
       logger.error({ error, workspacePath }, "Failed to prepare workspace")
@@ -168,7 +169,11 @@ export abstract class BaseAgentAdapter implements AgentAdapter {
   /**
    * Copy results back from workspace to repository
    */
-  protected async copyResultsBack(workspacePath: string, repoPath: string, allowedFiles: string[]): Promise<{
+  protected async copyResultsBack(
+    workspacePath: string,
+    repoPath: string,
+    allowedFiles: string[]
+  ): Promise<{
     modifiedFiles: string[]
     createdFiles: string[]
     deletedFiles: string[]
@@ -176,24 +181,24 @@ export abstract class BaseAgentAdapter implements AgentAdapter {
     const modifiedFiles: string[] = []
     const createdFiles: string[] = []
     const deletedFiles: string[] = []
-    
+
     try {
       // Check each allowed file for changes
       for (const file of allowedFiles) {
         const relativePath = this.getRelativePath(file, repoPath)
         const workspaceFilePath = join(workspacePath, relativePath)
         const repoFilePath = resolve(repoPath, relativePath)
-        
+
         try {
-          const workspaceStats = await fs.stat(workspaceFilePath)
-          
+          const _workspaceStats = await fs.stat(workspaceFilePath)
+
           try {
-            const repoStats = await fs.stat(repoFilePath)
-            
+            const _repoStats = await fs.stat(repoFilePath)
+
             // File exists in both - check if modified
             const workspaceContent = await fs.readFile(workspaceFilePath, "utf-8")
             const repoContent = await fs.readFile(repoFilePath, "utf-8")
-            
+
             if (workspaceContent !== repoContent) {
               await fs.copyFile(workspaceFilePath, repoFilePath)
               modifiedFiles.push(relativePath)
@@ -219,7 +224,7 @@ export abstract class BaseAgentAdapter implements AgentAdapter {
           }
         }
       }
-      
+
       return { modifiedFiles, createdFiles, deletedFiles }
     } catch (error) {
       logger.error({ error, workspacePath, repoPath }, "Failed to copy results back")

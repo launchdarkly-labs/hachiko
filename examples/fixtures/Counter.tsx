@@ -1,4 +1,4 @@
-import React from 'react'
+import React from "react"
 
 interface CounterProps {
   initialValue?: number
@@ -21,7 +21,7 @@ class Counter extends React.Component<CounterProps, CounterState> {
     super(props)
     this.state = {
       count: props.initialValue || 0,
-      isLoading: false
+      isLoading: false,
     }
   }
 
@@ -33,7 +33,7 @@ class Counter extends React.Component<CounterProps, CounterState> {
     }, 1000)
   }
 
-  componentDidUpdate(prevProps: CounterProps, prevState: CounterState) {
+  componentDidUpdate(_prevProps: CounterProps, prevState: CounterState) {
     if (prevState.count !== this.state.count) {
       this.props.onCountChange?.(this.state.count)
     }
@@ -46,11 +46,11 @@ class Counter extends React.Component<CounterProps, CounterState> {
   }
 
   increment = () => {
-    this.setState(prevState => ({ count: prevState.count + 1 }))
+    this.setState((prevState) => ({ count: prevState.count + 1 }))
   }
 
   decrement = () => {
-    this.setState(prevState => ({ count: prevState.count - 1 }))
+    this.setState((prevState) => ({ count: prevState.count - 1 }))
   }
 
   reset = () => {
@@ -59,7 +59,7 @@ class Counter extends React.Component<CounterProps, CounterState> {
 
   startAutoIncrement = () => {
     if (this.interval) return
-    
+
     this.interval = setInterval(() => {
       this.increment()
     }, 1000)
@@ -83,13 +83,13 @@ class Counter extends React.Component<CounterProps, CounterState> {
       <div className="counter">
         <h2>Count: {count}</h2>
         <div className="controls">
-          <button onClick={this.decrement}>-</button>
-          <button onClick={this.increment}>+</button>
-          <button onClick={this.reset}>Reset</button>
+          <button type="button" onClick={this.decrement}>-</button>
+          <button type="button" onClick={this.increment}>+</button>
+          <button type="button" onClick={this.reset}>Reset</button>
         </div>
         <div className="auto-controls">
-          <button onClick={this.startAutoIncrement}>Start Auto</button>
-          <button onClick={this.stopAutoIncrement}>Stop Auto</button>
+          <button type="button" onClick={this.startAutoIncrement}>Start Auto</button>
+          <button type="button" onClick={this.stopAutoIncrement}>Stop Auto</button>
         </div>
       </div>
     )

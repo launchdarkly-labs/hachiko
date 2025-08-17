@@ -51,7 +51,7 @@ export async function handlePullRequest(
 async function handleMergedPR(
   context: Context<"pull_request.closed">,
   migrationMeta: { planId: string; stepId: string; chunk: string | undefined },
-  config: any, // TODO: Type this properly
+  _config: any, // TODO: Type this properly
   logger: Logger
 ): Promise<void> {
   const { planId, stepId, chunk } = migrationMeta
@@ -84,7 +84,7 @@ async function handleMergedPR(
 async function handleClosedPR(
   context: Context<"pull_request.closed">,
   migrationMeta: { planId: string; stepId: string; chunk: string | undefined },
-  config: any, // TODO: Type this properly
+  _config: any, // TODO: Type this properly
   logger: Logger
 ): Promise<void> {
   const { planId, stepId, chunk } = migrationMeta
@@ -135,7 +135,7 @@ async function addSkippedStepComment(
       return
     }
 
-    const migrationIssue = issues.data[0]!  // We know this exists due to length check
+    const migrationIssue = issues.data[0]! // We know this exists due to length check
     const chunkText = chunk ? ` (${chunk})` : ""
     const prUrl = context.payload.pull_request.html_url
 

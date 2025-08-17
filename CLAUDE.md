@@ -94,3 +94,7 @@ The app expects `.hachiko.yml` in target repositories with migration plan direct
 - Gray-matter for parsing migration plan frontmatter
 - LaunchDarkly SDK for feature flagging
 - Container sandboxing for agent execution security
+
+## Commit Messages
+
+When creating commits, use standard commit messages without any "Generated with Claude Code" lines. Co-author attributions are acceptable. Keep commit messages concise and focused on the changes made.

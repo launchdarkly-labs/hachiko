@@ -88,7 +88,7 @@ async function addSkippedStepComment(context, planId, stepId, chunk, logger) {
             logger.warn({ planId }, "No open Migration Issue found");
             return;
         }
-        const migrationIssue = issues.data[0];
+        const migrationIssue = issues.data[0]; // We know this exists due to length check
         const chunkText = chunk ? ` (${chunk})` : "";
         const prUrl = context.payload.pull_request.html_url;
         const comment = `⚠️ **Step Skipped**: \`${stepId}\`${chunkText}

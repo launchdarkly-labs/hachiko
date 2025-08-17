@@ -33,11 +33,11 @@ function extractMigrationMetadata(pr) {
     for (const label of hachikoLabels) {
         if (label.startsWith("hachiko:step:")) {
             const parts = label.replace("hachiko:step:", "").split(":");
-            if (parts.length >= 2) {
+            if (parts.length >= 2 && parts[0] && parts[1]) {
                 return {
                     planId: parts[0],
                     stepId: parts[1],
-                    chunk: parts[2],
+                    chunk: parts[2] || undefined,
                 };
             }
         }

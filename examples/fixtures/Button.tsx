@@ -1,9 +1,9 @@
-import React from 'react'
+import React from "react"
 
 interface ButtonProps {
   onClick: () => void
   disabled?: boolean
-  variant?: 'primary' | 'secondary'
+  variant?: "primary" | "secondary"
   children: React.ReactNode
 }
 
@@ -13,10 +13,11 @@ interface ButtonProps {
  */
 class Button extends React.Component<ButtonProps> {
   render() {
-    const { onClick, disabled = false, variant = 'primary', children } = this.props
-    
+    const { onClick, disabled = false, variant = "primary", children } = this.props
+
     return (
       <button
+        type="button"
         onClick={onClick}
         disabled={disabled}
         className={`btn btn-${variant}`}

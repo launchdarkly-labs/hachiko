@@ -1,7 +1,7 @@
 import LaunchDarklyClient from "@launchdarkly/node-server-sdk"
 import type { HachikoConfig } from "../config/schema.js"
-import { createLogger } from "../utils/logger.js"
 import { ConfigurationError } from "../utils/errors.js"
+import { createLogger } from "../utils/logger.js"
 
 const logger = createLogger("ai-configs")
 
@@ -60,10 +60,10 @@ export class AIConfigManager {
   private constructor() {}
 
   static getInstance(): AIConfigManager {
-    if (!this.instance) {
-      this.instance = new AIConfigManager()
+    if (!AIConfigManager.instance) {
+      AIConfigManager.instance = new AIConfigManager()
     }
-    return this.instance
+    return AIConfigManager.instance
   }
 
   /**
@@ -97,12 +97,11 @@ export class AIConfigManager {
     }
 
     const flagKey = this.buildFlagKey(planId, stepId)
-    
+
     if (this.config.aiConfigs.provider === "launchdarkly" && this.ldClient) {
       return this.getPromptFromLaunchDarkly(flagKey, context)
-    } else {
-      return this.getPromptFromLocal(planId, stepId)
     }
+    return this.getPromptFromLocal(planId, stepId)
   }
 
   /**
@@ -118,9 +117,8 @@ export class AIConfigManager {
       // For now, return empty object as LaunchDarkly doesn't have a simple way to list all flags
       logger.warn("Listing LaunchDarkly prompts not implemented")
       return {}
-    } else {
-      return this.getLocalPrompts()
     }
+    return this.getLocalPrompts()
   }
 
   /**
@@ -146,7 +144,9 @@ export class AIConfigManager {
     try {
       this.interpolateTemplate(config.template, context)
     } catch (error) {
-      errors.push(`Template interpolation failed: ${error instanceof Error ? error.message : String(error)}`)
+      errors.push(
+        `Template interpolation failed: ${error instanceof Error ? error.message : String(error)}`
+      )
     }
 
     // Validate parameters
@@ -227,7 +227,9 @@ export class AIConfigManager {
       logger.info("LaunchDarkly client initialized")
     } catch (error) {
       logger.error({ error }, "Failed to initialize LaunchDarkly client")
-      throw new ConfigurationError(`LaunchDarkly initialization failed: ${error instanceof Error ? error.message : String(error)}`)
+      throw new ConfigurationError(
+        `LaunchDarkly initialization failed: ${error instanceof Error ? error.message : String(error)}`
+      )
     }
   }
 
@@ -258,7 +260,7 @@ export class AIConfigManager {
 
     try {
       const flagValue = await this.ldClient.variation(flagKey, ldUser, null)
-      
+
       if (!flagValue) {
         logger.debug({ flagKey }, "No LaunchDarkly flag found, using default")
         return this.getDefaultPromptConfig()
@@ -267,11 +269,11 @@ export class AIConfigManager {
       // Parse the flag value as AI prompt config
       if (typeof flagValue === "string") {
         return JSON.parse(flagValue) as AIPromptConfig
-      } else if (typeof flagValue === "object") {
-        return flagValue as AIPromptConfig
-      } else {
-        throw new Error(`Invalid flag value type: ${typeof flagValue}`)
       }
+      if (typeof flagValue === "object") {
+        return flagValue as AIPromptConfig
+      }
+      throw new Error(`Invalid flag value type: ${typeof flagValue}`)
     } catch (error) {
       logger.error({ error, flagKey }, "Failed to get prompt from LaunchDarkly")
       return this.getDefaultPromptConfig()
@@ -290,7 +292,7 @@ export class AIConfigManager {
       try {
         const fs = await import("node:fs/promises")
         const { join } = await import("node:path")
-        
+
         const promptPath = join(this.config.aiConfigs.localPromptsDir, `${planId}-${stepId}.json`)
         const promptData = await fs.readFile(promptPath, "utf-8")
         return JSON.parse(promptData) as AIPromptConfig
@@ -314,12 +316,12 @@ export class AIConfigManager {
       const fs = await import("node:fs/promises")
       const { join } = await import("node:path")
       const { glob } = await import("glob")
-      
+
       const pattern = join(this.config.aiConfigs.localPromptsDir, "*.json")
       const files = await glob(pattern)
-      
+
       const prompts: Record<string, AIPromptConfig> = {}
-      
+
       for (const file of files) {
         try {
           const content = await fs.readFile(file, "utf-8")
@@ -330,7 +332,7 @@ export class AIConfigManager {
           logger.warn({ error, file }, "Failed to load local prompt file")
         }
       }
-      
+
       return prompts
     } catch (error) {
       logger.error({ error }, "Failed to load local prompts")

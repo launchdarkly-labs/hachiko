@@ -1,10 +1,10 @@
-import { describe, it, expect } from "vitest"
-import { 
+import { describe, expect, it } from "vitest"
+import {
   extractChangedFiles,
-  isDefaultBranch,
   generateMigrationBranchName,
+  isDefaultBranch,
+  isMigrationBranch,
   parseMigrationBranchName,
-  isMigrationBranch
 } from "../../../src/utils/git.js"
 
 describe("extractChangedFiles", () => {
@@ -16,16 +16,11 @@ describe("extractChangedFiles", () => {
         removed: ["old-file.js"],
       },
     ]
-    
+
     const result = extractChangedFiles(commits)
-    
+
     expect(result).toEqual(
-      expect.arrayContaining([
-        "new-file.ts",
-        "another-new.js", 
-        "existing-file.ts",
-        "old-file.js"
-      ])
+      expect.arrayContaining(["new-file.ts", "another-new.js", "existing-file.ts", "old-file.js"])
     )
     expect(result).toHaveLength(4)
   })
@@ -43,13 +38,11 @@ describe("extractChangedFiles", () => {
         removed: ["file4.ts"],
       },
     ]
-    
+
     const result = extractChangedFiles(commits)
-    
+
     // Should deduplicate file1.ts
-    expect(result).toEqual(
-      expect.arrayContaining(["file1.ts", "file2.ts", "file3.ts", "file4.ts"])
-    )
+    expect(result).toEqual(expect.arrayContaining(["file1.ts", "file2.ts", "file3.ts", "file4.ts"]))
     expect(result).toHaveLength(4)
   })
 
@@ -64,9 +57,9 @@ describe("extractChangedFiles", () => {
         // missing added and removed
       },
     ]
-    
+
     const result = extractChangedFiles(commits)
-    
+
     expect(result).toEqual(expect.arrayContaining(["file1.ts", "file2.ts"]))
     expect(result).toHaveLength(2)
   })
@@ -84,7 +77,7 @@ describe("extractChangedFiles", () => {
         removed: [],
       },
     ]
-    
+
     const result = extractChangedFiles(commits)
     expect(result).toEqual([])
   })
@@ -125,7 +118,11 @@ describe("generateMigrationBranchName", () => {
   })
 
   it("should handle complex identifiers", () => {
-    const result = generateMigrationBranchName("upgrade-deps-2024", "update-maven-deps", "backend/services")
+    const result = generateMigrationBranchName(
+      "upgrade-deps-2024",
+      "update-maven-deps",
+      "backend/services"
+    )
     expect(result).toBe("hachi/upgrade-deps-2024/update-maven-deps/backend/services")
   })
 })
@@ -133,7 +130,7 @@ describe("generateMigrationBranchName", () => {
 describe("parseMigrationBranchName", () => {
   it("should parse branch name without chunk", () => {
     const result = parseMigrationBranchName("hachi/upgrade-junit/step-1")
-    
+
     expect(result).toEqual({
       planId: "upgrade-junit",
       stepId: "step-1",
@@ -143,7 +140,7 @@ describe("parseMigrationBranchName", () => {
 
   it("should parse branch name with chunk", () => {
     const result = parseMigrationBranchName("hachi/upgrade-junit/step-1/src")
-    
+
     expect(result).toEqual({
       planId: "upgrade-junit",
       stepId: "step-1",
@@ -153,7 +150,7 @@ describe("parseMigrationBranchName", () => {
 
   it("should parse branch name with complex chunk path", () => {
     const result = parseMigrationBranchName("hachi/upgrade-deps/step-2/backend/services/api")
-    
+
     expect(result).toEqual({
       planId: "upgrade-deps",
       stepId: "step-2",
@@ -174,7 +171,7 @@ describe("parseMigrationBranchName", () => {
 
   it("should handle branch names with hyphens and underscores", () => {
     const result = parseMigrationBranchName("hachi/my-migration_plan/step_1-update/src_dir")
-    
+
     expect(result).toEqual({
       planId: "my-migration_plan",
       stepId: "step_1-update",

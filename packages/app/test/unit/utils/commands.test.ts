@@ -1,14 +1,14 @@
-import { describe, it, expect } from "vitest"
-import { 
-  parseHachikoCommand, 
-  canExecuteCommand, 
-  formatCommandResponse 
+import { describe, expect, it } from "vitest"
+import {
+  canExecuteCommand,
+  formatCommandResponse,
+  parseHachikoCommand,
 } from "../../../src/utils/commands.js"
 
 describe("parseHachikoCommand", () => {
   it("should parse a valid status command", () => {
     const result = parseHachikoCommand("/hachi status")
-    
+
     expect(result).toEqual({
       action: "status",
       args: [],
@@ -18,7 +18,7 @@ describe("parseHachikoCommand", () => {
 
   it("should parse a command with arguments", () => {
     const result = parseHachikoCommand("/hachi retry step-1 --force")
-    
+
     expect(result).toEqual({
       action: "retry",
       args: ["step-1", "--force"],
@@ -31,9 +31,9 @@ describe("parseHachikoCommand", () => {
     
     Additional comment text here
     That should be ignored`
-    
+
     const result = parseHachikoCommand(commentBody)
-    
+
     expect(result).toEqual({
       action: "status",
       args: [],
@@ -58,7 +58,7 @@ describe("parseHachikoCommand", () => {
 
   it("should handle extra whitespace", () => {
     const result = parseHachikoCommand("  /hachi   status   arg1   arg2  ")
-    
+
     expect(result).toEqual({
       action: "status",
       args: ["arg1", "arg2"],
@@ -80,34 +80,34 @@ describe("canExecuteCommand", () => {
   }
 
   const mockRepository = {
-    owner: { login: "test-org" }
+    owner: { login: "test-org" },
   }
 
   it("should allow status commands for anyone", () => {
     const statusCommand = { ...mockCommand, action: "status" }
     const user = { login: "anyone", type: "User" }
-    
+
     const result = canExecuteCommand(statusCommand, user, mockRepository)
     expect(result).toBe(true)
   })
 
   it("should allow commands for regular users", () => {
     const user = { login: "test-user", type: "User" }
-    
+
     const result = canExecuteCommand(mockCommand, user, mockRepository)
     expect(result).toBe(true)
   })
 
   it("should deny commands for bots", () => {
     const user = { login: "github-actions[bot]", type: "Bot" }
-    
+
     const result = canExecuteCommand(mockCommand, user, mockRepository)
     expect(result).toBe(false)
   })
 
   it("should deny commands for users with empty login", () => {
     const user = { login: "", type: "User" }
-    
+
     const result = canExecuteCommand(mockCommand, user, mockRepository)
     expect(result).toBe(false)
   })
@@ -115,7 +115,7 @@ describe("canExecuteCommand", () => {
   it("should allow status commands even for bots", () => {
     const statusCommand = { ...mockCommand, action: "status" }
     const user = { login: "github-actions[bot]", type: "Bot" }
-    
+
     const result = canExecuteCommand(statusCommand, user, mockRepository)
     expect(result).toBe(true)
   })
@@ -128,7 +128,7 @@ describe("formatCommandResponse", () => {
       "success",
       "Migration is currently running step 2 of 5"
     )
-    
+
     expect(result).toContain("✅")
     expect(result).toContain("**Command**: `/hachi status`")
     expect(result).toContain("Migration is currently running step 2 of 5")
@@ -140,7 +140,7 @@ describe("formatCommandResponse", () => {
       "error",
       "Step step-1 is not in a retryable state"
     )
-    
+
     expect(result).toContain("❌")
     expect(result).toContain("**Command**: `/hachi retry step-1`")
     expect(result).toContain("Step step-1 is not in a retryable state")
@@ -152,7 +152,7 @@ describe("formatCommandResponse", () => {
       "info",
       "Available commands: status, retry, skip, pause, resume"
     )
-    
+
     expect(result).toContain("ℹ️")
     expect(result).toContain("**Command**: `/hachi help`")
     expect(result).toContain("Available commands: status, retry, skip, pause, resume")
@@ -165,7 +165,7 @@ describe("formatCommandResponse", () => {
       "Migration is running",
       "Current step: step-2\\nProgress: 40%\\nETA: 15 minutes"
     )
-    
+
     expect(result).toContain("Migration is running")
     expect(result).toContain("**Details:**")
     expect(result).toContain("Current step: step-2")
@@ -179,7 +179,7 @@ describe("formatCommandResponse", () => {
       "success",
       "Migration completed successfully"
     )
-    
+
     expect(result).toContain("Migration completed successfully")
     expect(result).not.toContain("**Details:**")
   })

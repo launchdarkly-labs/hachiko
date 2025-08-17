@@ -20,11 +20,11 @@ function extractHachikoWorkflowData(workflowRun) {
     // Try to extract from commit message first
     if (workflowRun.head_commit?.message) {
         const match = workflowRun.head_commit.message.match(/Hachiko:\s*([^-]+)\s*-\s*([^(]+)(?:\s*\(([^)]+)\))?/);
-        if (match) {
+        if (match && match[1] && match[2]) {
             return {
                 planId: match[1].trim(),
                 stepId: match[2].trim(),
-                chunk: match[3]?.trim(),
+                chunk: match[3]?.trim() || undefined,
             };
         }
     }
@@ -42,7 +42,7 @@ function generateAgentDispatchPayload(planId, stepId, chunk, promptConfigRef, ad
     const payload = {
         planId,
         stepId,
-        chunk,
+        chunk: chunk || undefined,
         promptConfigRef,
         commitMessage: generateCommitMessage(planId, stepId, chunk),
         branchName: generateBranchName(planId, stepId, chunk),
