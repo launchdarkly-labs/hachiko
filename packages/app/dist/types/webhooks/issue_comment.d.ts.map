@@ -1,0 +1,1 @@
+{"version":3,"file":"issue_comment.d.ts","sourceRoot":"","sources":["../../../src/webhooks/issue_comment.ts"],"names":[],"mappings":"AAAA,OAAO,KAAK,EAAE,OAAO,EAAE,MAAM,QAAQ,CAAA;AAWrC,OAAO,KAAK,EAAE,MAAM,EAAE,MAAM,oBAAoB,CAAA;AAEhD,wBAAsB,kBAAkB,CACtC,OAAO,EAAE,OAAO,CAAC,uBAAuB,CAAC,EACzC,MAAM,EAAE,MAAM,GACb,OAAO,CAAC,IAAI,CAAC,CAwEf"}

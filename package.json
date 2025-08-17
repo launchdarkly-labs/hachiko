@@ -1,0 +1,38 @@
+{
+  "name": "hachiko",
+  "version": "0.1.0",
+  "private": true,
+  "description": "GitHub App for orchestrating technical migrations in large legacy codebases",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/launchdarkly/hachiko"
+  },
+  "engines": {
+    "node": ">=22.0.0"
+  },
+  "packageManager": "pnpm@9.15.2",
+  "scripts": {
+    "build": "pnpm -r build",
+    "dev": "pnpm --filter app dev",
+    "dev:probot:test": "cross-env PROBOT_WEBHOOK_PROXY_URL=$SMEE pnpm --filter app dev",
+    "lint": "biome lint .",
+    "format": "biome format --write .",
+    "typecheck": "pnpm -r typecheck",
+    "test": "vitest",
+    "coverage": "vitest run --coverage && c8 report",
+    "docs:check": "node scripts/check-docs-links.js",
+    "scripts:fire-webhook": "ts-node scripts/send-webhook.ts",
+    "scripts:assert-state": "ts-node scripts/assert-state.ts",
+    "scripts:simulate-merge": "ts-node scripts/sim-merge.ts"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^1.9.4",
+    "@types/node": "^22.10.2",
+    "@vitest/coverage-v8": "^2.1.8",
+    "c8": "^10.1.2",
+    "cross-env": "^7.0.3",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.7.2",
+    "vitest": "^2.1.8"
+  }
+}

@@ -1,0 +1,97 @@
+name: Dogfood
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+  checks: write
+
+jobs:
+  simulate-migration:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+        
+      - name: Setup Node.js
+        uses: actions/setup-node@60edb5dd545a775178f52524783378180af0d1f8 # v4.0.3
+        with:
+          node-version: 22
+          cache: 'pnpm'
+          
+      - name: Install pnpm
+        uses: pnpm/action-setup@fe02b34f77f8bc703788d5817da081398fad5dd2 # v4.0.0
+        with:
+          version: 9
+          
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+        
+      - name: Build all packages
+        run: pnpm build
+        
+      - name: Test configuration parsing
+        run: |
+          echo "Testing Hachiko configuration parsing..."
+          cd examples
+          pnpm --filter @hachiko/app exec tsx -e "
+            import { validateConfig } from '../packages/app/dist/config/schema.js';
+            import { readFileSync } from 'fs';
+            import yaml from 'js-yaml';
+            
+            const config = yaml.load(readFileSync('.hachiko.yml', 'utf8'));
+            const valid = validateConfig(config);
+            console.log('✅ Configuration is valid:', valid.plans.directory);
+          "
+          
+      - name: Test migration plan parsing
+        run: |
+          echo "Testing migration plan parsing..."
+          pnpm --filter @hachiko/app exec tsx -e "
+            import { parsePlanFile } from '../packages/app/dist/services/plans.js';
+            
+            parsePlanFile('./examples/migrations/upgrade-junit.md').then(result => {
+              if (result.isValid) {
+                console.log('✅ Migration plan is valid:', result.plan.id);
+              } else {
+                console.error('❌ Plan validation errors:', result.errors);
+                process.exit(1);
+              }
+            });
+          "
+          
+      - name: Simulate webhook events (placeholder)
+        run: |
+          echo "🚧 Webhook simulation not yet implemented"
+          echo "This would:"
+          echo "  1. Start Probot app in test mode"
+          echo "  2. Fire push webhook with sample migration plan"
+          echo "  3. Verify Migration Issue creation" 
+          echo "  4. Simulate Plan Review PR merge"
+          echo "  5. Verify agent dispatch event"
+          echo "  6. Assert final state"
+          
+      - name: Verify example fixtures
+        run: |
+          echo "Verifying example fixtures exist..."
+          test -f examples/fixtures/SampleTest.java
+          test -f examples/fixtures/pom.xml
+          echo "✅ All fixtures present"
+          
+      - name: Summary
+        run: |
+          echo "🎉 Dogfood simulation completed!"
+          echo ""
+          echo "Verified:"
+          echo "  ✅ Configuration schema validation"
+          echo "  ✅ Migration plan parsing"
+          echo "  ✅ Example fixtures"
+          echo "  🚧 End-to-end webhook simulation (TODO)"
+          echo ""
+          echo "The Hachiko core is ready for basic functionality testing."

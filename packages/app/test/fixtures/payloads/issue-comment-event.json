@@ -1,0 +1,36 @@
+{
+  "action": "created",
+  "issue": {
+    "number": 123,
+    "title": "[Migration] Test Migration",
+    "body": "Migration issue body",
+    "state": "open",
+    "labels": [
+      {
+        "name": "hachiko"
+      },
+      {
+        "name": "migration"
+      },
+      {
+        "name": "hachiko:plan:test-migration"
+      }
+    ]
+  },
+  "comment": {
+    "id": 456,
+    "body": "/hachi status",
+    "user": {
+      "login": "test-user",
+      "type": "User"
+    }
+  },
+  "repository": {
+    "id": 12345,
+    "name": "test-repo",
+    "full_name": "test-org/test-repo",
+    "owner": {
+      "login": "test-org"
+    }
+  }
+}

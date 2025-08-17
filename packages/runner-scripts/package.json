@@ -1,0 +1,25 @@
+{
+  "name": "@hachiko/runner-scripts",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Hachiko CLI scripts for GitHub Actions runner",
+  "scripts": {
+    "build": "tsc -b",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@launchdarkly/node-server-sdk": "^9.6.3",
+    "@octokit/core": "^6.1.2",
+    "@octokit/rest": "^21.0.2",
+    "execa": "^9.5.1",
+    "gray-matter": "^4.0.3",
+    "pino": "^9.5.0",
+    "tsx": "^4.20.4",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "typescript": "^5.7.2"
+  }
+}

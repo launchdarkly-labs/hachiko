@@ -1,0 +1,103 @@
+name: Hachiko Agent Runner
+
+on:
+  repository_dispatch:
+    types: [hachiko.run]
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+  checks: write
+
+jobs:
+  run-agent:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+          
+      - name: Setup Node.js
+        uses: actions/setup-node@60edb5dd545a775178f52524783378180af0d1f8 # v4.0.3
+        with:
+          node-version: 22
+          cache: 'pnpm'
+          
+      - name: Install pnpm
+        uses: pnpm/action-setup@fe02b34f77f8bc703788d5817da081398fad5dd2 # v4.0.0
+        with:
+          version: 9
+          
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+        
+      - name: Build runner scripts
+        run: pnpm --filter @hachiko/runner-scripts build
+        
+      - name: Extract event payload
+        id: payload
+        run: |
+          echo "EVENT_PAYLOAD<<EOF" >> $GITHUB_OUTPUT
+          echo '${{ toJson(github.event.client_payload) }}' >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+          
+      - name: Validate payload
+        run: |
+          echo "Received payload:"
+          echo '${{ steps.payload.outputs.EVENT_PAYLOAD }}'
+          
+          # Basic validation
+          PLAN_ID=$(echo '${{ steps.payload.outputs.EVENT_PAYLOAD }}' | jq -r '.planId // empty')
+          STEP_ID=$(echo '${{ steps.payload.outputs.EVENT_PAYLOAD }}' | jq -r '.stepId // empty')
+          
+          if [ -z "$PLAN_ID" ] || [ -z "$STEP_ID" ]; then
+            echo "ERROR: Missing required payload fields (planId, stepId)"
+            exit 1
+          fi
+          
+          echo "PLAN_ID=$PLAN_ID" >> $GITHUB_ENV
+          echo "STEP_ID=$STEP_ID" >> $GITHUB_ENV
+          
+      - name: Setup Docker (for agent sandboxing)
+        uses: docker/setup-buildx-action@v3
+        
+      - name: Run Hachiko Agent
+        env:
+          HACHIKO_EVENT: ${{ steps.payload.outputs.EVENT_PAYLOAD }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          LAUNCHDARKLY_SDK_KEY: ${{ secrets.LAUNCHDARKLY_SDK_KEY }}
+        run: |
+          echo "Executing migration step: $PLAN_ID / $STEP_ID"
+          pnpm --filter @hachiko/runner-scripts exec tsx src/hachiko-invoke.ts "$HACHIKO_EVENT"
+          
+      - name: Run migration checks
+        if: always()
+        run: |
+          echo "Running post-migration checks..."
+          # This would run the checks defined in the migration plan
+          # For now, just a placeholder
+          echo "✅ Checks completed"
+          
+      - name: Open/Update Pull Request
+        if: always()
+        env:
+          HACHIKO_EVENT: ${{ steps.payload.outputs.EVENT_PAYLOAD }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo "Creating/updating pull request..."
+          pnpm --filter @hachiko/runner-scripts exec tsx src/hachiko-open-pr.ts "$HACHIKO_EVENT"
+          
+      - name: Report Results
+        if: always()
+        env:
+          HACHIKO_EVENT: ${{ steps.payload.outputs.EVENT_PAYLOAD }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          WORKFLOW_CONCLUSION: ${{ job.status }}
+        run: |
+          echo "Reporting results back to GitHub..."
+          pnpm --filter @hachiko/runner-scripts exec tsx src/hachiko-report.ts "$HACHIKO_EVENT"

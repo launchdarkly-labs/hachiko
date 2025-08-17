@@ -1,0 +1,42 @@
+{
+  "ref": "refs/heads/main",
+  "before": "abc123",
+  "after": "def456",
+  "repository": {
+    "id": 12345,
+    "name": "test-repo",
+    "full_name": "test-org/test-repo",
+    "owner": {
+      "login": "test-org"
+    },
+    "default_branch": "main"
+  },
+  "pusher": {
+    "name": "test-user",
+    "email": "test@example.com"
+  },
+  "head_commit": {
+    "id": "def456",
+    "message": "Add test migration plan",
+    "author": {
+      "name": "Test User",
+      "email": "test@example.com"
+    },
+    "added": ["migrations/test-migration.md"],
+    "modified": [],
+    "removed": []
+  },
+  "commits": [
+    {
+      "id": "def456",
+      "message": "Add test migration plan",
+      "author": {
+        "name": "Test User",
+        "email": "test@example.com"
+      },
+      "added": ["migrations/test-migration.md"],
+      "modified": [],
+      "removed": []
+    }
+  ]
+}

@@ -1,0 +1,43 @@
+plans:
+  directory: "migrations"
+  extensions: [".md"]
+
+agents:
+  claude:
+    type: "cli"
+    command: "claude"
+    args: ["--project", "{projectPath}"]
+    container:
+      image: "anthropic/claude-cli:latest"
+      timeout: 3600
+
+defaults:
+  agent: "claude"
+  labels: ["hachiko", "migration"]
+  strategy:
+    chunkBy: "directory"
+    maxOpenPRs: 3
+
+policies:
+  allowedPaths:
+    - "src/**"
+    - "test/**"
+    - "migrations/**"
+  
+  blockedPaths:
+    - ".git/**"
+    - "node_modules/**"
+    - "dist/**"
+
+  maxFileSize: 1048576  # 1MB
+  
+  dangerousPatterns:
+    - "rm -rf"
+    - "sudo"
+    - "eval"
+
+launchdarkly:
+  enabled: true
+  environment: "test"
+  promptConfigs:
+    baseKey: "hachiko_prompts"
