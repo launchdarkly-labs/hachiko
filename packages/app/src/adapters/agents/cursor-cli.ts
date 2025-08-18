@@ -1,9 +1,9 @@
 import { join } from "node:path"
-import { BaseAgentAdapter } from "./base.js"
-import { ContainerExecutor } from "../container.js"
-import type { AgentInput, AgentResult, PolicyConfig, ContainerConfig } from "../types.js"
 import { AgentExecutionError } from "../../utils/errors.js"
 import { createLogger } from "../../utils/logger.js"
+import { ContainerExecutor } from "../container.js"
+import type { AgentInput, AgentResult, ContainerConfig, PolicyConfig } from "../types.js"
+import { BaseAgentAdapter } from "./base.js"
 
 const logger = createLogger("cursor-cli-adapter")
 
@@ -25,14 +25,11 @@ export interface CursorCliConfig {
  */
 export class CursorCliAdapter extends BaseAgentAdapter {
   readonly name = "cursor-cli"
-  
+
   private readonly containerExecutor: ContainerExecutor
   private readonly cursorConfig: CursorCliConfig
 
-  constructor(
-    policyConfig: PolicyConfig,
-    cursorConfig: CursorCliConfig
-  ) {
+  constructor(policyConfig: PolicyConfig, cursorConfig: CursorCliConfig) {
     super(policyConfig)
     this.containerExecutor = ContainerExecutor.getInstance()
     this.cursorConfig = cursorConfig
@@ -48,13 +45,17 @@ export class CursorCliAdapter extends BaseAgentAdapter {
       }
 
       // Check if Cursor CLI image is available
-      const result = await this.containerExecutor.executeCommand(
-        "docker",
-        ["image", "inspect", this.cursorConfig.image]
-      )
-      
+      const result = await this.containerExecutor.executeCommand("docker", [
+        "image",
+        "inspect",
+        this.cursorConfig.image,
+      ])
+
       if (result.exitCode !== 0) {
-        logger.warn({ image: this.cursorConfig.image }, "Cursor CLI image not found, will pull on first use")
+        logger.warn(
+          { image: this.cursorConfig.image },
+          "Cursor CLI image not found, will pull on first use"
+        )
       }
 
       return true
@@ -74,14 +75,14 @@ export class CursorCliAdapter extends BaseAgentAdapter {
       const policyResult = await this.enforceFilePolicy(input.files, input.repoPath)
       if (!policyResult.allowed) {
         throw new AgentExecutionError(
-          `Policy violations: ${policyResult.violations.map(v => v.message).join(", ")}`,
+          `Policy violations: ${policyResult.violations.map((v) => v.message).join(", ")}`,
           this.name
         )
       }
 
       // Prepare safe workspace
       workspacePath = await this.prepareSafeWorkspace(input)
-      
+
       // Create container
       const containerConfig: ContainerConfig = {
         image: this.cursorConfig.image,
@@ -113,9 +114,10 @@ export class CursorCliAdapter extends BaseAgentAdapter {
         "cursor",
         "--headless",
         "--apply",
-        "--instruction-file", ".hachiko-instructions.md",
+        "--instruction-file",
+        ".hachiko-instructions.md",
         "--non-interactive",
-        ...input.files.map(f => this.getRelativePath(f, input.repoPath))
+        ...input.files.map((f) => this.getRelativePath(f, input.repoPath)),
       ]
 
       const executionResult = await this.containerExecutor.executeInContainer(
@@ -141,25 +143,30 @@ export class CursorCliAdapter extends BaseAgentAdapter {
         executionTime,
       }
 
-      logger.info({
-        planId: input.planId,
-        stepId: input.stepId,
-        success,
-        executionTime,
-        modifiedFiles: fileChanges.modifiedFiles.length,
-        createdFiles: fileChanges.createdFiles.length,
-      }, "Cursor CLI execution completed")
+      logger.info(
+        {
+          planId: input.planId,
+          stepId: input.stepId,
+          success,
+          executionTime,
+          modifiedFiles: fileChanges.modifiedFiles.length,
+          createdFiles: fileChanges.createdFiles.length,
+        },
+        "Cursor CLI execution completed"
+      )
 
       return result
-
     } catch (error) {
       const executionTime = Date.now() - startTime
-      logger.error({ 
-        error, 
-        planId: input.planId, 
-        stepId: input.stepId,
-        executionTime 
-      }, "Cursor CLI execution failed")
+      logger.error(
+        {
+          error,
+          planId: input.planId,
+          stepId: input.stepId,
+          executionTime,
+        },
+        "Cursor CLI execution failed"
+      )
 
       return {
         success: false,
@@ -205,7 +212,7 @@ export class CursorCliAdapter extends BaseAgentAdapter {
 ${input.chunk ? `- Processing Chunk: ${input.chunk}` : ""}
 
 ## Target Files
-${input.files.map(f => `- ${this.getRelativePath(f, input.repoPath)}`).join("\n")}
+${input.files.map((f) => `- ${this.getRelativePath(f, input.repoPath)}`).join("\n")}
 
 ## Detailed Instructions
 ${input.prompt}

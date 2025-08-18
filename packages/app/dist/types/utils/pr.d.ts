@@ -27,7 +27,7 @@ export declare function extractMigrationMetadata(pr: {
 }): {
     planId: string;
     stepId: string;
-    chunk?: string;
+    chunk: string | undefined;
 } | null;
 /**
  * Generate labels for a migration PR

@@ -22,7 +22,7 @@ export function extractHachikoWorkflowData(workflowRun: {
       /Hachiko:\s*([^-]+)\s*-\s*([^(]+)(?:\s*\(([^)]+)\))?/
     )
 
-    if (match && match[1] && match[2]) {
+    if (match?.[1] && match[2]) {
       return {
         planId: match[1].trim(),
         stepId: match[2].trim(),

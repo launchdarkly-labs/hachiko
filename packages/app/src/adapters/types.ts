@@ -74,13 +74,13 @@ export interface PolicyConfig {
 export interface AgentAdapter {
   /** Adapter name/identifier */
   readonly name: string
-  
+
   /** Execute the agent with given input */
   execute(input: AgentInput): Promise<AgentResult>
-  
+
   /** Validate that the agent is available and configured correctly */
   validate(): Promise<boolean>
-  
+
   /** Get adapter-specific configuration */
   getConfig(): Record<string, unknown>
 }

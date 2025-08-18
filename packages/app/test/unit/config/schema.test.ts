@@ -1,5 +1,5 @@
-import { describe, it, expect } from "vitest"
-import { validateHachikoConfig, HachikoConfigSchema } from "../../../src/config/schema.js"
+import { describe, expect, it } from "vitest"
+import { HachikoConfigSchema, validateHachikoConfig } from "../../../src/config/schema.js"
 
 describe("HachikoConfigSchema", () => {
   it("should validate a complete valid configuration", () => {

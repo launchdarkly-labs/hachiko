@@ -5,9 +5,9 @@ export declare const AgentCliConfigSchema: z.ZodObject<{
     args: z.ZodDefault<z.ZodArray<z.ZodString, "many">>;
     timeout: z.ZodOptional<z.ZodNumber>;
 }, "strip", z.ZodTypeAny, {
-    args: string[];
     kind: "cli";
     command: string;
+    args: string[];
     timeout?: number | undefined;
 }, {
     kind: "cli";
@@ -52,9 +52,9 @@ export declare const AgentConfigSchema: z.ZodUnion<[z.ZodObject<{
     args: z.ZodDefault<z.ZodArray<z.ZodString, "many">>;
     timeout: z.ZodOptional<z.ZodNumber>;
 }, "strip", z.ZodTypeAny, {
-    args: string[];
     kind: "cli";
     command: string;
+    args: string[];
     timeout?: number | undefined;
 }, {
     kind: "cli";
@@ -121,10 +121,10 @@ export declare const RebaseConfigSchema: z.ZodObject<{
     when: z.ZodDefault<z.ZodEnum<["always", "behind-base-branch", "never"]>>;
     allowManual: z.ZodDefault<z.ZodBoolean>;
 }, "strip", z.ZodTypeAny, {
-    when: "never" | "always" | "behind-base-branch";
+    when: "always" | "behind-base-branch" | "never";
     allowManual: boolean;
 }, {
-    when?: "never" | "always" | "behind-base-branch" | undefined;
+    when?: "always" | "behind-base-branch" | "never" | undefined;
     allowManual?: boolean | undefined;
 }>;
 export declare const AiConfigsSchema: z.ZodObject<{
@@ -144,10 +144,10 @@ export declare const StrategyConfigSchema: z.ZodObject<{
     chunkBy: z.ZodDefault<z.ZodEnum<["module", "package", "fileset", "custom"]>>;
     maxOpenPRs: z.ZodDefault<z.ZodNumber>;
 }, "strip", z.ZodTypeAny, {
-    chunkBy: "package" | "custom" | "module" | "fileset";
+    chunkBy: "custom" | "package" | "module" | "fileset";
     maxOpenPRs: number;
 }, {
-    chunkBy?: "package" | "custom" | "module" | "fileset" | undefined;
+    chunkBy?: "custom" | "package" | "module" | "fileset" | undefined;
     maxOpenPRs?: number | undefined;
 }>;
 export declare const PlansConfigSchema: z.ZodObject<{
@@ -188,30 +188,30 @@ export declare const HachikoConfigSchema: z.ZodObject<{
             when: z.ZodDefault<z.ZodEnum<["always", "behind-base-branch", "never"]>>;
             allowManual: z.ZodDefault<z.ZodBoolean>;
         }, "strip", z.ZodTypeAny, {
-            when: "never" | "always" | "behind-base-branch";
+            when: "always" | "behind-base-branch" | "never";
             allowManual: boolean;
         }, {
-            when?: "never" | "always" | "behind-base-branch" | undefined;
+            when?: "always" | "behind-base-branch" | "never" | undefined;
             allowManual?: boolean | undefined;
         }>>;
         labels: z.ZodDefault<z.ZodArray<z.ZodString, "many">>;
         requirePlanReview: z.ZodDefault<z.ZodBoolean>;
     }, "strip", z.ZodTypeAny, {
-        rebase: {
-            when: "never" | "always" | "behind-base-branch";
-            allowManual: boolean;
-        };
         agent: string;
         prParallelism: number;
+        rebase: {
+            when: "always" | "behind-base-branch" | "never";
+            allowManual: boolean;
+        };
         labels: string[];
         requirePlanReview: boolean;
     }, {
-        rebase?: {
-            when?: "never" | "always" | "behind-base-branch" | undefined;
-            allowManual?: boolean | undefined;
-        } | undefined;
         agent?: string | undefined;
         prParallelism?: number | undefined;
+        rebase?: {
+            when?: "always" | "behind-base-branch" | "never" | undefined;
+            allowManual?: boolean | undefined;
+        } | undefined;
         labels?: string[] | undefined;
         requirePlanReview?: boolean | undefined;
     }>>;
@@ -269,9 +269,9 @@ export declare const HachikoConfigSchema: z.ZodObject<{
         args: z.ZodDefault<z.ZodArray<z.ZodString, "many">>;
         timeout: z.ZodOptional<z.ZodNumber>;
     }, "strip", z.ZodTypeAny, {
-        args: string[];
         kind: "cli";
         command: string;
+        args: string[];
         timeout?: number | undefined;
     }, {
         kind: "cli";
@@ -315,12 +315,12 @@ export declare const HachikoConfigSchema: z.ZodObject<{
         filenamePattern: string;
     };
     defaults: {
-        rebase: {
-            when: "never" | "always" | "behind-base-branch";
-            allowManual: boolean;
-        };
         agent: string;
         prParallelism: number;
+        rebase: {
+            when: "always" | "behind-base-branch" | "never";
+            allowManual: boolean;
+        };
         labels: string[];
         requirePlanReview: boolean;
     };
@@ -343,9 +343,9 @@ export declare const HachikoConfigSchema: z.ZodObject<{
         updateStrategy: "manual" | "auto";
     };
     agents: Record<string, {
-        args: string[];
         kind: "cli";
         command: string;
+        args: string[];
         timeout?: number | undefined;
     } | {
         kind: "api";
@@ -362,12 +362,12 @@ export declare const HachikoConfigSchema: z.ZodObject<{
         filenamePattern?: string | undefined;
     } | undefined;
     defaults?: {
-        rebase?: {
-            when?: "never" | "always" | "behind-base-branch" | undefined;
-            allowManual?: boolean | undefined;
-        } | undefined;
         agent?: string | undefined;
         prParallelism?: number | undefined;
+        rebase?: {
+            when?: "always" | "behind-base-branch" | "never" | undefined;
+            allowManual?: boolean | undefined;
+        } | undefined;
         labels?: string[] | undefined;
         requirePlanReview?: boolean | undefined;
     } | undefined;
@@ -418,13 +418,13 @@ export declare const MigrationStepSchema: z.ZodObject<{
     id: string;
     description: string;
     expectedPR: boolean;
-    timeout?: number | undefined;
     agent?: string | undefined;
+    timeout?: number | undefined;
 }, {
     id: string;
     description: string;
-    timeout?: number | undefined;
     agent?: string | undefined;
+    timeout?: number | undefined;
     expectedPR?: boolean | undefined;
 }>;
 export declare const MigrationChecksSchema: z.ZodDefault<z.ZodArray<z.ZodString, "many">>;
@@ -449,10 +449,10 @@ export declare const MigrationFrontmatterSchema: z.ZodObject<{
         chunkBy: z.ZodDefault<z.ZodEnum<["module", "package", "fileset", "custom"]>>;
         maxOpenPRs: z.ZodDefault<z.ZodNumber>;
     }, "strip", z.ZodTypeAny, {
-        chunkBy: "package" | "custom" | "module" | "fileset";
+        chunkBy: "custom" | "package" | "module" | "fileset";
         maxOpenPRs: number;
     }, {
-        chunkBy?: "package" | "custom" | "module" | "fileset" | undefined;
+        chunkBy?: "custom" | "package" | "module" | "fileset" | undefined;
         maxOpenPRs?: number | undefined;
     }>>;
     checks: z.ZodDefault<z.ZodArray<z.ZodString, "many">>;
@@ -477,13 +477,13 @@ export declare const MigrationFrontmatterSchema: z.ZodObject<{
         id: string;
         description: string;
         expectedPR: boolean;
-        timeout?: number | undefined;
         agent?: string | undefined;
+        timeout?: number | undefined;
     }, {
         id: string;
         description: string;
-        timeout?: number | undefined;
         agent?: string | undefined;
+        timeout?: number | undefined;
         expectedPR?: boolean | undefined;
     }>, "many">>;
     dependsOn: z.ZodDefault<z.ZodArray<z.ZodString, "many">>;
@@ -492,12 +492,12 @@ export declare const MigrationFrontmatterSchema: z.ZodObject<{
     lastError: z.ZodOptional<z.ZodString>;
     currentStep: z.ZodOptional<z.ZodString>;
 }, "strip", z.ZodTypeAny, {
-    status: "draft" | "plan-approved" | "queued" | "running" | "awaiting-review" | "paused" | "failed" | "done" | "cancelled" | "skipped";
+    status: "queued" | "running" | "awaiting-review" | "failed" | "skipped" | "paused" | "draft" | "plan-approved" | "done" | "cancelled";
     owner: string;
-    id: string;
     title: string;
+    id: string;
     strategy: {
-        chunkBy: "package" | "custom" | "module" | "fileset";
+        chunkBy: "custom" | "package" | "module" | "fileset";
         maxOpenPRs: number;
     };
     checks: string[];
@@ -510,8 +510,8 @@ export declare const MigrationFrontmatterSchema: z.ZodObject<{
         id: string;
         description: string;
         expectedPR: boolean;
-        timeout?: number | undefined;
         agent?: string | undefined;
+        timeout?: number | undefined;
     }[];
     dependsOn: string[];
     touches: string[];
@@ -521,12 +521,12 @@ export declare const MigrationFrontmatterSchema: z.ZodObject<{
     currentStep?: string | undefined;
 }, {
     owner: string;
-    id: string;
     title: string;
-    status?: "draft" | "plan-approved" | "queued" | "running" | "awaiting-review" | "paused" | "failed" | "done" | "cancelled" | "skipped" | undefined;
+    id: string;
+    status?: "queued" | "running" | "awaiting-review" | "failed" | "skipped" | "paused" | "draft" | "plan-approved" | "done" | "cancelled" | undefined;
     agent?: string | undefined;
     strategy?: {
-        chunkBy?: "package" | "custom" | "module" | "fileset" | undefined;
+        chunkBy?: "custom" | "package" | "module" | "fileset" | undefined;
         maxOpenPRs?: number | undefined;
     } | undefined;
     checks?: string[] | undefined;
@@ -538,8 +538,8 @@ export declare const MigrationFrontmatterSchema: z.ZodObject<{
     steps?: {
         id: string;
         description: string;
-        timeout?: number | undefined;
         agent?: string | undefined;
+        timeout?: number | undefined;
         expectedPR?: boolean | undefined;
     }[] | undefined;
     dependsOn?: string[] | undefined;

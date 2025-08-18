@@ -36,7 +36,7 @@ export async function handleWorkflowRun(
 
     logger.info({ workflowData }, "Extracted workflow data")
 
-    const { planId, stepId, chunk } = workflowData
+    const { planId: _planId, stepId: _stepId, chunk: _chunk } = workflowData
 
     // Update Checks API with results
     await updateChecksStatus(context, workflowRun, workflowData, logger)
@@ -140,7 +140,7 @@ async function extractFailureReason(
     const failedJobs = jobs.data.jobs.filter((job) => job.conclusion === "failure")
 
     if (failedJobs.length > 0) {
-      const failedJob = failedJobs[0]!  // We know this exists due to length check
+      const failedJob = failedJobs[0]! // We know this exists due to length check
       return `Job "${failedJob.name}" failed. See [workflow run](${workflowRun.html_url}) for details.`
     }
 
@@ -173,7 +173,7 @@ async function addFailureComment(
       return
     }
 
-    const migrationIssue = issues.data[0]!  // We know this exists due to length check
+    const migrationIssue = issues.data[0]! // We know this exists due to length check
     const chunkText = chunk ? ` (${chunk})` : ""
 
     const comment = `❌ **Step Failed**: \`${stepId}\`${chunkText}

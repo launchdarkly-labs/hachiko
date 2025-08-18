@@ -1,9 +1,9 @@
 import type { HachikoConfig } from "../config/schema.js"
-import type { AgentAdapter, PolicyConfig } from "./types.js"
+import { createLogger } from "../utils/logger.js"
 import { ClaudeCliAdapter, type ClaudeCliConfig } from "./agents/claude-cli.js"
 import { CursorCliAdapter, type CursorCliConfig } from "./agents/cursor-cli.js"
 import { MockAgentAdapter } from "./agents/mock.js"
-import { createLogger } from "../utils/logger.js"
+import type { AgentAdapter, PolicyConfig } from "./types.js"
 
 const logger = createLogger("agent-registry")
 
@@ -17,10 +17,10 @@ export class AgentRegistry {
   private constructor() {}
 
   static getInstance(): AgentRegistry {
-    if (!this.instance) {
-      this.instance = new AgentRegistry()
+    if (!AgentRegistry.instance) {
+      AgentRegistry.instance = new AgentRegistry()
     }
-    return this.instance
+    return AgentRegistry.instance
   }
 
   /**
@@ -35,8 +35,12 @@ export class AgentRegistry {
       blockedPaths: config.policy.riskyGlobs,
       maxFileSize: 10 * 1024 * 1024, // 10MB default
       dangerousPatterns: ["rm -rf", "sudo", "curl", "wget", "exec", "eval"],
-      networkIsolation: config.policy.network === "none" ? "full" : 
-                       config.policy.network === "restricted" ? "restricted" : "none",
+      networkIsolation:
+        config.policy.network === "none"
+          ? "full"
+          : config.policy.network === "restricted"
+            ? "restricted"
+            : "none",
     }
 
     // Initialize configured agents
@@ -59,9 +63,12 @@ export class AgentRegistry {
     })
     await this.registerAdapter("mock", mockAdapter)
 
-    logger.info({ 
-      adapters: Array.from(this.adapters.keys()) 
-    }, "Agent adapters initialized")
+    logger.info(
+      {
+        adapters: Array.from(this.adapters.keys()),
+      },
+      "Agent adapters initialized"
+    )
   }
 
   /**
@@ -115,7 +122,7 @@ export class AgentRegistry {
    */
   async validateAllAdapters(): Promise<Record<string, boolean>> {
     const results: Record<string, boolean> = {}
-    
+
     for (const [name, adapter] of this.adapters) {
       try {
         results[name] = await adapter.validate()
@@ -132,8 +139,8 @@ export class AgentRegistry {
    * Create adapter instance based on configuration
    */
   private async createAdapter(
-    name: string, 
-    agentConfig: any, 
+    _name: string,
+    agentConfig: any,
     policyConfig: PolicyConfig
   ): Promise<AgentAdapter | null> {
     const { kind } = agentConfig

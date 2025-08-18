@@ -5,7 +5,7 @@ owner: "@team-frontend"
 status: draft
 agent: claude-cli
 strategy:
-  chunkBy: directory
+  chunkBy: module
   maxOpenPRs: 2
 checks:
   - "npm test"

@@ -89,6 +89,7 @@ async function withRetry(operation, maxAttempts = 3, backoffMs = 1000) {
             await new Promise((resolve) => setTimeout(resolve, backoffMs * 2 ** (attempt - 1)));
         }
     }
-    throw lastError;
+    // This should never happen since we throw on maxAttempts, but TypeScript needs assurance
+    throw lastError ?? new Error("Unexpected error in withRetry");
 }
 //# sourceMappingURL=errors.js.map

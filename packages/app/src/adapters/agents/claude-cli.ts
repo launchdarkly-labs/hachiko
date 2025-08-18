@@ -1,9 +1,9 @@
 import { join } from "node:path"
-import { BaseAgentAdapter } from "./base.js"
-import { ContainerExecutor } from "../container.js"
-import type { AgentInput, AgentResult, PolicyConfig, ContainerConfig } from "../types.js"
 import { AgentExecutionError } from "../../utils/errors.js"
 import { createLogger } from "../../utils/logger.js"
+import { ContainerExecutor } from "../container.js"
+import type { AgentInput, AgentResult, ContainerConfig, PolicyConfig } from "../types.js"
+import { BaseAgentAdapter } from "./base.js"
 
 const logger = createLogger("claude-cli-adapter")
 
@@ -25,14 +25,11 @@ export interface ClaudeCliConfig {
  */
 export class ClaudeCliAdapter extends BaseAgentAdapter {
   readonly name = "claude-cli"
-  
+
   private readonly containerExecutor: ContainerExecutor
   private readonly claudeConfig: ClaudeCliConfig
 
-  constructor(
-    policyConfig: PolicyConfig,
-    claudeConfig: ClaudeCliConfig
-  ) {
+  constructor(policyConfig: PolicyConfig, claudeConfig: ClaudeCliConfig) {
     super(policyConfig)
     this.containerExecutor = ContainerExecutor.getInstance()
     this.claudeConfig = claudeConfig
@@ -48,13 +45,17 @@ export class ClaudeCliAdapter extends BaseAgentAdapter {
       }
 
       // Check if Claude CLI image is available
-      const result = await this.containerExecutor.executeCommand(
-        "docker",
-        ["image", "inspect", this.claudeConfig.image]
-      )
-      
+      const result = await this.containerExecutor.executeCommand("docker", [
+        "image",
+        "inspect",
+        this.claudeConfig.image,
+      ])
+
       if (result.exitCode !== 0) {
-        logger.warn({ image: this.claudeConfig.image }, "Claude CLI image not found, will pull on first use")
+        logger.warn(
+          { image: this.claudeConfig.image },
+          "Claude CLI image not found, will pull on first use"
+        )
       }
 
       return true
@@ -74,14 +75,14 @@ export class ClaudeCliAdapter extends BaseAgentAdapter {
       const policyResult = await this.enforceFilePolicy(input.files, input.repoPath)
       if (!policyResult.allowed) {
         throw new AgentExecutionError(
-          `Policy violations: ${policyResult.violations.map(v => v.message).join(", ")}`,
+          `Policy violations: ${policyResult.violations.map((v) => v.message).join(", ")}`,
           this.name
         )
       }
 
       // Prepare safe workspace
       workspacePath = await this.prepareSafeWorkspace(input)
-      
+
       // Create container
       const containerConfig: ContainerConfig = {
         image: this.claudeConfig.image,
@@ -112,10 +113,11 @@ export class ClaudeCliAdapter extends BaseAgentAdapter {
       const command = [
         "claude",
         "chat",
-        "--prompt-file", ".hachiko-prompt.md",
+        "--prompt-file",
+        ".hachiko-prompt.md",
         "--apply-diff",
         "--yes", // Non-interactive mode
-        ...input.files.map(f => this.getRelativePath(f, input.repoPath))
+        ...input.files.map((f) => this.getRelativePath(f, input.repoPath)),
       ]
 
       const executionResult = await this.containerExecutor.executeInContainer(
@@ -141,25 +143,30 @@ export class ClaudeCliAdapter extends BaseAgentAdapter {
         executionTime,
       }
 
-      logger.info({
-        planId: input.planId,
-        stepId: input.stepId,
-        success,
-        executionTime,
-        modifiedFiles: fileChanges.modifiedFiles.length,
-        createdFiles: fileChanges.createdFiles.length,
-      }, "Claude CLI execution completed")
+      logger.info(
+        {
+          planId: input.planId,
+          stepId: input.stepId,
+          success,
+          executionTime,
+          modifiedFiles: fileChanges.modifiedFiles.length,
+          createdFiles: fileChanges.createdFiles.length,
+        },
+        "Claude CLI execution completed"
+      )
 
       return result
-
     } catch (error) {
       const executionTime = Date.now() - startTime
-      logger.error({ 
-        error, 
-        planId: input.planId, 
-        stepId: input.stepId,
-        executionTime 
-      }, "Claude CLI execution failed")
+      logger.error(
+        {
+          error,
+          planId: input.planId,
+          stepId: input.stepId,
+          executionTime,
+        },
+        "Claude CLI execution failed"
+      )
 
       return {
         success: false,
@@ -205,7 +212,7 @@ export class ClaudeCliAdapter extends BaseAgentAdapter {
 ${input.chunk ? `- **Chunk**: ${input.chunk}` : ""}
 
 ## Files to Modify
-${input.files.map(f => `- ${this.getRelativePath(f, input.repoPath)}`).join("\n")}
+${input.files.map((f) => `- ${this.getRelativePath(f, input.repoPath)}`).join("\n")}
 
 ## Instructions
 ${input.prompt}

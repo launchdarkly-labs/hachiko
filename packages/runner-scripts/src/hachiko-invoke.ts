@@ -2,12 +2,12 @@
 
 /**
  * Hachiko Agent Invocation Script
- * 
+ *
  * This script is executed by the GitHub Actions runner to invoke
  * the configured agent for a migration step.
  */
 
-import { writeFile, readFile } from "node:fs/promises"
+import { readFile, writeFile } from "node:fs/promises"
 import { join } from "node:path"
 import { execa } from "execa"
 import { z } from "zod"
@@ -25,14 +25,12 @@ const HachikoEventSchema = z.object({
 type HachikoEvent = z.infer<typeof HachikoEventSchema>
 
 async function main() {
-  console.log("🤖 Hachiko Agent Invocation Starting...")
-  
   const eventJson = process.argv[2]
   if (!eventJson) {
     console.error("❌ Missing event payload argument")
     process.exit(1)
   }
-  
+
   let event: HachikoEvent
   try {
     event = HachikoEventSchema.parse(JSON.parse(eventJson))
@@ -40,63 +38,44 @@ async function main() {
     console.error("❌ Invalid event payload:", error)
     process.exit(1)
   }
-  
-  console.log("📋 Event Details:")
-  console.log(`  Plan ID: ${event.planId}`)
-  console.log(`  Step ID: ${event.stepId}`)
-  console.log(`  Chunk: ${event.chunk || "N/A"}`)
-  console.log(`  Branch: ${event.branchName}`)
-  
+
   // Load Hachiko configuration
   const config = await loadConfig()
   const agentConfig = config.agents[config.defaults.agent as keyof typeof config.agents]
-  
+
   if (!agentConfig) {
     console.error(`❌ Agent "${config.defaults.agent}" not found in configuration`)
     process.exit(1)
   }
-  
-  console.log(`🤖 Using agent: ${config.defaults.agent} (${agentConfig.kind})`)
-  
+
   // Load migration plan
   const plan = await loadPlan(event.planId, config)
-  const step = plan.steps.find(s => s.id === event.stepId)
-  
+  const step = plan.steps.find((s) => s.id === event.stepId)
+
   if (!step) {
     console.error(`❌ Step "${event.stepId}" not found in plan`)
     process.exit(1)
   }
-  
-  console.log(`📝 Step: ${step.description}`)
-  
+
   // Create working branch
   await createWorkingBranch(event.branchName)
-  
+
   // Prepare prompt (placeholder for LaunchDarkly integration)
   const prompt = await preparePrompt(event, plan, step)
-  
+
   // Execute agent in sandbox
   const result = await executeAgent(agentConfig, prompt, event)
-  
-  // Report results
-  console.log("📊 Agent Execution Results:")
-  console.log(`  Success: ${result.success}`)
-  console.log(`  Files Changed: ${result.changedFiles.length}`)
-  
+
   if (result.changedFiles.length > 0) {
-    console.log("  Changed files:")
-    for (const file of result.changedFiles) {
-      console.log(`    - ${file}`)
+    for (const _file of result.changedFiles) {
     }
   }
-  
+
   if (!result.success) {
     console.error("❌ Agent execution failed")
     console.error(result.error)
     process.exit(1)
   }
-  
-  console.log("✅ Agent execution completed successfully")
 }
 
 async function loadConfig() {
@@ -114,7 +93,7 @@ async function loadConfig() {
   }
 }
 
-async function loadPlan(planId: string, config: any) {
+async function loadPlan(planId: string, _config: any) {
   // For now, return mock plan data
   // TODO: Load actual plan from repository
   return {
@@ -125,7 +104,7 @@ async function loadPlan(planId: string, config: any) {
         description: "Inventory and analyze code",
       },
       {
-        id: "codemod", 
+        id: "codemod",
         description: "Apply automated transformations",
       },
       {
@@ -137,23 +116,16 @@ async function loadPlan(planId: string, config: any) {
 }
 
 async function createWorkingBranch(branchName: string) {
-  console.log(`🔀 Creating working branch: ${branchName}`)
-  
   try {
     // Check if branch already exists
     await execa("git", ["show-ref", "--verify", `refs/heads/${branchName}`])
-    console.log("  Branch already exists, checking out...")
     await execa("git", ["checkout", branchName])
   } catch {
-    // Branch doesn't exist, create it
-    console.log("  Creating new branch...")
     await execa("git", ["checkout", "-b", branchName])
   }
 }
 
-async function preparePrompt(event: HachikoEvent, plan: any, step: any) {
-  console.log("📝 Preparing agent prompt...")
-  
+async function preparePrompt(event: HachikoEvent, _plan: any, step: any) {
   // TODO: Integrate with LaunchDarkly to fetch prompt templates
   const prompt = `You are a coding agent helping with a migration.
 
@@ -166,50 +138,46 @@ Focus only on files that are relevant to this specific step.
 Ensure all changes are safe and well-tested.
 
 When complete, commit your changes with the message: "${event.commitMessage}"`
-  
+
   // Write prompt to temp file for agent consumption
   const promptPath = "/tmp/hachiko-prompt.txt"
   await writeFile(promptPath, prompt)
-  
+
   return promptPath
 }
 
 async function executeAgent(agentConfig: any, promptPath: string, event: HachikoEvent) {
-  console.log("🏃 Executing agent...")
-  
   const startTime = Date.now()
-  
+
   try {
     if (agentConfig.kind === "cli") {
       // For mock agent, just simulate execution
       if (agentConfig.command === "echo") {
-        console.log("🎭 Mock agent execution...")
-        
         // Simulate making changes to fixture files
         const changedFiles = await simulateMockChanges(event)
-        
+
         return {
           success: true,
           changedFiles,
           duration: Date.now() - startTime,
         }
       }
-      
+
       // Real agent execution would happen here
       const result = await execa(agentConfig.command, [
         ...agentConfig.args,
-        "--prompt-file", promptPath,
+        "--prompt-file",
+        promptPath,
       ])
-      
+
       return {
         success: result.exitCode === 0,
         changedFiles: await getChangedFiles(),
         duration: Date.now() - startTime,
       }
     }
-    
+
     throw new Error(`Unsupported agent kind: ${agentConfig.kind}`)
-    
   } catch (error) {
     return {
       success: false,
@@ -223,31 +191,21 @@ async function executeAgent(agentConfig: any, promptPath: string, event: Hachiko
 async function simulateMockChanges(event: HachikoEvent): Promise<string[]> {
   // For demonstration, modify one of the fixture files
   const filePath = "examples/fixtures/SampleTest.java"
-  
+
   try {
     const content = await readFile(filePath, "utf-8")
-    const modified = content.replace(
-      "import org.junit.Test;",
-      "import org.junit.jupiter.api.Test;"
-    ).replace(
-      "import org.junit.Assert;",
-      "import org.junit.jupiter.api.Assertions;"
-    ).replace(
-      "Assert.assertEquals",
-      "Assertions.assertEquals"
-    )
-    
+    const modified = content
+      .replace("import org.junit.Test;", "import org.junit.jupiter.api.Test;")
+      .replace("import org.junit.Assert;", "import org.junit.jupiter.api.Assertions;")
+      .replace("Assert.assertEquals", "Assertions.assertEquals")
+
     await writeFile(filePath, modified)
-    
+
     // Stage and commit the changes
     await execa("git", ["add", filePath])
     await execa("git", ["commit", "-m", event.commitMessage])
-    
-    console.log(`  ✏️  Modified: ${filePath}`)
     return [filePath]
-    
-  } catch (error) {
-    console.log("  ℹ️  Could not modify fixture file (file may not exist)")
+  } catch (_error) {
     return []
   }
 }

@@ -1,9 +1,9 @@
 import { spawn } from "node:child_process"
 import { promises as fs } from "node:fs"
 import { join } from "node:path"
-import type { ContainerConfig, ContainerContext } from "./types.js"
 import { AgentExecutionError } from "../utils/errors.js"
 import { createLogger } from "../utils/logger.js"
+import type { ContainerConfig, ContainerContext } from "./types.js"
 
 const logger = createLogger("container")
 
@@ -14,10 +14,10 @@ export class ContainerExecutor {
   private static instance: ContainerExecutor | null = null
 
   static getInstance(): ContainerExecutor {
-    if (!this.instance) {
-      this.instance = new ContainerExecutor()
+    if (!ContainerExecutor.instance) {
+      ContainerExecutor.instance = new ContainerExecutor()
     }
-    return this.instance
+    return ContainerExecutor.instance
   }
 
   /**
@@ -41,47 +41,57 @@ export class ContainerExecutor {
     repoPath: string
   ): Promise<ContainerContext> {
     const containerId = `hachiko-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
-    
+
     const dockerArgs = [
       "run",
       "--detach",
-      "--name", containerId,
+      "--name",
+      containerId,
       "--rm", // Auto-remove when stopped
-      
+
       // Security constraints
-      "--user", "1000:1000", // Run as non-root user
+      "--user",
+      "1000:1000", // Run as non-root user
       "--read-only", // Read-only filesystem
-      "--tmpfs", "/tmp:exec,size=100m", // Writable tmp with size limit
-      "--cap-drop", "ALL", // Drop all Linux capabilities
-      "--security-opt", "no-new-privileges", // Prevent privilege escalation
-      
+      "--tmpfs",
+      "/tmp:exec,size=100m", // Writable tmp with size limit
+      "--cap-drop",
+      "ALL", // Drop all Linux capabilities
+      "--security-opt",
+      "no-new-privileges", // Prevent privilege escalation
+
       // Resource limits
       ...(config.memoryLimit ? ["--memory", `${config.memoryLimit}m`] : []),
       ...(config.cpuLimit ? ["--cpus", config.cpuLimit.toString()] : []),
-      
+
       // Network isolation
-      "--network", "none", // No network access
-      
+      "--network",
+      "none", // No network access
+
       // Mounts
-      "--mount", `type=bind,source=${workspacePath},target=/workspace`,
-      "--mount", `type=bind,source=${repoPath},target=/repo,readonly`,
-      
+      "--mount",
+      `type=bind,source=${workspacePath},target=/workspace`,
+      "--mount",
+      `type=bind,source=${repoPath},target=/repo,readonly`,
+
       // Working directory
-      "--workdir", config.workdir || "/workspace",
-      
+      "--workdir",
+      config.workdir || "/workspace",
+
       // Environment variables
       ...Object.entries(config.env || {}).flatMap(([key, value]) => ["-e", `${key}=${value}`]),
-      
+
       // Image
       config.image,
-      
+
       // Keep container running
-      "sleep", "infinity"
+      "sleep",
+      "infinity",
     ]
 
     try {
       const result = await this.executeCommand("docker", dockerArgs)
-      
+
       if (result.exitCode !== 0) {
         throw new Error(`Docker run failed: ${result.stderr}`)
       }
@@ -113,28 +123,32 @@ export class ContainerExecutor {
   async executeInContainer(
     context: ContainerContext,
     command: string[],
-    timeout: number = 300000 // 5 minutes default
+    timeout = 300000 // 5 minutes default
   ): Promise<{ exitCode: number; stdout: string; stderr: string; executionTime: number }> {
     const startTime = Date.now()
-    
+
     const dockerArgs = [
       "exec",
-      "--workdir", context.workdir,
+      "--workdir",
+      context.workdir,
       ...Object.entries(context.env).flatMap(([key, value]) => ["-e", `${key}=${value}`]),
       context.containerId,
-      ...command
+      ...command,
     ]
 
     try {
       const result = await this.executeCommand("docker", dockerArgs, timeout)
       const executionTime = Date.now() - startTime
-      
-      logger.debug({ 
-        containerId: context.containerId, 
-        command, 
-        exitCode: result.exitCode,
-        executionTime 
-      }, "Command executed in container")
+
+      logger.debug(
+        {
+          containerId: context.containerId,
+          command,
+          exitCode: result.exitCode,
+          executionTime,
+        },
+        "Command executed in container"
+      )
 
       return {
         exitCode: result.exitCode,
@@ -144,13 +158,16 @@ export class ContainerExecutor {
       }
     } catch (error) {
       const executionTime = Date.now() - startTime
-      logger.error({ 
-        error, 
-        containerId: context.containerId, 
-        command,
-        executionTime 
-      }, "Container command execution failed")
-      
+      logger.error(
+        {
+          error,
+          containerId: context.containerId,
+          command,
+          executionTime,
+        },
+        "Container command execution failed"
+      )
+
       throw new AgentExecutionError(
         `Container execution failed: ${error instanceof Error ? error.message : String(error)}`,
         "container"
@@ -177,7 +194,7 @@ export class ContainerExecutor {
   executeCommand(
     command: string,
     args: string[],
-    timeout: number = 30000
+    timeout = 30000
   ): Promise<{ exitCode: number; stdout: string; stderr: string }> {
     return new Promise((resolve, reject) => {
       const process = spawn(command, args, {

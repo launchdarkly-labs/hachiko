@@ -1,6 +1,6 @@
-import { describe, it, expect, vi, beforeEach } from "vitest"
 import { promises as fs } from "node:fs"
 import { join } from "node:path"
+import { beforeEach, describe, expect, it, vi } from "vitest"
 
 // Mock the logger before importing modules that use it
 vi.mock("../../../src/utils/logger.js", () => ({
@@ -18,14 +18,14 @@ vi.mock("../../../src/utils/logger.js", () => ({
   }),
 }))
 
-import { 
-  parsePlanFile, 
-  validatePlanFrontmatter, 
+import {
   discoverPlans,
   generateNormalizedFrontmatter,
-  serializeFrontmatter
+  parsePlanFile,
+  serializeFrontmatter,
+  validatePlanFrontmatter,
 } from "../../../src/services/plans.js"
-import { testConfig, loadFixture } from "../../helpers/test-utils.js"
+import { loadFixture, testConfig } from "../../helpers/test-utils.js"
 
 // Mock fs module
 vi.mock("node:fs", () => ({
@@ -43,7 +43,7 @@ describe("parsePlanFile", () => {
   it("should parse a valid migration plan file", async () => {
     const planContent = loadFixture("migration-plans/valid-plan.md")
     const tempPath = "/tmp/test-plan.md"
-    
+
     vi.mocked(fs.writeFile).mockResolvedValue(undefined)
     vi.mocked(fs.unlink).mockResolvedValue(undefined)
 
@@ -60,7 +60,7 @@ describe("parsePlanFile", () => {
   it("should handle files without frontmatter", async () => {
     const planContent = "# Just a markdown file\n\nNo frontmatter here."
     const tempPath = "/tmp/test-plan.md"
-    
+
     vi.mocked(fs.writeFile).mockResolvedValue(undefined)
     vi.mocked(fs.unlink).mockResolvedValue(undefined)
 
@@ -76,20 +76,20 @@ title: Missing ID
 ---
 # Plan without ID`
     const tempPath = "/tmp/test-plan.md"
-    
+
     vi.mocked(fs.writeFile).mockResolvedValue(undefined)
     vi.mocked(fs.unlink).mockResolvedValue(undefined)
 
     const result = await parsePlanFile(planContent, tempPath)
 
     expect(result.isValid).toBe(false)
-    expect(result.errors.some(error => error.includes("id"))).toBe(true)
+    expect(result.errors.some((error) => error.includes("id"))).toBe(true)
   })
 
   it("should clean up temporary files even on error", async () => {
     const planContent = "invalid frontmatter ---"
     const tempPath = "/tmp/test-plan.md"
-    
+
     vi.mocked(fs.writeFile).mockRejectedValue(new Error("Write failed"))
 
     const result = await parsePlanFile(planContent, tempPath)
@@ -134,7 +134,7 @@ describe("validatePlanFrontmatter", () => {
 
     const result = validatePlanFrontmatter(frontmatter)
     expect(result.isValid).toBe(false)
-    expect(result.errors.some(error => error.includes("id"))).toBe(true)
+    expect(result.errors.some((error) => error.includes("id"))).toBe(true)
   })
 
   it("should reject invalid status values", () => {
@@ -179,21 +179,17 @@ describe("validatePlanFrontmatter", () => {
 
 describe("discoverPlans", () => {
   it("should discover plans in the configured directory", async () => {
-    const mockGlob = vi.fn().mockResolvedValue([
-      "migrations/plan1.md",
-      "migrations/subdir/plan2.md",
-    ])
+    const mockGlob = vi
+      .fn()
+      .mockResolvedValue(["migrations/plan1.md", "migrations/subdir/plan2.md"])
 
     // Mock glob import
     vi.doMock("glob", () => ({ glob: mockGlob }))
-    
+
     const { discoverPlans: discoverPlansImport } = await import("../../../src/services/plans.js")
     const result = await discoverPlansImport(testConfig)
 
-    expect(result).toEqual([
-      "migrations/plan1.md",
-      "migrations/subdir/plan2.md",
-    ])
+    expect(result).toEqual(["migrations/plan1.md", "migrations/subdir/plan2.md"])
     expect(mockGlob).toHaveBeenCalledWith("migrations/**/*.md")
   })
 
@@ -206,20 +202,14 @@ describe("discoverPlans", () => {
       },
     }
 
-    const mockGlob = vi.fn().mockResolvedValue([
-      "plans/plan1.md",
-      "plans/plan2.markdown",
-    ])
+    const mockGlob = vi.fn().mockResolvedValue(["plans/plan1.md", "plans/plan2.markdown"])
 
     vi.doMock("glob", () => ({ glob: mockGlob }))
-    
+
     const { discoverPlans: discoverPlansImport } = await import("../../../src/services/plans.js")
     const result = await discoverPlansImport(config)
 
-    expect(result).toEqual([
-      "plans/plan1.md",
-      "plans/plan2.markdown",
-    ])
+    expect(result).toEqual(["plans/plan1.md", "plans/plan2.markdown"])
   })
 })
 

@@ -19,16 +19,14 @@ jobs:
       - name: Checkout
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
         
+      - name: Install pnpm
+        uses: pnpm/action-setup@fe02b34f77f8bc703788d5817da081398fad5dd2 # v4.0.0
+          
       - name: Setup Node.js
         uses: actions/setup-node@60edb5dd545a775178f52524783378180af0d1f8 # v4.0.3
         with:
           node-version: 22
           cache: 'pnpm'
-          
-      - name: Install pnpm
-        uses: pnpm/action-setup@fe02b34f77f8bc703788d5817da081398fad5dd2 # v4.0.0
-        with:
-          version: 9
           
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
@@ -39,24 +37,23 @@ jobs:
       - name: Test configuration parsing
         run: |
           echo "Testing Hachiko configuration parsing..."
-          cd examples
-          pnpm --filter @hachiko/app exec tsx -e "
-            import { validateConfig } from '../packages/app/dist/config/schema.js';
+          pnpm --filter @hachiko/runner-scripts exec tsx -e "
+            import { validateHachikoConfig } from '../app/dist/config/schema.js';
             import { readFileSync } from 'fs';
             import yaml from 'js-yaml';
             
-            const config = yaml.load(readFileSync('.hachiko.yml', 'utf8'));
-            const valid = validateConfig(config);
+            const config = yaml.load(readFileSync('../../examples/.hachiko.yml', 'utf8'));
+            const valid = validateHachikoConfig(config);
             console.log('✅ Configuration is valid:', valid.plans.directory);
           "
           
       - name: Test migration plan parsing
         run: |
           echo "Testing migration plan parsing..."
-          pnpm --filter @hachiko/app exec tsx -e "
-            import { parsePlanFile } from '../packages/app/dist/services/plans.js';
+          pnpm --filter @hachiko/runner-scripts exec tsx -e "
+            import { parsePlanFile } from '../app/dist/services/plans.js';
             
-            parsePlanFile('./examples/migrations/upgrade-junit.md').then(result => {
+            parsePlanFile('../../examples/migrations/react-class-to-hooks.md').then(result => {
               if (result.isValid) {
                 console.log('✅ Migration plan is valid:', result.plan.id);
               } else {
@@ -80,9 +77,11 @@ jobs:
       - name: Verify example fixtures
         run: |
           echo "Verifying example fixtures exist..."
-          test -f examples/fixtures/SampleTest.java
-          test -f examples/fixtures/pom.xml
-          echo "✅ All fixtures present"
+          test -f examples/fixtures/Button.tsx
+          test -f examples/fixtures/Counter.tsx
+          test -f examples/fixtures/UserProfile.tsx
+          test -f examples/fixtures/package.json
+          echo "✅ All React fixtures present"
           
       - name: Summary
         run: |
@@ -91,7 +90,7 @@ jobs:
           echo "Verified:"
           echo "  ✅ Configuration schema validation"
           echo "  ✅ Migration plan parsing"
-          echo "  ✅ Example fixtures"
+          echo "  ✅ React example fixtures"
           echo "  🚧 End-to-end webhook simulation (TODO)"
           echo ""
           echo "The Hachiko core is ready for basic functionality testing."
