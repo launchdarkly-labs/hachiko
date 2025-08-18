@@ -19,7 +19,7 @@
     "format": "biome format --write .",
     "typecheck": "pnpm -r typecheck",
     "test": "pnpm --filter @hachiko/app test:run",
-    "coverage": "vitest run --coverage && c8 report",
+    "coverage": "pnpm --filter @hachiko/app test:coverage",
     "docs:check": "node scripts/check-docs-links.js",
     "scripts:fire-webhook": "ts-node scripts/send-webhook.ts",
     "scripts:assert-state": "ts-node scripts/assert-state.ts",

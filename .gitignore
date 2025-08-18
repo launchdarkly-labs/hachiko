@@ -38,3 +38,6 @@ build/
 
 # Local settings
 .claude/
+
+# Project plans
+.projects

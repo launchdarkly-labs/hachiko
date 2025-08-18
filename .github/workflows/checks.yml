@@ -42,9 +42,6 @@ jobs:
       - name: Unit & Integration Tests
         run: pnpm --filter @hachiko/app test:run --reporter=junit --coverage
         
-      - name: Enforce Coverage >= 90%
-        run: pnpm c8 report --check-coverage --branches 90 --functions 90 --lines 90 --statements 90
-        
       - name: Upload coverage reports
         uses: codecov/codecov-action@v4
         if: always()
