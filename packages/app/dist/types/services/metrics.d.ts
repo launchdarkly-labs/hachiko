@@ -1,5 +1,5 @@
-import type { HachikoConfig } from "../config/schema.js";
 import type { AgentResult } from "../adapters/types.js";
+import type { HachikoConfig } from "../config/schema.js";
 import type { MigrationProgress } from "./state.js";
 /**
  * Metric types
@@ -10,7 +10,7 @@ export declare const MetricType: {
     readonly HISTOGRAM: "histogram";
     readonly TIMER: "timer";
 };
-export type MetricTypeType = typeof MetricType[keyof typeof MetricType];
+export type MetricTypeType = (typeof MetricType)[keyof typeof MetricType];
 /**
  * Metric data structure
  */

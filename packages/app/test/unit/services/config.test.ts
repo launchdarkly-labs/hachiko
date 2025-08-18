@@ -56,7 +56,7 @@ describe("loadHachikoConfig", () => {
     })
 
     expect(result.plans.directory).toBe("migrations")
-    expect(result.agents.claude.type).toBe("cli")
+    expect(result.agents.claude.kind).toBe("cli")
     expect(result.defaults.agent).toBe("claude")
   })
 
@@ -127,7 +127,7 @@ describe("validateConfig", () => {
     const partialConfig = {
       agents: {
         custom: {
-          type: "cli",
+          kind: "cli",
           command: "custom-agent",
         },
       },
@@ -135,7 +135,7 @@ describe("validateConfig", () => {
 
     const result = validateConfig(partialConfig)
     expect(result.plans.directory).toBe("migrations")
-    expect(result.defaults.agent).toBe("mock")
-    expect(result.agents.custom.type).toBe("cli")
+    expect(result.defaults.agent).toBe("claude-cli")
+    expect(result.agents.custom.kind).toBe("cli")
   })
 })

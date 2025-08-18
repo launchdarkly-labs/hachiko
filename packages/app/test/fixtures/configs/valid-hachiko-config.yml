@@ -4,12 +4,9 @@ plans:
 
 agents:
   claude:
-    type: "cli"
+    kind: "cli"
     command: "claude"
     args: ["--project", "{projectPath}"]
-    container:
-      image: "anthropic/claude-cli:latest"
-      timeout: 3600
 
 defaults:
   agent: "claude"

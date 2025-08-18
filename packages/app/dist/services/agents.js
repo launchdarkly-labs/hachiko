@@ -15,10 +15,10 @@ class AgentService {
     initialized = false;
     constructor() { }
     static getInstance() {
-        if (!this.instance) {
-            this.instance = new AgentService();
+        if (!AgentService.instance) {
+            AgentService.instance = new AgentService();
         }
-        return this.instance;
+        return AgentService.instance;
     }
     /**
      * Initialize the agent service with configuration

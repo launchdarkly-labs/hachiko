@@ -1,6 +1,6 @@
-import type { ContextWithRepository } from "../types/context.js";
-import type { HachikoConfig } from "../config/schema.js";
 import type { AgentInput, AgentResult } from "../adapters/types.js";
+import type { HachikoConfig } from "../config/schema.js";
+import type { ContextWithRepository } from "../types/context.js";
 /**
  * Service for executing agents
  */

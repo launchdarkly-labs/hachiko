@@ -2,10 +2,10 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.CursorCliAdapter = void 0;
 const node_path_1 = require("node:path");
-const base_js_1 = require("./base.js");
-const container_js_1 = require("../container.js");
 const errors_js_1 = require("../../utils/errors.js");
 const logger_js_1 = require("../../utils/logger.js");
+const container_js_1 = require("../container.js");
+const base_js_1 = require("./base.js");
 const logger = (0, logger_js_1.createLogger)("cursor-cli-adapter");
 /**
  * Cursor CLI agent adapter with container sandboxing
@@ -28,7 +28,11 @@ class CursorCliAdapter extends base_js_1.BaseAgentAdapter {
                 return false;
             }
             // Check if Cursor CLI image is available
-            const result = await this.containerExecutor.executeCommand("docker", ["image", "inspect", this.cursorConfig.image]);
+            const result = await this.containerExecutor.executeCommand("docker", [
+                "image",
+                "inspect",
+                this.cursorConfig.image,
+            ]);
             if (result.exitCode !== 0) {
                 logger.warn({ image: this.cursorConfig.image }, "Cursor CLI image not found, will pull on first use");
             }
@@ -47,7 +51,7 @@ class CursorCliAdapter extends base_js_1.BaseAgentAdapter {
             // Enforce file access policy
             const policyResult = await this.enforceFilePolicy(input.files, input.repoPath);
             if (!policyResult.allowed) {
-                throw new errors_js_1.AgentExecutionError(`Policy violations: ${policyResult.violations.map(v => v.message).join(", ")}`, this.name);
+                throw new errors_js_1.AgentExecutionError(`Policy violations: ${policyResult.violations.map((v) => v.message).join(", ")}`, this.name);
             }
             // Prepare safe workspace
             workspacePath = await this.prepareSafeWorkspace(input);
@@ -75,9 +79,10 @@ class CursorCliAdapter extends base_js_1.BaseAgentAdapter {
                 "cursor",
                 "--headless",
                 "--apply",
-                "--instruction-file", ".hachiko-instructions.md",
+                "--instruction-file",
+                ".hachiko-instructions.md",
                 "--non-interactive",
-                ...input.files.map(f => this.getRelativePath(f, input.repoPath))
+                ...input.files.map((f) => this.getRelativePath(f, input.repoPath)),
             ];
             const executionResult = await this.containerExecutor.executeInContainer(containerContext, command, this.cursorConfig.timeout * 1000);
             // Copy results back to repository
@@ -110,7 +115,7 @@ class CursorCliAdapter extends base_js_1.BaseAgentAdapter {
                 error,
                 planId: input.planId,
                 stepId: input.stepId,
-                executionTime
+                executionTime,
             }, "Cursor CLI execution failed");
             return {
                 success: false,
@@ -155,7 +160,7 @@ class CursorCliAdapter extends base_js_1.BaseAgentAdapter {
 ${input.chunk ? `- Processing Chunk: ${input.chunk}` : ""}
 
 ## Target Files
-${input.files.map(f => `- ${this.getRelativePath(f, input.repoPath)}`).join("\n")}
+${input.files.map((f) => `- ${this.getRelativePath(f, input.repoPath)}`).join("\n")}
 
 ## Detailed Instructions
 ${input.prompt}

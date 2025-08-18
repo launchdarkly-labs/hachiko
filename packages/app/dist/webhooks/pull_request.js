@@ -6,7 +6,7 @@ const migrations_js_1 = require("../services/migrations.js");
 const pr_js_1 = require("../utils/pr.js");
 async function handlePullRequest(context, logger) {
     const { payload } = context;
-    const { pull_request: pr, repository } = payload;
+    const { pull_request: pr, repository: _repository } = payload;
     logger.info({
         prNumber: pr.number,
         merged: pr.merged,
@@ -37,7 +37,7 @@ async function handlePullRequest(context, logger) {
         throw error;
     }
 }
-async function handleMergedPR(context, migrationMeta, config, // TODO: Type this properly
+async function handleMergedPR(context, migrationMeta, _config, // TODO: Type this properly
 logger) {
     const { planId, stepId, chunk } = migrationMeta;
     logger.info({ planId, stepId, chunk }, "Handling merged migration PR");
@@ -56,7 +56,7 @@ logger) {
         throw error;
     }
 }
-async function handleClosedPR(context, migrationMeta, config, // TODO: Type this properly
+async function handleClosedPR(context, migrationMeta, _config, // TODO: Type this properly
 logger) {
     const { planId, stepId, chunk } = migrationMeta;
     logger.info({ planId, stepId, chunk }, "Handling closed (unmerged) migration PR");

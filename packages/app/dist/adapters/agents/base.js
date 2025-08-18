@@ -37,7 +37,7 @@ class BaseAgentAdapter {
             }
             // Check against allowed paths (if any are specified)
             if (this.policyConfig.allowedPaths.length > 0) {
-                const isAllowed = this.policyConfig.allowedPaths.some(pattern => (0, minimatch_1.minimatch)(relativePath, pattern));
+                const isAllowed = this.policyConfig.allowedPaths.some((pattern) => (0, minimatch_1.minimatch)(relativePath, pattern));
                 if (!isAllowed) {
                     violations.push({
                         type: "file_access",
@@ -61,7 +61,7 @@ class BaseAgentAdapter {
                     allowed = false;
                 }
             }
-            catch (error) {
+            catch (_error) {
                 // File doesn't exist yet (might be created by agent) - that's okay
             }
         }
@@ -144,9 +144,9 @@ class BaseAgentAdapter {
                 const workspaceFilePath = (0, node_path_1.join)(workspacePath, relativePath);
                 const repoFilePath = (0, node_path_1.resolve)(repoPath, relativePath);
                 try {
-                    const workspaceStats = await node_fs_1.promises.stat(workspaceFilePath);
+                    const _workspaceStats = await node_fs_1.promises.stat(workspaceFilePath);
                     try {
-                        const repoStats = await node_fs_1.promises.stat(repoFilePath);
+                        const _repoStats = await node_fs_1.promises.stat(repoFilePath);
                         // File exists in both - check if modified
                         const workspaceContent = await node_fs_1.promises.readFile(workspaceFilePath, "utf-8");
                         const repoContent = await node_fs_1.promises.readFile(repoFilePath, "utf-8");

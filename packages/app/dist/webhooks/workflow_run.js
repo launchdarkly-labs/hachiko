@@ -24,7 +24,7 @@ async function handleWorkflowRun(context, logger) {
             return;
         }
         logger.info({ workflowData }, "Extracted workflow data");
-        const { planId, stepId, chunk } = workflowData;
+        const { planId: _planId, stepId: _stepId, chunk: _chunk } = workflowData;
         // Update Checks API with results
         await (0, checks_js_1.updateChecksStatus)(context, workflowRun, workflowData, logger);
         if (workflowRun.conclusion === "success") {

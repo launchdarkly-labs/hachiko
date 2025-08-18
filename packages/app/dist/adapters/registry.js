@@ -3,10 +3,10 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.AgentRegistry = void 0;
 exports.createAgentRegistry = createAgentRegistry;
 exports.initializeAgents = initializeAgents;
+const logger_js_1 = require("../utils/logger.js");
 const claude_cli_js_1 = require("./agents/claude-cli.js");
 const cursor_cli_js_1 = require("./agents/cursor-cli.js");
 const mock_js_1 = require("./agents/mock.js");
-const logger_js_1 = require("../utils/logger.js");
 const logger = (0, logger_js_1.createLogger)("agent-registry");
 /**
  * Registry for managing agent adapters
@@ -16,10 +16,10 @@ class AgentRegistry {
     adapters = new Map();
     constructor() { }
     static getInstance() {
-        if (!this.instance) {
-            this.instance = new AgentRegistry();
+        if (!AgentRegistry.instance) {
+            AgentRegistry.instance = new AgentRegistry();
         }
-        return this.instance;
+        return AgentRegistry.instance;
     }
     /**
      * Initialize agents from configuration
@@ -32,8 +32,11 @@ class AgentRegistry {
             blockedPaths: config.policy.riskyGlobs,
             maxFileSize: 10 * 1024 * 1024, // 10MB default
             dangerousPatterns: ["rm -rf", "sudo", "curl", "wget", "exec", "eval"],
-            networkIsolation: config.policy.network === "none" ? "full" :
-                config.policy.network === "restricted" ? "restricted" : "none",
+            networkIsolation: config.policy.network === "none"
+                ? "full"
+                : config.policy.network === "restricted"
+                    ? "restricted"
+                    : "none",
         };
         // Initialize configured agents
         for (const [agentName, agentConfig] of Object.entries(config.agents)) {
@@ -55,7 +58,7 @@ class AgentRegistry {
         });
         await this.registerAdapter("mock", mockAdapter);
         logger.info({
-            adapters: Array.from(this.adapters.keys())
+            adapters: Array.from(this.adapters.keys()),
         }, "Agent adapters initialized");
     }
     /**
@@ -118,7 +121,7 @@ class AgentRegistry {
     /**
      * Create adapter instance based on configuration
      */
-    async createAdapter(name, agentConfig, policyConfig) {
+    async createAdapter(_name, agentConfig, policyConfig) {
         const { kind } = agentConfig;
         switch (kind) {
             case "cli": {

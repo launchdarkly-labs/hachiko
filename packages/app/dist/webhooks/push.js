@@ -73,7 +73,7 @@ logger) {
         const content = Buffer.from(fileContent.data.content, "base64").toString("utf-8");
         // Write content to a temporary file and parse it
         const tempPath = `/tmp/${planPath.replace(/[^a-zA-Z0-9]/g, "_")}`;
-        await require("fs").promises.writeFile(tempPath, content);
+        await require("node:fs").promises.writeFile(tempPath, content);
         const parsed = await (0, plans_js_1.parsePlanFile)(tempPath);
         if (!parsed.isValid) {
             logger.warn({ errors: parsed.errors }, "Plan file has validation errors");

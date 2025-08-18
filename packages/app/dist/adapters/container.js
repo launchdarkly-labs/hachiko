@@ -12,10 +12,10 @@ const logger = (0, logger_js_1.createLogger)("container");
 class ContainerExecutor {
     static instance = null;
     static getInstance() {
-        if (!this.instance) {
-            this.instance = new ContainerExecutor();
+        if (!ContainerExecutor.instance) {
+            ContainerExecutor.instance = new ContainerExecutor();
         }
-        return this.instance;
+        return ContainerExecutor.instance;
     }
     /**
      * Check if Docker is available
@@ -37,30 +37,40 @@ class ContainerExecutor {
         const dockerArgs = [
             "run",
             "--detach",
-            "--name", containerId,
+            "--name",
+            containerId,
             "--rm", // Auto-remove when stopped
             // Security constraints
-            "--user", "1000:1000", // Run as non-root user
+            "--user",
+            "1000:1000", // Run as non-root user
             "--read-only", // Read-only filesystem
-            "--tmpfs", "/tmp:exec,size=100m", // Writable tmp with size limit
-            "--cap-drop", "ALL", // Drop all Linux capabilities
-            "--security-opt", "no-new-privileges", // Prevent privilege escalation
+            "--tmpfs",
+            "/tmp:exec,size=100m", // Writable tmp with size limit
+            "--cap-drop",
+            "ALL", // Drop all Linux capabilities
+            "--security-opt",
+            "no-new-privileges", // Prevent privilege escalation
             // Resource limits
             ...(config.memoryLimit ? ["--memory", `${config.memoryLimit}m`] : []),
             ...(config.cpuLimit ? ["--cpus", config.cpuLimit.toString()] : []),
             // Network isolation
-            "--network", "none", // No network access
+            "--network",
+            "none", // No network access
             // Mounts
-            "--mount", `type=bind,source=${workspacePath},target=/workspace`,
-            "--mount", `type=bind,source=${repoPath},target=/repo,readonly`,
+            "--mount",
+            `type=bind,source=${workspacePath},target=/workspace`,
+            "--mount",
+            `type=bind,source=${repoPath},target=/repo,readonly`,
             // Working directory
-            "--workdir", config.workdir || "/workspace",
+            "--workdir",
+            config.workdir || "/workspace",
             // Environment variables
             ...Object.entries(config.env || {}).flatMap(([key, value]) => ["-e", `${key}=${value}`]),
             // Image
             config.image,
             // Keep container running
-            "sleep", "infinity"
+            "sleep",
+            "infinity",
         ];
         try {
             const result = await this.executeCommand("docker", dockerArgs);
@@ -92,10 +102,11 @@ class ContainerExecutor {
         const startTime = Date.now();
         const dockerArgs = [
             "exec",
-            "--workdir", context.workdir,
+            "--workdir",
+            context.workdir,
             ...Object.entries(context.env).flatMap(([key, value]) => ["-e", `${key}=${value}`]),
             context.containerId,
-            ...command
+            ...command,
         ];
         try {
             const result = await this.executeCommand("docker", dockerArgs, timeout);
@@ -104,7 +115,7 @@ class ContainerExecutor {
                 containerId: context.containerId,
                 command,
                 exitCode: result.exitCode,
-                executionTime
+                executionTime,
             }, "Command executed in container");
             return {
                 exitCode: result.exitCode,
@@ -119,7 +130,7 @@ class ContainerExecutor {
                 error,
                 containerId: context.containerId,
                 command,
-                executionTime
+                executionTime,
             }, "Container command execution failed");
             throw new errors_js_1.AgentExecutionError(`Container execution failed: ${error instanceof Error ? error.message : String(error)}`, "container");
         }

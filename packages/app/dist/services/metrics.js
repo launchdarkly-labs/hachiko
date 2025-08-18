@@ -26,10 +26,10 @@ class MetricsCollector {
     reportingInterval = null;
     constructor() { }
     static getInstance() {
-        if (!this.instance) {
-            this.instance = new MetricsCollector();
+        if (!MetricsCollector.instance) {
+            MetricsCollector.instance = new MetricsCollector();
         }
-        return this.instance;
+        return MetricsCollector.instance;
     }
     /**
      * Initialize metrics collector
@@ -104,7 +104,9 @@ class MetricsCollector {
         migrationMetrics.filesCreated += agentResult.createdFiles.length;
         migrationMetrics.policyViolations += policyViolations;
         // Recalculate averages
-        const completedSteps = migrationMetrics.successfulSteps + migrationMetrics.failedSteps + migrationMetrics.skippedSteps;
+        const completedSteps = migrationMetrics.successfulSteps +
+            migrationMetrics.failedSteps +
+            migrationMetrics.skippedSteps;
         if (completedSteps > 0) {
             migrationMetrics.agentSuccessRate = migrationMetrics.successfulSteps / completedSteps;
         }
@@ -179,14 +181,14 @@ class MetricsCollector {
     getMetrics(startTime, endTime, namePattern) {
         let filtered = this.metrics;
         if (startTime) {
-            filtered = filtered.filter(m => m.timestamp >= startTime);
+            filtered = filtered.filter((m) => m.timestamp >= startTime);
         }
         if (endTime) {
-            filtered = filtered.filter(m => m.timestamp <= endTime);
+            filtered = filtered.filter((m) => m.timestamp <= endTime);
         }
         if (namePattern) {
             const regex = new RegExp(namePattern);
-            filtered = filtered.filter(m => regex.test(m.name));
+            filtered = filtered.filter((m) => regex.test(m.name));
         }
         return filtered;
     }
@@ -225,23 +227,23 @@ class MetricsCollector {
      * Generate metrics summary
      */
     generateSummary(timeRangeHours = 24) {
-        const cutoffTime = Date.now() - (timeRangeHours * 60 * 60 * 1000);
+        const cutoffTime = Date.now() - timeRangeHours * 60 * 60 * 1000;
         const recentMetrics = this.getMetrics(cutoffTime);
-        const migrationStarts = recentMetrics.filter(m => m.name === "migration_started").length;
-        const migrationCompletions = recentMetrics.filter(m => m.name === "migration_completed");
-        const successfulMigrations = migrationCompletions.filter(m => m.tags.state === "completed").length;
-        const failedMigrations = migrationCompletions.filter(m => m.tags.state === "failed").length;
+        const migrationStarts = recentMetrics.filter((m) => m.name === "migration_started").length;
+        const migrationCompletions = recentMetrics.filter((m) => m.name === "migration_completed");
+        const successfulMigrations = migrationCompletions.filter((m) => m.tags.state === "completed").length;
+        const failedMigrations = migrationCompletions.filter((m) => m.tags.state === "failed").length;
         const executionTimes = recentMetrics
-            .filter(m => m.name === "migration_total_time")
-            .map(m => m.value);
-        const avgExecutionTime = executionTimes.length > 0 ?
-            executionTimes.reduce((a, b) => a + b, 0) / executionTimes.length : 0;
-        const stepExecutions = recentMetrics.filter(m => m.name === "step_execution_time").length;
+            .filter((m) => m.name === "migration_total_time")
+            .map((m) => m.value);
+        const avgExecutionTime = executionTimes.length > 0
+            ? executionTimes.reduce((a, b) => a + b, 0) / executionTimes.length
+            : 0;
+        const stepExecutions = recentMetrics.filter((m) => m.name === "step_execution_time").length;
         const successRates = recentMetrics
-            .filter(m => m.name === "migration_success_rate")
-            .map(m => m.value);
-        const avgSuccessRate = successRates.length > 0 ?
-            successRates.reduce((a, b) => a + b, 0) / successRates.length : 0;
+            .filter((m) => m.name === "migration_success_rate")
+            .map((m) => m.value);
+        const avgSuccessRate = successRates.length > 0 ? successRates.reduce((a, b) => a + b, 0) / successRates.length : 0;
         return {
             totalMigrations: migrationStarts,
             successfulMigrations,
@@ -263,7 +265,7 @@ class MetricsCollector {
             if (!metricGroups.has(metric.name)) {
                 metricGroups.set(metric.name, []);
             }
-            metricGroups.get(metric.name).push(metric);
+            metricGroups.get(metric.name)?.push(metric);
         }
         // Generate Prometheus format
         for (const [name, metrics] of metricGroups) {
@@ -272,7 +274,8 @@ class MetricsCollector {
             lines.push(`# HELP ${name} Hachiko metric`);
             lines.push(`# TYPE ${name} ${latestMetric.type}`);
             // Add metric values
-            for (const metric of metrics.slice(-10)) { // Last 10 values
+            for (const metric of metrics.slice(-10)) {
+                // Last 10 values
                 const tags = Object.entries(metric.tags)
                     .map(([key, value]) => `${key}="${value}"`)
                     .join(",");

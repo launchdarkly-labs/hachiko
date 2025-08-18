@@ -1,5 +1,5 @@
-import { BaseAgentAdapter } from "./base.js";
 import type { AgentInput, AgentResult, PolicyConfig } from "../types.js";
+import { BaseAgentAdapter } from "./base.js";
 export interface MockAgentConfig {
     /** Simulate success rate (0-1) */
     successRate?: number;

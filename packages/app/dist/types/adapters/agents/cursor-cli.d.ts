@@ -1,5 +1,5 @@
-import { BaseAgentAdapter } from "./base.js";
 import type { AgentInput, AgentResult, PolicyConfig } from "../types.js";
+import { BaseAgentAdapter } from "./base.js";
 export interface CursorCliConfig {
     /** Docker image for Cursor CLI */
     image: string;

@@ -1,5 +1,5 @@
-import { BaseAgentAdapter } from "./base.js";
 import type { AgentInput, AgentResult, PolicyConfig } from "../types.js";
+import { BaseAgentAdapter } from "./base.js";
 export interface ClaudeCliConfig {
     /** Docker image for Claude CLI */
     image: string;

@@ -37,10 +37,10 @@ class PolicyEngine {
     initialized = false;
     constructor() { }
     static getInstance() {
-        if (!this.instance) {
-            this.instance = new PolicyEngine();
+        if (!PolicyEngine.instance) {
+            PolicyEngine.instance = new PolicyEngine();
         }
-        return this.instance;
+        return PolicyEngine.instance;
     }
     /**
      * Initialize the policy engine
@@ -54,7 +54,7 @@ class PolicyEngine {
         this.initialized = true;
         logger.info({
             rulesCount: this.rules.length,
-            enabledRules: this.rules.filter(r => r.enabled).length
+            enabledRules: this.rules.filter((r) => r.enabled).length,
         }, "Policy engine initialized");
     }
     /**
@@ -77,8 +77,11 @@ class PolicyEngine {
                         type: this.mapRuleTypeToViolationType(rule.type),
                         message: ruleResult.message || rule.description,
                         pattern: rule.id,
-                        severity: rule.severity === exports.PolicySeverity.CRITICAL ? "error" :
-                            rule.severity === exports.PolicySeverity.ERROR ? "error" : "warning",
+                        severity: rule.severity === exports.PolicySeverity.CRITICAL
+                            ? "error"
+                            : rule.severity === exports.PolicySeverity.ERROR
+                                ? "error"
+                                : "warning",
                     };
                     if (rule.severity === exports.PolicySeverity.ERROR || rule.severity === exports.PolicySeverity.CRITICAL) {
                         violations.push(violation);
@@ -87,7 +90,7 @@ class PolicyEngine {
                         warnings.push(violation);
                     }
                     // Check if any actions require approval
-                    if (rule.actions.some(action => action.type === "require_approval")) {
+                    if (rule.actions.some((action) => action.type === "require_approval")) {
                         requiresApproval = true;
                     }
                 }
@@ -116,7 +119,7 @@ class PolicyEngine {
      * Add a custom policy rule
      */
     addRule(rule) {
-        const existingIndex = this.rules.findIndex(r => r.id === rule.id);
+        const existingIndex = this.rules.findIndex((r) => r.id === rule.id);
         if (existingIndex >= 0) {
             this.rules[existingIndex] = rule;
             logger.info({ ruleId: rule.id }, "Policy rule updated");
@@ -130,7 +133,7 @@ class PolicyEngine {
      * Remove a policy rule
      */
     removeRule(ruleId) {
-        const index = this.rules.findIndex(r => r.id === ruleId);
+        const index = this.rules.findIndex((r) => r.id === ruleId);
         if (index >= 0) {
             this.rules.splice(index, 1);
             logger.info({ ruleId }, "Policy rule removed");
@@ -148,13 +151,13 @@ class PolicyEngine {
      * Get enabled policy rules
      */
     getEnabledRules() {
-        return this.rules.filter(rule => rule.enabled);
+        return this.rules.filter((rule) => rule.enabled);
     }
     /**
      * Enable/disable a policy rule
      */
     setRuleEnabled(ruleId, enabled) {
-        const rule = this.rules.find(r => r.id === ruleId);
+        const rule = this.rules.find((r) => r.id === ruleId);
         if (rule) {
             rule.enabled = enabled;
             logger.info({ ruleId, enabled }, "Policy rule enabled/disabled");
@@ -321,7 +324,7 @@ class PolicyEngine {
         for (const condition of rule.conditions) {
             const violated = await this.evaluateCondition(condition, context);
             if (violated) {
-                const actionMessage = rule.actions.find(a => a.message)?.message;
+                const actionMessage = rule.actions.find((a) => a.message)?.message;
                 return {
                     violated: true,
                     message: actionMessage || rule.description,
@@ -373,9 +376,9 @@ class PolicyEngine {
     /**
      * Compare values for equality
      */
-    compareValues(actual, expected, operator) {
+    compareValues(actual, expected, _operator) {
         if (Array.isArray(actual) && Array.isArray(expected)) {
-            return actual.length === expected.length && actual.every(v => expected.includes(v));
+            return actual.length === expected.length && actual.every((v) => expected.includes(v));
         }
         return actual === expected;
     }
@@ -384,11 +387,11 @@ class PolicyEngine {
      */
     matchesPattern(actual, patterns) {
         if (Array.isArray(actual)) {
-            return actual.some(item => this.matchesPattern(item, patterns));
+            return actual.some((item) => this.matchesPattern(item, patterns));
         }
         const actualStr = String(actual);
         const patternArray = Array.isArray(patterns) ? patterns : [patterns];
-        return patternArray.some(pattern => {
+        return patternArray.some((pattern) => {
             const patternStr = String(pattern);
             return (0, minimatch_1.minimatch)(actualStr, patternStr);
         });
@@ -398,11 +401,11 @@ class PolicyEngine {
      */
     containsValue(actual, values) {
         if (Array.isArray(actual)) {
-            return actual.some(item => this.containsValue(item, values));
+            return actual.some((item) => this.containsValue(item, values));
         }
         const actualStr = String(actual).toLowerCase();
         const valueArray = Array.isArray(values) ? values : [values];
-        return valueArray.some(value => actualStr.includes(String(value).toLowerCase()));
+        return valueArray.some((value) => actualStr.includes(String(value).toLowerCase()));
     }
     /**
      * Compare numeric values
@@ -410,7 +413,7 @@ class PolicyEngine {
     compareNumbers(actual, expected, operator) {
         const actualNum = Number(actual);
         const expectedNum = Number(expected);
-        if (isNaN(actualNum) || isNaN(expectedNum)) {
+        if (Number.isNaN(actualNum) || Number.isNaN(expectedNum)) {
             return false;
         }
         return operator === "greater" ? actualNum > expectedNum : actualNum < expectedNum;

@@ -16,7 +16,6 @@ const HachikoEventSchema = z.object({
     branchName: z.string(),
 });
 async function main() {
-    console.log("📊 Hachiko Results Reporting Starting...");
     const eventJson = process.argv[2];
     if (!eventJson) {
         console.error("❌ Missing event payload argument");
@@ -31,38 +30,18 @@ async function main() {
         process.exit(1);
     }
     const workflowConclusion = process.env.WORKFLOW_CONCLUSION || "success";
-    console.log("📋 Reporting Details:");
-    console.log(`  Plan ID: ${event.planId}`);
-    console.log(`  Step ID: ${event.stepId}`);
-    console.log(`  Conclusion: ${workflowConclusion}`);
     // Create GitHub Check
     await createGitHubCheck(event, workflowConclusion);
     // Update Migration Issue (if possible)
     await updateMigrationIssue(event, workflowConclusion);
-    console.log("✅ Results reporting completed successfully");
 }
 async function createGitHubCheck(event, conclusion) {
-    console.log("✅ Creating GitHub Check...");
     const chunkText = event.chunk ? ` (${event.chunk})` : "";
-    const checkName = `Hachiko: ${event.planId} - ${event.stepId}${chunkText}`;
-    const summary = generateCheckSummary(event, conclusion);
-    console.log("📋 Check Details:");
-    console.log(`  Name: ${checkName}`);
-    console.log(`  Conclusion: ${conclusion}`);
-    console.log(`  Summary length: ${summary.length} characters`);
-    // TODO: Use GitHub API to create actual check
-    // For now, just log what we would do
-    console.log("  ℹ️  Check creation would use GitHub API in real implementation");
+    const _checkName = `Hachiko: ${event.planId} - ${event.stepId}${chunkText}`;
+    const _summary = generateCheckSummary(event, conclusion);
 }
 async function updateMigrationIssue(event, conclusion) {
-    console.log("📝 Updating Migration Issue...");
-    const comment = generateIssueComment(event, conclusion);
-    console.log("💬 Comment Details:");
-    console.log(`  Comment length: ${comment.length} characters`);
-    console.log(`  First line: ${comment.split("\n")[0]}`);
-    // TODO: Use GitHub API to find and update Migration Issue
-    // For now, just log what we would do
-    console.log("  ℹ️  Issue update would use GitHub API in real implementation");
+    const _comment = generateIssueComment(event, conclusion);
 }
 function generateCheckSummary(event, conclusion) {
     const status = conclusion === "success" ? "✅ Completed" : "❌ Failed";
@@ -85,22 +64,22 @@ function generateIssueComment(event, conclusion) {
     const timestamp = new Date().toISOString();
     let comment = `${emoji} **Step Update**: \`${event.stepId}\`${chunkText} → \`${status}\`\n\n`;
     if (conclusion === "success") {
-        comment += `The agent successfully executed this migration step. `;
-        comment += `A pull request has been created with the changes.\n\n`;
-        comment += `**Next Steps:**\n`;
-        comment += `- Review the pull request for correctness\n`;
-        comment += `- Merge the PR to continue to the next step\n`;
-        comment += `- Or use \`/hachi pause\` to halt the migration\n\n`;
+        comment += "The agent successfully executed this migration step. ";
+        comment += "A pull request has been created with the changes.\n\n";
+        comment += "**Next Steps:**\n";
+        comment += "- Review the pull request for correctness\n";
+        comment += "- Merge the PR to continue to the next step\n";
+        comment += "- Or use `/hachi pause` to halt the migration\n\n";
     }
     else {
-        comment += `The agent encountered an error during execution. `;
-        comment += `Please review the workflow logs for details.\n\n`;
-        comment += `**Next Steps:**\n`;
+        comment += "The agent encountered an error during execution. ";
+        comment += "Please review the workflow logs for details.\n\n";
+        comment += "**Next Steps:**\n";
         comment += `- Check the [workflow run](${process.env.GITHUB_SERVER_URL}/${process.env.GITHUB_REPOSITORY}/actions/runs/${process.env.GITHUB_RUN_ID}) for error details\n`;
         comment += `- Use \`/hachi retry ${event.stepId}\` to retry this step\n`;
         comment += `- Use \`/hachi skip ${event.stepId}\` to skip this step\n\n`;
     }
-    comment += `**Details:**\n`;
+    comment += "**Details:**\n";
     comment += `- Branch: ${event.branchName}\n`;
     comment += `- Commit: ${event.commitMessage}\n`;
     comment += `- Prompt Config: ${event.promptConfigRef || "default"}\n\n`;

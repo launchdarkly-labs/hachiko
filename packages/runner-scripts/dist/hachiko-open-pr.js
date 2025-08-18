@@ -17,7 +17,6 @@ const HachikoEventSchema = z.object({
     branchName: z.string(),
 });
 async function main() {
-    console.log("🔀 Hachiko PR Creation Starting...");
     const eventJson = process.argv[2];
     if (!eventJson) {
         console.error("❌ Missing event payload argument");
@@ -31,47 +30,35 @@ async function main() {
         console.error("❌ Invalid event payload:", error);
         process.exit(1);
     }
-    console.log("📋 Event Details:");
-    console.log(`  Plan ID: ${event.planId}`);
-    console.log(`  Step ID: ${event.stepId}`);
-    console.log(`  Branch: ${event.branchName}`);
     // Check if we have any changes to push
     const hasChanges = await checkForChanges();
     if (!hasChanges) {
-        console.log("ℹ️  No changes detected, skipping PR creation");
         return;
     }
     // Push branch to remote
     await pushBranch(event.branchName);
     // Create or update PR
     await createOrUpdatePR(event);
-    console.log("✅ PR creation completed successfully");
 }
 async function checkForChanges() {
     try {
         const result = await execa("git", ["diff", "--name-only", "HEAD~1"]);
         const changedFiles = result.stdout.split("\n").filter(Boolean);
-        console.log(`📊 Changes detected: ${changedFiles.length} files`);
         if (changedFiles.length > 0) {
-            console.log("  Changed files:");
-            for (const file of changedFiles) {
-                console.log(`    - ${file}`);
+            for (const _file of changedFiles) {
             }
         }
         return changedFiles.length > 0;
     }
-    catch (error) {
-        console.log("ℹ️  No changes detected (or error checking):", error);
+    catch (_error) {
         return false;
     }
 }
 async function pushBranch(branchName) {
-    console.log(`⬆️  Pushing branch: ${branchName}`);
     try {
         await execa("git", ["push", "-u", "origin", branchName], {
             stdio: "inherit",
         });
-        console.log("  ✅ Branch pushed successfully");
     }
     catch (error) {
         console.error("❌ Failed to push branch:", error);
@@ -79,38 +66,37 @@ async function pushBranch(branchName) {
     }
 }
 async function createOrUpdatePR(event) {
-    console.log("📝 Creating/updating pull request...");
     // For now, just log what we would do
     // TODO: Use GitHub CLI or Octokit to create actual PR
     const chunkText = event.chunk ? ` (${event.chunk})` : "";
     const title = `Hachiko: ${event.planId} - ${event.stepId}${chunkText}`;
     const body = generatePRBody(event);
-    console.log("📋 PR Details:");
-    console.log(`  Title: ${title}`);
-    console.log(`  Base: main`);
-    console.log(`  Head: ${event.branchName}`);
-    console.log(`  Body length: ${body.length} characters`);
     // Try to create PR using GitHub CLI if available
     try {
-        const result = await execa("gh", [
-            "pr", "create",
-            "--title", title,
-            "--body", body,
-            "--head", event.branchName,
-            "--base", "main",
-            "--label", "hachiko",
-            "--label", "migration",
-            "--label", `hachiko:plan:${event.planId}`,
-            "--label", `hachiko:step:${event.planId}:${event.stepId}${event.chunk ? `:${event.chunk}` : ""}`,
+        const _result = await execa("gh", [
+            "pr",
+            "create",
+            "--title",
+            title,
+            "--body",
+            body,
+            "--head",
+            event.branchName,
+            "--base",
+            "main",
+            "--label",
+            "hachiko",
+            "--label",
+            "migration",
+            "--label",
+            `hachiko:plan:${event.planId}`,
+            "--label",
+            `hachiko:step:${event.planId}:${event.stepId}${event.chunk ? `:${event.chunk}` : ""}`,
         ], {
             stdio: "inherit",
         });
-        console.log("✅ Pull request created successfully");
     }
-    catch (error) {
-        console.log("⚠️  Could not create PR with GitHub CLI (may not be available):", error);
-        console.log("   In a real environment, this would use the GitHub API");
-    }
+    catch (_error) { }
 }
 function generatePRBody(event) {
     const chunkText = event.chunk ? `\n- **Chunk**: ${event.chunk}` : "";

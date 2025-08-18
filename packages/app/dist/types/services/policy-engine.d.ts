@@ -1,5 +1,5 @@
-import type { HachikoConfig } from "../config/schema.js";
 import type { PolicyViolation } from "../adapters/types.js";
+import type { HachikoConfig } from "../config/schema.js";
 /**
  * Policy rule types
  */
@@ -11,7 +11,7 @@ export declare const PolicyRuleType: {
     readonly TIME_CONSTRAINTS: "time_constraints";
     readonly USER_PERMISSIONS: "user_permissions";
 };
-export type PolicyRuleTypeType = typeof PolicyRuleType[keyof typeof PolicyRuleType];
+export type PolicyRuleTypeType = (typeof PolicyRuleType)[keyof typeof PolicyRuleType];
 /**
  * Policy severity levels
  */
@@ -21,7 +21,7 @@ export declare const PolicySeverity: {
     readonly ERROR: "error";
     readonly CRITICAL: "critical";
 };
-export type PolicySeverityType = typeof PolicySeverity[keyof typeof PolicySeverity];
+export type PolicySeverityType = (typeof PolicySeverity)[keyof typeof PolicySeverity];
 /**
  * Policy rule definition
  */

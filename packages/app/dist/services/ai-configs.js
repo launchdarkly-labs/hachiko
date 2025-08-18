@@ -5,8 +5,8 @@ exports.createAIConfigManager = createAIConfigManager;
 exports.initializeAIConfigs = initializeAIConfigs;
 const tslib_1 = require("tslib");
 const node_server_sdk_1 = tslib_1.__importDefault(require("@launchdarkly/node-server-sdk"));
-const logger_js_1 = require("../utils/logger.js");
 const errors_js_1 = require("../utils/errors.js");
+const logger_js_1 = require("../utils/logger.js");
 const logger = (0, logger_js_1.createLogger)("ai-configs");
 /**
  * AI configuration manager using LaunchDarkly for dynamic prompt management
@@ -18,10 +18,10 @@ class AIConfigManager {
     initialized = false;
     constructor() { }
     static getInstance() {
-        if (!this.instance) {
-            this.instance = new AIConfigManager();
+        if (!AIConfigManager.instance) {
+            AIConfigManager.instance = new AIConfigManager();
         }
-        return this.instance;
+        return AIConfigManager.instance;
     }
     /**
      * Initialize the AI config manager
@@ -48,9 +48,7 @@ class AIConfigManager {
         if (this.config.aiConfigs.provider === "launchdarkly" && this.ldClient) {
             return this.getPromptFromLaunchDarkly(flagKey, context);
         }
-        else {
-            return this.getPromptFromLocal(planId, stepId);
-        }
+        return this.getPromptFromLocal(planId, stepId);
     }
     /**
      * Get available prompt configurations
@@ -65,9 +63,7 @@ class AIConfigManager {
             logger.warn("Listing LaunchDarkly prompts not implemented");
             return {};
         }
-        else {
-            return this.getLocalPrompts();
-        }
+        return this.getLocalPrompts();
     }
     /**
      * Test a prompt configuration
@@ -190,12 +186,10 @@ class AIConfigManager {
             if (typeof flagValue === "string") {
                 return JSON.parse(flagValue);
             }
-            else if (typeof flagValue === "object") {
+            if (typeof flagValue === "object") {
                 return flagValue;
             }
-            else {
-                throw new Error(`Invalid flag value type: ${typeof flagValue}`);
-            }
+            throw new Error(`Invalid flag value type: ${typeof flagValue}`);
         }
         catch (error) {
             logger.error({ error, flagKey }, "Failed to get prompt from LaunchDarkly");

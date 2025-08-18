@@ -13,7 +13,7 @@ export declare const MigrationState: {
     readonly CANCELLED: "cancelled";
     readonly PAUSED: "paused";
 };
-export type MigrationStateType = typeof MigrationState[keyof typeof MigrationState];
+export type MigrationStateType = (typeof MigrationState)[keyof typeof MigrationState];
 /**
  * Step state enumeration
  */
@@ -25,7 +25,7 @@ export declare const StepState: {
     readonly SKIPPED: "skipped";
     readonly PAUSED: "paused";
 };
-export type StepStateType = typeof StepState[keyof typeof StepState];
+export type StepStateType = (typeof StepState)[keyof typeof StepState];
 /**
  * Migration progress data structure
  */

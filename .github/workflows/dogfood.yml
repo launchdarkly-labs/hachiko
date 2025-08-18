@@ -38,7 +38,7 @@ jobs:
         run: |
           echo "Testing Hachiko configuration parsing..."
           cd examples
-          pnpm --filter @hachiko/app exec tsx -e "
+          pnpm --filter @hachiko/runner-scripts exec tsx -e "
             import { validateConfig } from '../packages/app/dist/config/schema.js';
             import { readFileSync } from 'fs';
             import yaml from 'js-yaml';
@@ -51,7 +51,7 @@ jobs:
       - name: Test migration plan parsing
         run: |
           echo "Testing migration plan parsing..."
-          pnpm --filter @hachiko/app exec tsx -e "
+          pnpm --filter @hachiko/runner-scripts exec tsx -e "
             import { parsePlanFile } from '../packages/app/dist/services/plans.js';
             
             parsePlanFile('./examples/migrations/upgrade-junit.md').then(result => {

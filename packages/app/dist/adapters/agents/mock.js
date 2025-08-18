@@ -2,8 +2,8 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.MockAgentAdapter = void 0;
 const node_fs_1 = require("node:fs");
-const base_js_1 = require("./base.js");
 const logger_js_1 = require("../../utils/logger.js");
+const base_js_1 = require("./base.js");
 const logger = (0, logger_js_1.createLogger)("mock-adapter");
 /**
  * Mock agent adapter for testing and development
@@ -36,19 +36,19 @@ class MockAgentAdapter extends base_js_1.BaseAgentAdapter {
                     createdFiles: [],
                     deletedFiles: [],
                     output: "",
-                    error: `Policy violations: ${policyResult.violations.map(v => v.message).join(", ")}`,
+                    error: `Policy violations: ${policyResult.violations.map((v) => v.message).join(", ")}`,
                     exitCode: 1,
                     executionTime: Date.now() - startTime,
                 };
             }
             // Simulate execution time
             if (this.mockConfig.executionTime > 0) {
-                await new Promise(resolve => setTimeout(resolve, this.mockConfig.executionTime));
+                await new Promise((resolve) => setTimeout(resolve, this.mockConfig.executionTime));
             }
             // Simulate success/failure based on success rate
             const success = Math.random() < this.mockConfig.successRate;
-            let modifiedFiles = [];
-            let createdFiles = [];
+            const modifiedFiles = [];
+            const createdFiles = [];
             // Optionally modify files for testing
             if (success && this.mockConfig.modifyFiles) {
                 for (const file of input.files) {
@@ -58,7 +58,7 @@ class MockAgentAdapter extends base_js_1.BaseAgentAdapter {
                         await node_fs_1.promises.writeFile(file, content + mockModification, "utf-8");
                         modifiedFiles.push(this.getRelativePath(file, input.repoPath));
                     }
-                    catch (error) {
+                    catch (_error) {
                         // File might not exist - create it
                         const mockContent = `// Created by Hachiko Mock Agent\n// Plan: ${input.planId}, Step: ${input.stepId}\n// Prompt: ${input.prompt.slice(0, 100)}...\n`;
                         await node_fs_1.promises.writeFile(file, mockContent, "utf-8");
@@ -96,7 +96,7 @@ class MockAgentAdapter extends base_js_1.BaseAgentAdapter {
                 error,
                 planId: input.planId,
                 stepId: input.stepId,
-                executionTime
+                executionTime,
             }, "Mock agent execution failed");
             return {
                 success: false,

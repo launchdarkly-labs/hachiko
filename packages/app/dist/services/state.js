@@ -35,10 +35,29 @@ exports.StepState = {
  */
 const VALID_STATE_TRANSITIONS = {
     [exports.MigrationState.DRAFT]: [exports.MigrationState.PLAN_APPROVED, exports.MigrationState.CANCELLED],
-    [exports.MigrationState.PLAN_APPROVED]: [exports.MigrationState.QUEUED, exports.MigrationState.CANCELLED, exports.MigrationState.DRAFT],
-    [exports.MigrationState.QUEUED]: [exports.MigrationState.RUNNING, exports.MigrationState.PAUSED, exports.MigrationState.CANCELLED],
-    [exports.MigrationState.RUNNING]: [exports.MigrationState.AWAITING_REVIEW, exports.MigrationState.COMPLETED, exports.MigrationState.FAILED, exports.MigrationState.PAUSED, exports.MigrationState.CANCELLED],
-    [exports.MigrationState.AWAITING_REVIEW]: [exports.MigrationState.RUNNING, exports.MigrationState.COMPLETED, exports.MigrationState.FAILED, exports.MigrationState.CANCELLED],
+    [exports.MigrationState.PLAN_APPROVED]: [
+        exports.MigrationState.QUEUED,
+        exports.MigrationState.CANCELLED,
+        exports.MigrationState.DRAFT,
+    ],
+    [exports.MigrationState.QUEUED]: [
+        exports.MigrationState.RUNNING,
+        exports.MigrationState.PAUSED,
+        exports.MigrationState.CANCELLED,
+    ],
+    [exports.MigrationState.RUNNING]: [
+        exports.MigrationState.AWAITING_REVIEW,
+        exports.MigrationState.COMPLETED,
+        exports.MigrationState.FAILED,
+        exports.MigrationState.PAUSED,
+        exports.MigrationState.CANCELLED,
+    ],
+    [exports.MigrationState.AWAITING_REVIEW]: [
+        exports.MigrationState.RUNNING,
+        exports.MigrationState.COMPLETED,
+        exports.MigrationState.FAILED,
+        exports.MigrationState.CANCELLED,
+    ],
     [exports.MigrationState.COMPLETED]: [], // Terminal state
     [exports.MigrationState.FAILED]: [exports.MigrationState.QUEUED, exports.MigrationState.CANCELLED], // Can retry
     [exports.MigrationState.CANCELLED]: [], // Terminal state
@@ -59,10 +78,10 @@ class StateManager {
     static instance = null;
     constructor() { }
     static getInstance() {
-        if (!this.instance) {
-            this.instance = new StateManager();
+        if (!StateManager.instance) {
+            StateManager.instance = new StateManager();
         }
-        return this.instance;
+        return StateManager.instance;
     }
     /**
      * Create a new migration state
@@ -145,7 +164,11 @@ class StateManager {
         if (newState === exports.MigrationState.RUNNING && !currentProgress.startedAt) {
             currentProgress.startedAt = currentProgress.lastUpdatedAt;
         }
-        const terminalStates = [exports.MigrationState.COMPLETED, exports.MigrationState.FAILED, exports.MigrationState.CANCELLED];
+        const terminalStates = [
+            exports.MigrationState.COMPLETED,
+            exports.MigrationState.FAILED,
+            exports.MigrationState.CANCELLED,
+        ];
         if (terminalStates.includes(newState)) {
             currentProgress.completedAt = currentProgress.lastUpdatedAt;
         }
@@ -180,7 +203,11 @@ class StateManager {
         if (newState === exports.StepState.RUNNING && !step.startedAt) {
             step.startedAt = now;
         }
-        const terminalStepStates = [exports.StepState.COMPLETED, exports.StepState.FAILED, exports.StepState.SKIPPED];
+        const terminalStepStates = [
+            exports.StepState.COMPLETED,
+            exports.StepState.FAILED,
+            exports.StepState.SKIPPED,
+        ];
         if (terminalStepStates.includes(newState)) {
             step.completedAt = now;
         }
@@ -282,14 +309,22 @@ class StateManager {
 - **Skipped**: ${skippedSteps} steps
 
 ### Step Status
-${Object.values(progress.steps).map(step => {
-            const icon = step.state === exports.StepState.COMPLETED ? "✅" :
-                step.state === exports.StepState.FAILED ? "❌" :
-                    step.state === exports.StepState.RUNNING ? "🏃" :
-                        step.state === exports.StepState.SKIPPED ? "⏭️" :
-                            step.state === exports.StepState.PAUSED ? "⏸️" : "⏳";
+${Object.values(progress.steps)
+            .map((step) => {
+            const icon = step.state === exports.StepState.COMPLETED
+                ? "✅"
+                : step.state === exports.StepState.FAILED
+                    ? "❌"
+                    : step.state === exports.StepState.RUNNING
+                        ? "🏃"
+                        : step.state === exports.StepState.SKIPPED
+                            ? "⏭️"
+                            : step.state === exports.StepState.PAUSED
+                                ? "⏸️"
+                                : "⏳";
             return `- ${icon} **${step.stepId}**: ${step.state}`;
-        }).join("\n")}
+        })
+            .join("\n")}
 
 ---
 
@@ -319,8 +354,9 @@ ${stateJson}
             }
         }
         // Update current step
-        progress.currentStep = Object.values(progress.steps)
-            .find(step => step.state === exports.StepState.RUNNING)?.stepId || undefined;
+        progress.currentStep =
+            Object.values(progress.steps).find((step) => step.state === exports.StepState.RUNNING)?.stepId ||
+                undefined;
     }
 }
 exports.StateManager = StateManager;
