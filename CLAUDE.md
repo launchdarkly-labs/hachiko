@@ -1,99 +1,62 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+This file provides guidance to Claude Code when working with code in this repository.
 
 ## Project Overview
 
-Hachiko is a GitHub App that orchestrates technical migrations in large legacy codebases using configurable LLM coding agents. It's built as a TypeScript monorepo using pnpm workspaces with two main packages:
+Hachiko is a GitHub App that orchestrates technical migrations in large legacy codebases using configurable LLM coding agents. 
 
-- `packages/app/` - Main Probot GitHub App that handles webhooks and orchestrates migrations
-- `packages/runner-scripts/` - CLI scripts that run in GitHub Actions for agent execution
+**Current Architecture**: TypeScript monorepo with pnpm workspaces
+- `packages/app/` - Main Probot GitHub App 
+- `packages/runner-scripts/` - CLI scripts for GitHub Actions
+- **Note**: Planning to flatten to single package structure for better developer experience
 
-## Common Commands
+## Commands
 
 ```bash
-# Install dependencies
+# Setup
 pnpm install
-
-# Build all packages
 pnpm build
 
-# Run the GitHub App locally (with webhook proxy)
-pnpm dev
+# Development  
+pnpm dev                           # Run GitHub App locally
+pnpm test                          # Run tests (delegates to app package)
+pnpm biome ci                      # Lint and format check
+pnpm typecheck                     # TypeScript validation
 
-# Run tests
-pnpm test
-
-# Run tests with coverage
-pnpm coverage
-
-# Lint code
-pnpm lint
-
-# Format code
-pnpm format
-
-# Type check
-pnpm typecheck
-
-# Development scripts
-pnpm scripts:fire-webhook          # Fire test webhooks
-pnpm scripts:assert-state          # Assert state checks
-pnpm scripts:simulate-merge        # Simulate merge operations
+# Package-specific (current workaround)
+pnpm --filter @hachiko/app test:run               # Unit tests
+pnpm --filter @hachiko/app test:coverage          # Tests with coverage
 ```
 
-## Architecture
+## Key Directories
 
-### Core Components
+- `packages/app/src/` - Main application code
+  - `webhooks/` - GitHub event handlers (push, PR, comments, workflow runs)
+  - `services/` - Business logic (migrations, plans, state, agents, commands)
+  - `adapters/` - Agent implementations (Claude CLI, Cursor CLI, etc.)
+  - `config/` - Configuration schema and validation
+- `packages/app/test/` - Vitest unit tests with GitHub API mocks
+- `examples/` - Migration plans and fixtures
+- `.projects/` - Project status and planning documents
 
-**GitHub App (packages/app/)**
-- `src/probot.ts` - Main Probot app entry point
-- `src/webhooks/` - Webhook handlers for GitHub events (push, PR, comments, workflow runs)
-- `src/services/` - Core business logic services:
-  - `migrations.ts` - Migration orchestration
-  - `plans.ts` - Migration plan parsing and validation
-  - `state.ts` - Migration state management
-  - `agents.ts` - Agent execution coordination
-  - `commands.ts` - Issue comment command parsing
-  - `policy-engine.ts` - Safety policy enforcement
-- `src/adapters/` - External service adapters:
-  - `agents/` - Different agent implementations (Claude CLI, Cursor CLI, etc.)
-  - `vcs/` - Version control system integration
-- `src/config/` - Configuration schema and validation
+## Key Files
 
-**Runner Scripts (packages/runner-scripts/)**
-- CLI tools that execute in GitHub Actions to run agents in isolated environments
-- `hachiko-invoke.ts` - Invokes agents with migration plans
-- `hachiko-open-pr.ts` - Opens pull requests with agent changes
-- `hachiko-report.ts` - Reports agent execution results
+- `.hachiko.yml` - Configuration file expected in target repositories
+- `examples/migrations/react-class-to-hooks.md` - Example migration plan
+- `.projects/project-status.md` - Current project status and roadmap
 
-### Key Concepts
+## Development Context
 
-- **Migration Plans**: Markdown files with YAML frontmatter defining multi-step migrations
-- **Agents**: Pluggable AI coding tools (Claude CLI, Cursor CLI, etc.) that execute migration steps
-- **State Management**: Tracks migration progress and handles rollbacks/conflicts
-- **Policy Engine**: Enforces filesystem allowlists and risky change detection
-- **Command Interface**: GitHub issue comments control migrations (`/hachi pause`, `/hachi resume`, etc.)
+**Current Issues**: 
+- Monorepo complexity causing scope confusion with commands
+- Low test coverage (7.4%) due to excluded integration tests
+- CI pipeline works but requires package-specific commands
 
-## Configuration
-
-The app expects `.hachiko.yml` in target repositories with migration plan directories, agent configurations, and safety policies.
-
-## Testing
-
-- Uses Vitest for unit and integration testing
-- Test files are in `packages/app/test/` with fixtures for GitHub payloads and migration plans
-- Mock implementations available in `test/mocks/`
-- End-to-end tests simulate full migration workflows
-
-## Development Notes
-
-- Built with Probot framework for GitHub App development
-- Uses Zod schemas for configuration validation
-- Pino for structured logging
-- Gray-matter for parsing migration plan frontmatter
-- LaunchDarkly SDK for feature flagging
-- Container sandboxing for agent execution security
+**Next Steps**:
+- Flatten monorepo to single package structure  
+- Fix integration test fixtures and improve coverage
+- Simplify development workflow
 
 ## Commit Messages
 
