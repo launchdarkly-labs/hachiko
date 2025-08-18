@@ -77,9 +77,11 @@ jobs:
       - name: Verify example fixtures
         run: |
           echo "Verifying example fixtures exist..."
-          test -f examples/fixtures/SampleTest.java
-          test -f examples/fixtures/pom.xml
-          echo "✅ All fixtures present"
+          test -f examples/fixtures/Button.tsx
+          test -f examples/fixtures/Counter.tsx
+          test -f examples/fixtures/UserProfile.tsx
+          test -f examples/fixtures/package.json
+          echo "✅ All React fixtures present"
           
       - name: Summary
         run: |
@@ -88,7 +90,7 @@ jobs:
           echo "Verified:"
           echo "  ✅ Configuration schema validation"
           echo "  ✅ Migration plan parsing"
-          echo "  ✅ Example fixtures"
+          echo "  ✅ React example fixtures"
           echo "  🚧 End-to-end webhook simulation (TODO)"
           echo ""
           echo "The Hachiko core is ready for basic functionality testing."

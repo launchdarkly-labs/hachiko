@@ -18,7 +18,7 @@
     "lint": "biome lint .",
     "format": "biome format --write .",
     "typecheck": "pnpm -r typecheck",
-    "test": "vitest",
+    "test": "pnpm --filter @hachiko/app test:run",
     "coverage": "vitest run --coverage && c8 report",
     "docs:check": "node scripts/check-docs-links.js",
     "scripts:fire-webhook": "ts-node scripts/send-webhook.ts",
