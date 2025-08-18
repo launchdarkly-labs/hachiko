@@ -8,9 +8,13 @@ exports.formatCommandResponse = formatCommandResponse;
  */
 function parseHachikoCommand(commentBody) {
     const lines = commentBody.trim().split("\n");
-    const commandLine = lines[0].trim();
+    // Ensure we have at least one line
+    if (lines.length === 0) {
+        return null;
+    }
+    const commandLine = lines[0]?.trim();
     // Must start with /hachi
-    if (!commandLine.startsWith("/hachi")) {
+    if (!commandLine || !commandLine.startsWith("/hachi")) {
         return null;
     }
     // Split command into parts
@@ -18,7 +22,7 @@ function parseHachikoCommand(commentBody) {
     if (parts.length < 2) {
         return null;
     }
-    const action = parts[1];
+    const action = parts[1]; // We know this exists due to length check
     const args = parts.slice(2);
     return {
         action,

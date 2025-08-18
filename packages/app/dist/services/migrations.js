@@ -20,11 +20,11 @@ async function updateMigrationProgress(context, planId, stepId, status, metadata
             logger?.warn({ planId }, "No open Migration Issue found");
             return;
         }
-        const migrationIssue = issues.data[0];
+        const migrationIssue = issues.data[0]; // We know this exists due to length check
         // Update issue labels to reflect current status
         const currentLabels = migrationIssue.labels.map((label) => typeof label === "string" ? label : label.name);
         const updatedLabels = currentLabels
-            .filter((label) => !label?.startsWith("hachiko:status:"))
+            .filter((label) => typeof label === "string" && !label.startsWith("hachiko:status:"))
             .concat(`hachiko:status:${status}`);
         await context.octokit.issues.update({
             owner: context.payload.repository.owner.login,

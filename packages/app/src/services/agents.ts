@@ -1,7 +1,7 @@
-import type { ContextWithRepository } from "../types/context.js"
-import type { HachikoConfig } from "../config/schema.js"
-import type { AgentInput, AgentResult } from "../adapters/types.js"
 import { createAgentRegistry, initializeAgents } from "../adapters/registry.js"
+import type { AgentInput, AgentResult } from "../adapters/types.js"
+import type { HachikoConfig } from "../config/schema.js"
+import type { ContextWithRepository } from "../types/context.js"
 import { AgentExecutionError } from "../utils/errors.js"
 import { createLogger } from "../utils/logger.js"
 
@@ -17,10 +17,10 @@ export class AgentService {
   private constructor() {}
 
   static getInstance(): AgentService {
-    if (!this.instance) {
-      this.instance = new AgentService()
+    if (!AgentService.instance) {
+      AgentService.instance = new AgentService()
     }
-    return this.instance
+    return AgentService.instance
   }
 
   /**
@@ -44,10 +44,7 @@ export class AgentService {
   /**
    * Execute an agent for a migration step
    */
-  async executeAgent(
-    agentName: string,
-    input: AgentInput
-  ): Promise<AgentResult> {
+  async executeAgent(agentName: string, input: AgentInput): Promise<AgentResult> {
     if (!this.initialized) {
       throw new AgentExecutionError("Agent service not initialized", agentName)
     }
@@ -59,34 +56,43 @@ export class AgentService {
       throw new AgentExecutionError(`Agent ${agentName} not found`, agentName)
     }
 
-    logger.info({
-      agentName,
-      planId: input.planId,
-      stepId: input.stepId,
-      files: input.files.length,
-    }, "Executing agent")
+    logger.info(
+      {
+        agentName,
+        planId: input.planId,
+        stepId: input.stepId,
+        files: input.files.length,
+      },
+      "Executing agent"
+    )
 
     try {
       const result = await adapter.execute(input)
-      
-      logger.info({
-        agentName,
-        planId: input.planId,
-        stepId: input.stepId,
-        success: result.success,
-        executionTime: result.executionTime,
-        modifiedFiles: result.modifiedFiles.length,
-        createdFiles: result.createdFiles.length,
-      }, "Agent execution completed")
+
+      logger.info(
+        {
+          agentName,
+          planId: input.planId,
+          stepId: input.stepId,
+          success: result.success,
+          executionTime: result.executionTime,
+          modifiedFiles: result.modifiedFiles.length,
+          createdFiles: result.createdFiles.length,
+        },
+        "Agent execution completed"
+      )
 
       return result
     } catch (error) {
-      logger.error({
-        error,
-        agentName,
-        planId: input.planId,
-        stepId: input.stepId,
-      }, "Agent execution failed")
+      logger.error(
+        {
+          error,
+          agentName,
+          planId: input.planId,
+          stepId: input.stepId,
+        },
+        "Agent execution failed"
+      )
 
       throw new AgentExecutionError(
         `Agent execution failed: ${error instanceof Error ? error.message : String(error)}`,
@@ -157,7 +163,7 @@ export async function executeMigrationStep(
   chunk?: string
 ): Promise<AgentResult> {
   const agentService = createAgentService()
-  
+
   // Ensure agent service is initialized
   await agentService.initialize(config)
 

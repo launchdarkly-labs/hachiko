@@ -22,25 +22,41 @@ export function loadJsonFixture<T = any>(filepath: string): T {
  */
 export function createTestLogger() {
   const logs: Array<{ level: string; message: string; data?: any }> = []
-  
+
   const logger = {
     info: (data: any, message?: string) => {
-      logs.push({ level: "info", message: message || data, data: typeof data === "object" ? data : undefined })
+      logs.push({
+        level: "info",
+        message: message || data,
+        data: typeof data === "object" ? data : undefined,
+      })
     },
     warn: (data: any, message?: string) => {
-      logs.push({ level: "warn", message: message || data, data: typeof data === "object" ? data : undefined })
+      logs.push({
+        level: "warn",
+        message: message || data,
+        data: typeof data === "object" ? data : undefined,
+      })
     },
     error: (data: any, message?: string) => {
-      logs.push({ level: "error", message: message || data, data: typeof data === "object" ? data : undefined })
+      logs.push({
+        level: "error",
+        message: message || data,
+        data: typeof data === "object" ? data : undefined,
+      })
     },
     debug: (data: any, message?: string) => {
-      logs.push({ level: "debug", message: message || data, data: typeof data === "object" ? data : undefined })
+      logs.push({
+        level: "debug",
+        message: message || data,
+        data: typeof data === "object" ? data : undefined,
+      })
     },
     child: () => logger,
     getLogs: () => logs,
     clearLogs: () => logs.splice(0, logs.length),
   }
-  
+
   return logger
 }
 
@@ -89,14 +105,14 @@ export const testConfig: HachikoConfig = {
 /**
  * Helper to wait for async operations in tests
  */
-export const waitFor = (ms: number) => new Promise(resolve => setTimeout(resolve, ms))
+export const waitFor = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
 
 /**
  * Mock console that captures output
  */
 export function createMockConsole() {
   const outputs: Array<{ method: string; args: any[] }> = []
-  
+
   return {
     log: (...args: any[]) => outputs.push({ method: "log", args }),
     info: (...args: any[]) => outputs.push({ method: "info", args }),

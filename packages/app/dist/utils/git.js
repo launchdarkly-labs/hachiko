@@ -43,13 +43,13 @@ function generateMigrationBranchName(planId, stepId, chunk) {
  */
 function parseMigrationBranchName(branchName) {
     const match = branchName.match(/^hachi\/([^/]+)\/([^/]+)(?:\/(.+))?$/);
-    if (!match) {
+    if (!match || !match[1] || !match[2]) {
         return null;
     }
     return {
         planId: match[1],
         stepId: match[2],
-        chunk: match[3],
+        chunk: match[3] || undefined,
     };
 }
 /**

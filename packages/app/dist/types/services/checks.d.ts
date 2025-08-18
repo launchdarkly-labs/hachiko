@@ -7,6 +7,6 @@ export declare function updateChecksStatus(context: Context<"workflow_run.comple
 workflowData: {
     planId: string;
     stepId: string;
-    chunk?: string;
+    chunk: string | undefined;
 }, logger: Logger): Promise<void>;
 //# sourceMappingURL=checks.d.ts.map

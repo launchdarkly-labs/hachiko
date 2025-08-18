@@ -1,4 +1,4 @@
-import React from 'react'
+import React from "react"
 
 interface User {
   id: string
@@ -30,7 +30,7 @@ class UserProfile extends React.Component<UserProfileProps, UserProfileState> {
     this.state = {
       user: null,
       loading: false,
-      error: null
+      error: null,
     }
   }
 
@@ -57,18 +57,18 @@ class UserProfile extends React.Component<UserProfileProps, UserProfileState> {
     try {
       // Simulate API call
       const response = await fetch(`/api/users/${this.props.userId}`)
-      if (!response.ok) throw new Error('Failed to fetch user')
-      
+      if (!response.ok) throw new Error("Failed to fetch user")
+
       const user = await response.json()
-      
+
       if (this.mounted) {
         this.setState({ user, loading: false })
       }
     } catch (error) {
       if (this.mounted) {
-        this.setState({ 
-          error: error instanceof Error ? error.message : 'Unknown error',
-          loading: false 
+        this.setState({
+          error: error instanceof Error ? error.message : "Unknown error",
+          loading: false,
         })
       }
     }
@@ -79,7 +79,7 @@ class UserProfile extends React.Component<UserProfileProps, UserProfileState> {
     if (!user) return
 
     this.setState({
-      user: { ...user, name: e.target.value }
+      user: { ...user, name: e.target.value },
     })
   }
 
@@ -89,18 +89,18 @@ class UserProfile extends React.Component<UserProfileProps, UserProfileState> {
 
     try {
       const response = await fetch(`/api/users/${user.id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(user)
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(user),
       })
 
-      if (!response.ok) throw new Error('Failed to save user')
-      
+      if (!response.ok) throw new Error("Failed to save user")
+
       // Focus the input after save
       this.nameInputRef.current?.focus()
     } catch (error) {
-      this.setState({ 
-        error: error instanceof Error ? error.message : 'Save failed' 
+      this.setState({
+        error: error instanceof Error ? error.message : "Save failed",
       })
     }
   }
@@ -132,10 +132,10 @@ class UserProfile extends React.Component<UserProfileProps, UserProfileState> {
               onChange={this.handleNameChange}
             />
           </label>
-          <div className="email">
-            Email: {user.email}
-          </div>
-          <button onClick={this.handleSave}>Save</button>
+          <div className="email">Email: {user.email}</div>
+          <button type="button" onClick={this.handleSave}>
+            Save
+          </button>
         </div>
       </div>
     )

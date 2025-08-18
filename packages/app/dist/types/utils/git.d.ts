@@ -20,7 +20,7 @@ export declare function generateMigrationBranchName(planId: string, stepId: stri
 export declare function parseMigrationBranchName(branchName: string): {
     planId: string;
     stepId: string;
-    chunk?: string;
+    chunk: string | undefined;
 } | null;
 /**
  * Check if a branch name is a Hachiko migration branch

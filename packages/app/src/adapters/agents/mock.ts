@@ -1,7 +1,7 @@
 import { promises as fs } from "node:fs"
-import { BaseAgentAdapter } from "./base.js"
-import type { AgentInput, AgentResult, PolicyConfig } from "../types.js"
 import { createLogger } from "../../utils/logger.js"
+import type { AgentInput, AgentResult, PolicyConfig } from "../types.js"
+import { BaseAgentAdapter } from "./base.js"
 
 const logger = createLogger("mock-adapter")
 
@@ -19,13 +19,10 @@ export interface MockAgentConfig {
  */
 export class MockAgentAdapter extends BaseAgentAdapter {
   readonly name = "mock"
-  
+
   private readonly mockConfig: MockAgentConfig
 
-  constructor(
-    policyConfig: PolicyConfig,
-    mockConfig: MockAgentConfig = {}
-  ) {
+  constructor(policyConfig: PolicyConfig, mockConfig: MockAgentConfig = {}) {
     super(policyConfig)
     this.mockConfig = {
       successRate: 0.9,
@@ -53,7 +50,7 @@ export class MockAgentAdapter extends BaseAgentAdapter {
           createdFiles: [],
           deletedFiles: [],
           output: "",
-          error: `Policy violations: ${policyResult.violations.map(v => v.message).join(", ")}`,
+          error: `Policy violations: ${policyResult.violations.map((v) => v.message).join(", ")}`,
           exitCode: 1,
           executionTime: Date.now() - startTime,
         }
@@ -61,14 +58,14 @@ export class MockAgentAdapter extends BaseAgentAdapter {
 
       // Simulate execution time
       if (this.mockConfig.executionTime! > 0) {
-        await new Promise(resolve => setTimeout(resolve, this.mockConfig.executionTime))
+        await new Promise((resolve) => setTimeout(resolve, this.mockConfig.executionTime))
       }
 
       // Simulate success/failure based on success rate
       const success = Math.random() < this.mockConfig.successRate!
 
-      let modifiedFiles: string[] = []
-      let createdFiles: string[] = []
+      const modifiedFiles: string[] = []
+      const createdFiles: string[] = []
 
       // Optionally modify files for testing
       if (success && this.mockConfig.modifyFiles) {
@@ -78,7 +75,7 @@ export class MockAgentAdapter extends BaseAgentAdapter {
             const mockModification = `\n// Modified by Hachiko Mock Agent - ${new Date().toISOString()}\n// Plan: ${input.planId}, Step: ${input.stepId}\n`
             await fs.writeFile(file, content + mockModification, "utf-8")
             modifiedFiles.push(this.getRelativePath(file, input.repoPath))
-          } catch (error) {
+          } catch (_error) {
             // File might not exist - create it
             const mockContent = `// Created by Hachiko Mock Agent\n// Plan: ${input.planId}, Step: ${input.stepId}\n// Prompt: ${input.prompt.slice(0, 100)}...\n`
             await fs.writeFile(file, mockContent, "utf-8")
@@ -104,25 +101,30 @@ export class MockAgentAdapter extends BaseAgentAdapter {
         executionTime,
       }
 
-      logger.info({
-        planId: input.planId,
-        stepId: input.stepId,
-        success,
-        executionTime,
-        modifiedFiles: modifiedFiles.length,
-        createdFiles: createdFiles.length,
-      }, "Mock agent execution completed")
+      logger.info(
+        {
+          planId: input.planId,
+          stepId: input.stepId,
+          success,
+          executionTime,
+          modifiedFiles: modifiedFiles.length,
+          createdFiles: createdFiles.length,
+        },
+        "Mock agent execution completed"
+      )
 
       return result
-
     } catch (error) {
       const executionTime = Date.now() - startTime
-      logger.error({ 
-        error, 
-        planId: input.planId, 
-        stepId: input.stepId,
-        executionTime 
-      }, "Mock agent execution failed")
+      logger.error(
+        {
+          error,
+          planId: input.planId,
+          stepId: input.stepId,
+          executionTime,
+        },
+        "Mock agent execution failed"
+      )
 
       return {
         success: false,

@@ -9,14 +9,14 @@ export interface HachikoCommand {
  */
 export function parseHachikoCommand(commentBody: string): HachikoCommand | null {
   const lines = commentBody.trim().split("\n")
-  
+
   // Ensure we have at least one line
   if (lines.length === 0) {
     return null
   }
-  
+
   const commandLine = lines[0]?.trim()
-  
+
   // Must start with /hachi
   if (!commandLine || !commandLine.startsWith("/hachi")) {
     return null
@@ -29,7 +29,7 @@ export function parseHachikoCommand(commentBody: string): HachikoCommand | null 
     return null
   }
 
-  const action = parts[1]!  // We know this exists due to length check
+  const action = parts[1]! // We know this exists due to length check
   const args = parts.slice(2)
 
   return {

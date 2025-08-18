@@ -29,7 +29,7 @@ export async function updateMigrationProgress(
       return
     }
 
-    const migrationIssue = issues.data[0]!  // We know this exists due to length check
+    const migrationIssue = issues.data[0]! // We know this exists due to length check
 
     // Update issue labels to reflect current status
     const currentLabels = migrationIssue.labels.map((label) =>
@@ -37,7 +37,10 @@ export async function updateMigrationProgress(
     )
 
     const updatedLabels = currentLabels
-      .filter((label): label is string => typeof label === "string" && !label.startsWith("hachiko:status:"))
+      .filter(
+        (label): label is string =>
+          typeof label === "string" && !label.startsWith("hachiko:status:")
+      )
       .concat(`hachiko:status:${status}`)
 
     await context.octokit.issues.update({

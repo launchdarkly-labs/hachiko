@@ -3,7 +3,7 @@ import type { Context } from "probot"
 /**
  * Context types that have a repository property in their payload
  */
-export type ContextWithRepository = 
+export type ContextWithRepository =
   | Context<"push">
   | Context<"pull_request">
   | Context<"pull_request.closed">

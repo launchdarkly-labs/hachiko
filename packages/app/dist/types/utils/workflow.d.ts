@@ -15,7 +15,7 @@ export declare function extractHachikoWorkflowData(workflowRun: {
 }): {
     planId: string;
     stepId: string;
-    chunk?: string;
+    chunk: string | undefined;
 } | null;
 /**
  * Generate workflow dispatch payload for agent execution

@@ -1,7 +1,7 @@
-import { describe, it, expect, vi, beforeEach } from "vitest"
+import { beforeEach, describe, expect, it, vi } from "vitest"
 import { handlePush } from "../../../src/webhooks/push.js"
+import { createTestLogger, loadFixture, loadJsonFixture } from "../../helpers/test-utils.js"
 import { createMockContext, mockGitHubResponses, mockRepository } from "../../mocks/github.js"
-import { createTestLogger, loadJsonFixture, loadFixture } from "../../helpers/test-utils.js"
 
 describe("handlePush webhook", () => {
   let mockContext: any
@@ -10,7 +10,7 @@ describe("handlePush webhook", () => {
 
   beforeEach(() => {
     vi.clearAllMocks()
-    
+
     mockOctokit = {
       repos: {
         getContent: vi.fn(),
@@ -19,7 +19,7 @@ describe("handlePush webhook", () => {
         create: vi.fn(),
       },
     }
-    
+
     logger = createTestLogger()
   })
 
@@ -28,26 +28,28 @@ describe("handlePush webhook", () => {
       ...loadJsonFixture("payloads/push-event.json"),
       ref: "refs/heads/feature-branch",
     }
-    
+
     mockContext = createMockContext("push", payload, mockOctokit)
-    
+
     await handlePush(mockContext, logger)
-    
+
     expect(mockOctokit.repos.getContent).not.toHaveBeenCalled()
     expect(mockOctokit.issues.create).not.toHaveBeenCalled()
-    
+
     const logs = logger.getLogs()
-    expect(logs.some(log => log.message.includes("Ignoring push to non-default branch"))).toBe(true)
+    expect(logs.some((log) => log.message.includes("Ignoring push to non-default branch"))).toBe(
+      true
+    )
   })
 
   it("should process pushes to default branch", async () => {
     const payload = loadJsonFixture("payloads/push-event.json")
     mockContext = createMockContext("push", payload, mockOctokit)
-    
+
     await handlePush(mockContext, logger)
-    
+
     const logs = logger.getLogs()
-    expect(logs.some(log => log.message.includes("Processing push to default branch"))).toBe(true)
+    expect(logs.some((log) => log.message.includes("Processing push to default branch"))).toBe(true)
   })
 
   it("should discover and process new migration plans", async () => {
@@ -58,33 +60,35 @@ describe("handlePush webhook", () => {
         added: ["migrations/new-migration.md"],
       },
     }
-    
+
     mockContext = createMockContext("push", payload, mockOctokit)
-    
+
     // Mock the configuration file
     const configContent = loadFixture("configs/valid-hachiko-config.yml")
     mockOctokit.repos.getContent
       .mockResolvedValueOnce(mockGitHubResponses.getContent.file(configContent))
-      .mockResolvedValueOnce(mockGitHubResponses.getContent.file(loadFixture("migration-plans/valid-plan.md")))
-    
+      .mockResolvedValueOnce(
+        mockGitHubResponses.getContent.file(loadFixture("migration-plans/valid-plan.md"))
+      )
+
     // Mock issue creation
     mockOctokit.issues.create.mockResolvedValue(mockGitHubResponses.createIssue(123))
-    
+
     await handlePush(mockContext, logger)
-    
+
     expect(mockOctokit.repos.getContent).toHaveBeenCalledWith({
       owner: "test-org",
       repo: "test-repo",
       path: ".hachiko.yml",
     })
-    
+
     expect(mockOctokit.repos.getContent).toHaveBeenCalledWith({
       owner: "test-org",
       repo: "test-repo",
       path: "migrations/new-migration.md",
       ref: expect.any(String),
     })
-    
+
     expect(mockOctokit.issues.create).toHaveBeenCalledWith({
       owner: "test-org",
       repo: "test-repo",
@@ -102,22 +106,24 @@ describe("handlePush webhook", () => {
         added: ["migrations/new-migration.md"],
       },
     }
-    
+
     mockContext = createMockContext("push", payload, mockOctokit)
-    
+
     // Mock 404 for config file
     mockOctokit.repos.getContent
       .mockRejectedValueOnce(mockGitHubResponses.getContent.notFound())
-      .mockResolvedValueOnce(mockGitHubResponses.getContent.file(loadFixture("migration-plans/valid-plan.md")))
-    
+      .mockResolvedValueOnce(
+        mockGitHubResponses.getContent.file(loadFixture("migration-plans/valid-plan.md"))
+      )
+
     mockOctokit.issues.create.mockResolvedValue(mockGitHubResponses.createIssue(123))
-    
+
     await handlePush(mockContext, logger)
-    
+
     expect(mockOctokit.issues.create).toHaveBeenCalled()
-    
+
     const logs = logger.getLogs()
-    expect(logs.some(log => log.message.includes("No .hachiko.yml found"))).toBe(true)
+    expect(logs.some((log) => log.message.includes("No .hachiko.yml found"))).toBe(true)
   })
 
   it("should handle invalid migration plan files", async () => {
@@ -128,21 +134,23 @@ describe("handlePush webhook", () => {
         added: ["migrations/invalid-plan.md"],
       },
     }
-    
+
     mockContext = createMockContext("push", payload, mockOctokit)
-    
+
     // Mock config and invalid plan
     const configContent = loadFixture("configs/valid-hachiko-config.yml")
     mockOctokit.repos.getContent
       .mockResolvedValueOnce(mockGitHubResponses.getContent.file(configContent))
-      .mockResolvedValueOnce(mockGitHubResponses.getContent.file("# Invalid plan without frontmatter"))
-    
+      .mockResolvedValueOnce(
+        mockGitHubResponses.getContent.file("# Invalid plan without frontmatter")
+      )
+
     await handlePush(mockContext, logger)
-    
+
     expect(mockOctokit.issues.create).not.toHaveBeenCalled()
-    
+
     const logs = logger.getLogs()
-    expect(logs.some(log => log.level === "error")).toBe(true)
+    expect(logs.some((log) => log.level === "error")).toBe(true)
   })
 
   it("should only process files in the configured plans directory", async () => {
@@ -153,17 +161,17 @@ describe("handlePush webhook", () => {
         added: ["docs/not-a-migration.md", "src/code.ts"],
       },
     }
-    
+
     mockContext = createMockContext("push", payload, mockOctokit)
-    
+
     // Mock config file
     const configContent = loadFixture("configs/valid-hachiko-config.yml")
     mockOctokit.repos.getContent.mockResolvedValueOnce(
       mockGitHubResponses.getContent.file(configContent)
     )
-    
+
     await handlePush(mockContext, logger)
-    
+
     // Should not try to process the non-migration files
     expect(mockOctokit.repos.getContent).toHaveBeenCalledTimes(1) // Only .hachiko.yml
     expect(mockOctokit.issues.create).not.toHaveBeenCalled()
@@ -177,18 +185,18 @@ describe("handlePush webhook", () => {
         added: ["migrations/new-migration.md"],
       },
     }
-    
+
     mockContext = createMockContext("push", payload, mockOctokit)
-    
+
     // Mock config loading to succeed but plan loading to fail
     const configContent = loadFixture("configs/valid-hachiko-config.yml")
     mockOctokit.repos.getContent
       .mockResolvedValueOnce(mockGitHubResponses.getContent.file(configContent))
       .mockRejectedValueOnce(new Error("API Error"))
-    
+
     await expect(handlePush(mockContext, logger)).rejects.toThrow("API Error")
-    
+
     const logs = logger.getLogs()
-    expect(logs.some(log => log.level === "error")).toBe(true)
+    expect(logs.some((log) => log.level === "error")).toBe(true)
   })
 })

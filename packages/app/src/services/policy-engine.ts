@@ -1,6 +1,6 @@
 import { minimatch } from "minimatch"
-import type { HachikoConfig } from "../config/schema.js"
 import type { PolicyViolation } from "../adapters/types.js"
+import type { HachikoConfig } from "../config/schema.js"
 import { PolicyViolationError } from "../utils/errors.js"
 import { createLogger } from "../utils/logger.js"
 
@@ -11,26 +11,26 @@ const logger = createLogger("policy-engine")
  */
 export const PolicyRuleType = {
   FILE_ACCESS: "file_access",
-  COMMAND_EXECUTION: "command_execution", 
+  COMMAND_EXECUTION: "command_execution",
   NETWORK_ACCESS: "network_access",
   RESOURCE_USAGE: "resource_usage",
   TIME_CONSTRAINTS: "time_constraints",
   USER_PERMISSIONS: "user_permissions",
 } as const
 
-export type PolicyRuleTypeType = typeof PolicyRuleType[keyof typeof PolicyRuleType]
+export type PolicyRuleTypeType = (typeof PolicyRuleType)[keyof typeof PolicyRuleType]
 
 /**
  * Policy severity levels
  */
 export const PolicySeverity = {
   INFO: "info",
-  WARNING: "warning", 
+  WARNING: "warning",
   ERROR: "error",
   CRITICAL: "critical",
 } as const
 
-export type PolicySeverityType = typeof PolicySeverity[keyof typeof PolicySeverity]
+export type PolicySeverityType = (typeof PolicySeverity)[keyof typeof PolicySeverity]
 
 /**
  * Policy rule definition
@@ -52,7 +52,15 @@ export interface PolicyRule {
  */
 export interface PolicyCondition {
   field: string
-  operator: "equals" | "not_equals" | "matches" | "not_matches" | "contains" | "not_contains" | "greater_than" | "less_than"
+  operator:
+    | "equals"
+    | "not_equals"
+    | "matches"
+    | "not_matches"
+    | "contains"
+    | "not_contains"
+    | "greater_than"
+    | "less_than"
   value: string | number | boolean | string[]
   caseSensitive?: boolean
 }
@@ -128,10 +136,10 @@ export class PolicyEngine {
   private constructor() {}
 
   static getInstance(): PolicyEngine {
-    if (!this.instance) {
-      this.instance = new PolicyEngine()
+    if (!PolicyEngine.instance) {
+      PolicyEngine.instance = new PolicyEngine()
     }
-    return this.instance
+    return PolicyEngine.instance
   }
 
   /**
@@ -146,10 +154,13 @@ export class PolicyEngine {
     this.rules = await this.loadPolicyRules(config)
     this.initialized = true
 
-    logger.info({ 
-      rulesCount: this.rules.length,
-      enabledRules: this.rules.filter(r => r.enabled).length 
-    }, "Policy engine initialized")
+    logger.info(
+      {
+        rulesCount: this.rules.length,
+        enabledRules: this.rules.filter((r) => r.enabled).length,
+      },
+      "Policy engine initialized"
+    )
   }
 
   /**
@@ -169,14 +180,18 @@ export class PolicyEngine {
 
       try {
         const ruleResult = await this.evaluateRule(rule, context)
-        
+
         if (ruleResult.violated) {
           const violation: PolicyViolation = {
             type: this.mapRuleTypeToViolationType(rule.type),
             message: ruleResult.message || rule.description,
             pattern: rule.id,
-            severity: rule.severity === PolicySeverity.CRITICAL ? "error" : 
-                     rule.severity === PolicySeverity.ERROR ? "error" : "warning",
+            severity:
+              rule.severity === PolicySeverity.CRITICAL
+                ? "error"
+                : rule.severity === PolicySeverity.ERROR
+                  ? "error"
+                  : "warning",
           }
 
           if (rule.severity === PolicySeverity.ERROR || rule.severity === PolicySeverity.CRITICAL) {
@@ -186,7 +201,7 @@ export class PolicyEngine {
           }
 
           // Check if any actions require approval
-          if (rule.actions.some(action => action.type === "require_approval")) {
+          if (rule.actions.some((action) => action.type === "require_approval")) {
             requiresApproval = true
           }
         }
@@ -202,14 +217,17 @@ export class PolicyEngine {
       requiresApproval,
     }
 
-    logger.debug({
-      planId: context.planId,
-      stepId: context.stepId,
-      allowed: result.allowed,
-      violationsCount: violations.length,
-      warningsCount: warnings.length,
-      requiresApproval,
-    }, "Policy evaluation completed")
+    logger.debug(
+      {
+        planId: context.planId,
+        stepId: context.stepId,
+        allowed: result.allowed,
+        violationsCount: violations.length,
+        warningsCount: warnings.length,
+        requiresApproval,
+      },
+      "Policy evaluation completed"
+    )
 
     return result
   }
@@ -218,7 +236,7 @@ export class PolicyEngine {
    * Add a custom policy rule
    */
   addRule(rule: PolicyRule): void {
-    const existingIndex = this.rules.findIndex(r => r.id === rule.id)
+    const existingIndex = this.rules.findIndex((r) => r.id === rule.id)
     if (existingIndex >= 0) {
       this.rules[existingIndex] = rule
       logger.info({ ruleId: rule.id }, "Policy rule updated")
@@ -232,7 +250,7 @@ export class PolicyEngine {
    * Remove a policy rule
    */
   removeRule(ruleId: string): boolean {
-    const index = this.rules.findIndex(r => r.id === ruleId)
+    const index = this.rules.findIndex((r) => r.id === ruleId)
     if (index >= 0) {
       this.rules.splice(index, 1)
       logger.info({ ruleId }, "Policy rule removed")
@@ -252,14 +270,14 @@ export class PolicyEngine {
    * Get enabled policy rules
    */
   getEnabledRules(): PolicyRule[] {
-    return this.rules.filter(rule => rule.enabled)
+    return this.rules.filter((rule) => rule.enabled)
   }
 
   /**
    * Enable/disable a policy rule
    */
   setRuleEnabled(ruleId: string, enabled: boolean): boolean {
-    const rule = this.rules.find(r => r.id === ruleId)
+    const rule = this.rules.find((r) => r.id === ruleId)
     if (rule) {
       rule.enabled = enabled
       logger.info({ ruleId, enabled }, "Policy rule enabled/disabled")
@@ -439,7 +457,7 @@ export class PolicyEngine {
     for (const condition of rule.conditions) {
       const violated = await this.evaluateCondition(condition, context)
       if (violated) {
-        const actionMessage = rule.actions.find(a => a.message)?.message
+        const actionMessage = rule.actions.find((a) => a.message)?.message
         return {
           violated: true,
           message: actionMessage || rule.description,
@@ -458,32 +476,32 @@ export class PolicyEngine {
     context: PolicyContext
   ): Promise<boolean> {
     const fieldValue = this.getFieldValue(condition.field, context)
-    
+
     switch (condition.operator) {
       case "equals":
         return this.compareValues(fieldValue, condition.value, "equals")
-        
+
       case "not_equals":
         return !this.compareValues(fieldValue, condition.value, "equals")
-        
+
       case "matches":
         return this.matchesPattern(fieldValue, condition.value)
-        
+
       case "not_matches":
         return !this.matchesPattern(fieldValue, condition.value)
-        
+
       case "contains":
         return this.containsValue(fieldValue, condition.value)
-        
+
       case "not_contains":
         return !this.containsValue(fieldValue, condition.value)
-        
+
       case "greater_than":
         return this.compareNumbers(fieldValue, condition.value, "greater")
-        
+
       case "less_than":
         return this.compareNumbers(fieldValue, condition.value, "less")
-        
+
       default:
         logger.warn({ operator: condition.operator }, "Unknown condition operator")
         return false
@@ -496,21 +514,21 @@ export class PolicyEngine {
   private getFieldValue(field: string, context: PolicyContext): unknown {
     const parts = field.split(".")
     let value: any = context
-    
+
     for (const part of parts) {
       if (value == null) return undefined
       value = value[part]
     }
-    
+
     return value
   }
 
   /**
    * Compare values for equality
    */
-  private compareValues(actual: unknown, expected: unknown, operator: "equals"): boolean {
+  private compareValues(actual: unknown, expected: unknown, _operator: "equals"): boolean {
     if (Array.isArray(actual) && Array.isArray(expected)) {
-      return actual.length === expected.length && actual.every(v => expected.includes(v))
+      return actual.length === expected.length && actual.every((v) => expected.includes(v))
     }
     return actual === expected
   }
@@ -520,13 +538,13 @@ export class PolicyEngine {
    */
   private matchesPattern(actual: unknown, patterns: unknown): boolean {
     if (Array.isArray(actual)) {
-      return actual.some(item => this.matchesPattern(item, patterns))
+      return actual.some((item) => this.matchesPattern(item, patterns))
     }
-    
+
     const actualStr = String(actual)
     const patternArray = Array.isArray(patterns) ? patterns : [patterns]
-    
-    return patternArray.some(pattern => {
+
+    return patternArray.some((pattern) => {
       const patternStr = String(pattern)
       return minimatch(actualStr, patternStr)
     })
@@ -537,26 +555,30 @@ export class PolicyEngine {
    */
   private containsValue(actual: unknown, values: unknown): boolean {
     if (Array.isArray(actual)) {
-      return actual.some(item => this.containsValue(item, values))
+      return actual.some((item) => this.containsValue(item, values))
     }
-    
+
     const actualStr = String(actual).toLowerCase()
     const valueArray = Array.isArray(values) ? values : [values]
-    
-    return valueArray.some(value => actualStr.includes(String(value).toLowerCase()))
+
+    return valueArray.some((value) => actualStr.includes(String(value).toLowerCase()))
   }
 
   /**
    * Compare numeric values
    */
-  private compareNumbers(actual: unknown, expected: unknown, operator: "greater" | "less"): boolean {
+  private compareNumbers(
+    actual: unknown,
+    expected: unknown,
+    operator: "greater" | "less"
+  ): boolean {
     const actualNum = Number(actual)
     const expectedNum = Number(expected)
-    
-    if (isNaN(actualNum) || isNaN(expectedNum)) {
+
+    if (Number.isNaN(actualNum) || Number.isNaN(expectedNum)) {
       return false
     }
-    
+
     return operator === "greater" ? actualNum > expectedNum : actualNum < expectedNum
   }
 

@@ -1,5 +1,5 @@
-import { vi } from "vitest"
 import type { Context } from "probot"
+import { vi } from "vitest"
 
 /**
  * Create a mock Octokit instance with all the methods we use
@@ -94,32 +94,32 @@ export const mockGitHubResponses = {
       throw error
     },
   },
-  
+
   listIssues: {
     empty: () => ({ data: [] }),
     withIssue: (issue: any) => ({ data: [issue] }),
   },
-  
+
   createIssue: (issueNumber = 123) => ({
     data: {
       number: issueNumber,
       html_url: `https://github.com/test-owner/test-repo/issues/${issueNumber}`,
     },
   }),
-  
+
   createPR: (prNumber = 456) => ({
     data: {
       number: prNumber,
       html_url: `https://github.com/test-owner/test-repo/pull/${prNumber}`,
     },
   }),
-  
+
   getBranch: (sha = "abc123") => ({
     data: {
       commit: { sha },
     },
   }),
-  
+
   listJobs: {
     success: () => ({
       data: {

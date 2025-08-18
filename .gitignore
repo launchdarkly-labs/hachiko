@@ -26,3 +26,18 @@ Thumbs.db
 # Temporary files
 *.tmp
 *.temp
+
+# Build outputs
+build/
+*.tsbuildinfo
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# Local settings
+.claude/
+
+# Project plans
+.projects

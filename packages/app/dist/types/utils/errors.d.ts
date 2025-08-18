@@ -1,6 +1,6 @@
 export declare class HachikoError extends Error {
     readonly code: string;
-    readonly details?: Record<string, unknown>;
+    readonly details: Record<string, unknown> | undefined;
     constructor(message: string, code: string, details?: Record<string, unknown>);
 }
 export declare class ConfigurationError extends HachikoError {
