@@ -37,14 +37,13 @@ jobs:
       - name: Test configuration parsing
         run: |
           echo "Testing Hachiko configuration parsing..."
-          cd examples
           pnpm --filter @hachiko/runner-scripts exec tsx -e "
-            import { validateConfig } from '../packages/app/dist/config/schema.js';
+            import { validateHachikoConfig } from '../app/dist/config/schema.js';
             import { readFileSync } from 'fs';
             import yaml from 'js-yaml';
             
-            const config = yaml.load(readFileSync('.hachiko.yml', 'utf8'));
-            const valid = validateConfig(config);
+            const config = yaml.load(readFileSync('../../examples/.hachiko.yml', 'utf8'));
+            const valid = validateHachikoConfig(config);
             console.log('✅ Configuration is valid:', valid.plans.directory);
           "
           
@@ -52,9 +51,9 @@ jobs:
         run: |
           echo "Testing migration plan parsing..."
           pnpm --filter @hachiko/runner-scripts exec tsx -e "
-            import { parsePlanFile } from '../packages/app/dist/services/plans.js';
+            import { parsePlanFile } from '../app/dist/services/plans.js';
             
-            parsePlanFile('./examples/migrations/upgrade-junit.md').then(result => {
+            parsePlanFile('../../examples/migrations/react-class-to-hooks.md').then(result => {
               if (result.isValid) {
                 console.log('✅ Migration plan is valid:', result.plan.id);
               } else {
