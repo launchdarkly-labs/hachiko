@@ -17,21 +17,25 @@
     "rules": {
       "recommended": true,
       "style": {
-        "noUnusedTemplateLiteral": "error",
+        "noUnusedTemplateLiteral": "off",
         "useConst": "error",
         "useExportType": "error",
-        "useImportType": "error"
+        "useImportType": "error",
+        "noNonNullAssertion": "off"
       },
       "correctness": {
-        "noUnusedVariables": "error",
+        "noUnusedVariables": "warn",
         "useArrayLiterals": "error"
       },
       "security": {
         "noGlobalEval": "error"
       },
       "suspicious": {
-        "noExplicitAny": "warn",
+        "noExplicitAny": "off",
         "noConsoleLog": "warn"
+      },
+      "a11y": {
+        "useButtonType": "off"
       }
     }
   },

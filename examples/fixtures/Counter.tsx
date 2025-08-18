@@ -83,13 +83,23 @@ class Counter extends React.Component<CounterProps, CounterState> {
       <div className="counter">
         <h2>Count: {count}</h2>
         <div className="controls">
-          <button type="button" onClick={this.decrement}>-</button>
-          <button type="button" onClick={this.increment}>+</button>
-          <button type="button" onClick={this.reset}>Reset</button>
+          <button type="button" onClick={this.decrement}>
+            -
+          </button>
+          <button type="button" onClick={this.increment}>
+            +
+          </button>
+          <button type="button" onClick={this.reset}>
+            Reset
+          </button>
         </div>
         <div className="auto-controls">
-          <button type="button" onClick={this.startAutoIncrement}>Start Auto</button>
-          <button type="button" onClick={this.stopAutoIncrement}>Stop Auto</button>
+          <button type="button" onClick={this.startAutoIncrement}>
+            Start Auto
+          </button>
+          <button type="button" onClick={this.stopAutoIncrement}>
+            Stop Auto
+          </button>
         </div>
       </div>
     )

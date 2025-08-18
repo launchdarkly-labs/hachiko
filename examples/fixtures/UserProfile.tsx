@@ -133,7 +133,9 @@ class UserProfile extends React.Component<UserProfileProps, UserProfileState> {
             />
           </label>
           <div className="email">Email: {user.email}</div>
-          <button type="button" onClick={this.handleSave}>Save</button>
+          <button type="button" onClick={this.handleSave}>
+            Save
+          </button>
         </div>
       </div>
     )

@@ -9,7 +9,7 @@ export async function handlePullRequest(
   logger: Logger
 ): Promise<void> {
   const { payload } = context
-  const { pull_request: pr, repository } = payload
+  const { pull_request: pr, repository: _repository } = payload
 
   logger.info(
     {
