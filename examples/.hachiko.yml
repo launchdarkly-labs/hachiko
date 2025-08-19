@@ -28,7 +28,7 @@ policy:
   allowlistGlobs:
     - "src/**"
     - "examples/fixtures/**"
-    - "packages/**"
+    - "test/**"
     - "**/*.test.tsx"
     - "**/*.test.ts"
 

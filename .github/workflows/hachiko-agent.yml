@@ -35,7 +35,7 @@ jobs:
         run: pnpm install --frozen-lockfile
         
       - name: Build runner scripts
-        run: pnpm --filter @hachiko/runner-scripts build
+        run: pnpm build
         
       - name: Extract event payload
         id: payload
@@ -71,7 +71,7 @@ jobs:
           LAUNCHDARKLY_SDK_KEY: ${{ secrets.LAUNCHDARKLY_SDK_KEY }}
         run: |
           echo "Executing migration step: $PLAN_ID / $STEP_ID"
-          pnpm --filter @hachiko/runner-scripts exec tsx src/hachiko-invoke.ts "$HACHIKO_EVENT"
+          pnpm exec tsx src/scripts/hachiko-invoke.ts "$HACHIKO_EVENT"
           
       - name: Run migration checks
         if: always()
@@ -88,7 +88,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           echo "Creating/updating pull request..."
-          pnpm --filter @hachiko/runner-scripts exec tsx src/hachiko-open-pr.ts "$HACHIKO_EVENT"
+          pnpm exec tsx src/scripts/hachiko-open-pr.ts "$HACHIKO_EVENT"
           
       - name: Report Results
         if: always()
@@ -98,4 +98,4 @@ jobs:
           WORKFLOW_CONCLUSION: ${{ job.status }}
         run: |
           echo "Reporting results back to GitHub..."
-          pnpm --filter @hachiko/runner-scripts exec tsx src/hachiko-report.ts "$HACHIKO_EVENT"
+          pnpm exec tsx src/scripts/hachiko-report.ts "$HACHIKO_EVENT"
