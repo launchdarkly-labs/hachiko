@@ -23,6 +23,7 @@
     "test": "vitest run",
     "test:ui": "vitest --ui",
     "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
     "coverage": "vitest run --coverage",
     "docs:check": "node scripts/check-docs-links.js",
     "scripts:fire-webhook": "ts-node scripts/send-webhook.ts",

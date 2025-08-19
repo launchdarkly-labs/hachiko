@@ -40,7 +40,7 @@ jobs:
         run: pnpm typecheck
         
       - name: Unit & Integration Tests
-        run: pnpm test --reporter=junit --coverage
+        run: pnpm test:coverage --reporter=junit
         
       - name: Upload coverage reports
         uses: codecov/codecov-action@v4
