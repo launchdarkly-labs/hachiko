@@ -27,6 +27,9 @@ Thumbs.db
 *.tmp
 *.temp
 
+# Test artifacts (created by MockAgentAdapter)
+src/new-file.ts
+
 # Build outputs
 build/
 *.tsbuildinfo

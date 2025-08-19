@@ -18,20 +18,19 @@ global.console = {
 }
 
 // Mock pino logger
-vi.mock("pino", () => ({
-  default: () => ({
+vi.mock("pino", () => {
+  const mockLogger = {
     info: vi.fn(),
     warn: vi.fn(),
     error: vi.fn(),
     debug: vi.fn(),
-    child: vi.fn(() => ({
-      info: vi.fn(),
-      warn: vi.fn(),
-      error: vi.fn(),
-      debug: vi.fn(),
-    })),
-  }),
-  stdTimeFunctions: {
-    isoTime: () => new Date().toISOString(),
-  },
-}))
+    child: vi.fn(() => mockLogger),
+  }
+
+  const mockPino = vi.fn(() => mockLogger)
+  mockPino.stdTimeFunctions = {
+    isoTime: vi.fn(() => '"2023-01-01T00:00:00.000Z"'),
+  }
+
+  return { default: mockPino }
+})
