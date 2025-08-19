@@ -40,7 +40,7 @@ jobs:
         run: pnpm typecheck
         
       - name: Unit & Integration Tests
-        run: pnpm --filter @hachiko/app test:run --reporter=junit --coverage
+        run: pnpm test --reporter=junit --coverage
         
       - name: Upload coverage reports
         uses: codecov/codecov-action@v4

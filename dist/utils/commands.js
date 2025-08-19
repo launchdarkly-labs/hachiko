@@ -1,0 +1,53 @@
+/**
+ * Parse a Hachiko command from a comment body
+ */
+export function parseHachikoCommand(commentBody) {
+    const lines = commentBody.trim().split("\n");
+    // Ensure we have at least one line
+    if (lines.length === 0) {
+        return null;
+    }
+    const commandLine = lines[0]?.trim();
+    // Must start with /hachi
+    if (!commandLine || !commandLine.startsWith("/hachi")) {
+        return null;
+    }
+    // Split command into parts
+    const parts = commandLine.split(/\s+/).filter(Boolean);
+    if (parts.length < 2) {
+        return null;
+    }
+    const action = parts[1]; // We know this exists due to length check
+    const args = parts.slice(2);
+    return {
+        action,
+        args,
+        rawCommand: commandLine,
+    };
+}
+/**
+ * Validate command permissions (basic implementation)
+ */
+export function canExecuteCommand(command, user, _repository) {
+    // For now, allow repository owners and collaborators
+    // In a real implementation, you'd check GitHub permissions
+    // Always allow status commands
+    if (command.action === "status") {
+        return true;
+    }
+    // For other commands, user should be authenticated
+    return user.type !== "Bot" && user.login.length > 0;
+}
+/**
+ * Format command response with consistent styling
+ */
+export function formatCommandResponse(command, status, message, details) {
+    const emoji = status === "success" ? "✅" : status === "error" ? "❌" : "ℹ️";
+    const title = `${emoji} **Command**: \`${command}\``;
+    let response = `${title}\n\n${message}`;
+    if (details) {
+        response += `\n\n**Details:**\n${details}`;
+    }
+    return response;
+}
+//# sourceMappingURL=commands.js.map
