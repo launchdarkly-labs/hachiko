@@ -24,6 +24,7 @@ export default defineConfig({
         "**/*.config.ts",
         // Example/fixture files - not application code
         "examples/**",
+        "self-test/**",
         // CLI scripts - require integration testing
         "src/scripts/**",
         // Entry points - require full integration setup
