@@ -1,0 +1,52 @@
+plans:
+  directory: migrations/
+  filenamePattern: "*.md"
+
+defaults:
+  agent: claude-cli
+  prParallelism: 1
+  rebase:
+    when: behind-base-branch
+    allowManual: true
+  labels: [hachiko, migration]
+  requirePlanReview: true
+
+aiConfigs:
+  provider: launchdarkly
+  flagKeyPrefix: hachiko_prompts_
+
+policy:
+  allowWorkflowEdits: false
+  network: none
+  maxAttemptsPerStep: 2
+  stepTimeoutMinutes: 15
+  perRepoMaxConcurrentMigrations: 3
+  riskyGlobs:
+    - ".github/workflows/**"
+    - ".git/**"
+    - "**/*.sh"
+  allowlistGlobs:
+    - "src/**"
+    - "self-test/**"
+    - "examples/fixtures/**"
+    - "test/**"
+    - "**/*.test.tsx"
+    - "**/*.test.ts"
+
+dependencies:
+  conflictResolution: fail
+  updateStrategy: manual
+
+agents:
+  claude-cli:
+    kind: cli
+    command: claude
+    args: ["code", "--apply"]
+  cursor-cli:
+    kind: cli
+    command: cursor
+    args: ["--headless", "apply"]
+  mock-agent:
+    kind: cli
+    command: echo
+    args: ["Mock agent executed successfully"]

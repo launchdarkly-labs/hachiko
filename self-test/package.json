@@ -1,0 +1,17 @@
+{
+  "name": "hachiko-self-test",
+  "version": "1.0.0",
+  "description": "Self-testing environment for Hachiko migrations",
+  "scripts": {
+    "test": "echo 'Test placeholder'",
+    "type-check": "echo 'TypeScript check placeholder'",
+    "lint": "echo 'Lint check placeholder'"
+  },
+  "dependencies": {
+    "react": "^18.0.0"
+  },
+  "devDependencies": {
+    "@types/react": "^18.0.0",
+    "typescript": "^5.0.0"
+  }
+}
