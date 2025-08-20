@@ -95,7 +95,7 @@ class DataFetcher extends React.Component<DataFetcherProps, DataFetcherState> {
       <div className="data-fetcher">
         {this.props.children(data, loading, error)}
         {error && (
-          <button onClick={this.retry} className="retry-button">
+          <button type="button" onClick={this.retry} className="retry-button">
             Retry
           </button>
         )}

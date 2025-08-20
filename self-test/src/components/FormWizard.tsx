@@ -36,9 +36,9 @@ class FormWizard extends React.Component<FormWizardProps, FormWizardState> {
     super(props)
 
     // Initialize refs for each step
-    props.steps.forEach((step) => {
+    for (const step of props.steps) {
       this.formRefs[step.id] = React.createRef()
-    })
+    }
 
     this.state = {
       currentStepIndex: 0,
@@ -71,7 +71,7 @@ class FormWizard extends React.Component<FormWizardProps, FormWizardState> {
     window.addEventListener("beforeunload", this.handleBeforeUnload)
   }
 
-  componentDidUpdate(prevProps: FormWizardProps, prevState: FormWizardState) {
+  componentDidUpdate(_prevProps: FormWizardProps, prevState: FormWizardState) {
     if (prevState.currentStepIndex !== this.state.currentStepIndex) {
       this.focusCurrentStep()
 
@@ -105,7 +105,7 @@ class FormWizard extends React.Component<FormWizardProps, FormWizardState> {
     const currentStep = this.props.steps[this.state.currentStepIndex]
     const stepRef = this.formRefs[currentStep.id]
 
-    if (stepRef.current && stepRef.current.focus) {
+    if (stepRef.current?.focus) {
       setTimeout(() => stepRef.current.focus(), 100)
     }
   }
@@ -143,11 +143,10 @@ class FormWizard extends React.Component<FormWizardProps, FormWizardState> {
           errors: { ...this.state.errors, [currentStep.id]: error },
         })
         return false
-      } else {
-        const newErrors = { ...this.state.errors }
-        delete newErrors[currentStep.id]
-        this.setState({ errors: newErrors })
       }
+      const newErrors = { ...this.state.errors }
+      delete newErrors[currentStep.id]
+      this.setState({ errors: newErrors })
     }
 
     return true
@@ -223,7 +222,7 @@ class FormWizard extends React.Component<FormWizardProps, FormWizardState> {
     const CurrentStepComponent = currentStep.component
 
     const canGoBack = history.length > 1
-    const canGoNext = currentStepIndex < steps.length - 1
+    const _canGoNext = currentStepIndex < steps.length - 1
     const isLastStep = currentStepIndex === steps.length - 1
 
     return (
@@ -231,7 +230,8 @@ class FormWizard extends React.Component<FormWizardProps, FormWizardState> {
         <div className="wizard-header">
           <div className="step-indicator">
             {steps.map((step, index) => (
-              <div
+              <button
+                type="button"
                 key={step.id}
                 className={`step ${index === currentStepIndex ? "active" : ""} ${
                   index < currentStepIndex ? "completed" : ""
@@ -239,7 +239,7 @@ class FormWizard extends React.Component<FormWizardProps, FormWizardState> {
                 onClick={() => this.goToStep(index)}
               >
                 {step.title}
-              </div>
+              </button>
             ))}
           </div>
 

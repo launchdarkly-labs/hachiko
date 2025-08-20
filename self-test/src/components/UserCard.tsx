@@ -50,7 +50,8 @@ class UserCard extends React.Component<UserCardProps, UserCardState> {
     const { isHovered, isLoading } = this.state
 
     return (
-      <div
+      <button
+        type="button"
         className={`user-card ${isHovered ? "hovered" : ""}`}
         onMouseEnter={this.handleMouseEnter}
         onMouseLeave={this.handleMouseLeave}
@@ -64,7 +65,7 @@ class UserCard extends React.Component<UserCardProps, UserCardState> {
           <p>{user.email}</p>
         </div>
         {isLoading && <div className="loading">Loading...</div>}
-      </div>
+      </button>
     )
   }
 }
