@@ -139,6 +139,10 @@ pnpm scripts:simulate-migration
 
 # Fire test webhooks
 pnpm scripts:fire-webhook push examples/migrations/react-class-to-hooks.md
+
+# List LaunchDarkly feature flags
+export LAUNCHDARKLY_API_TOKEN=your-token-here
+pnpm scripts:list-flags
 ```
 
 ## 🛡️ Security
