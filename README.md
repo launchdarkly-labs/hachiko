@@ -12,6 +12,7 @@ Hachiko is a GitHub App that orchestrates technical migrations in large legacy c
 - **⚡ Fast Feedback**: Immediate CI checks, linting, testing, and coverage reporting
 - **🔄 Smart State Management**: Automatic progress tracking, rollback support, and conflict resolution
 - **💬 Interactive Commands**: Control migrations via GitHub issue comments (`/hachi pause`, `/hachi resume`, etc.)
+- **🚩 Feature Flags**: LaunchDarkly integration for dynamic feature control and A/B testing
 - **🔧 Self-Sufficient**: One command to develop, test, and simulate migrations locally
 
 ## 🚀 Quick Start
@@ -79,6 +80,7 @@ This migration will upgrade all Node.js dependencies to their latest stable vers
 - [Architecture Overview](docs/architecture.md)
 - [Configuration Reference](docs/config.md)
 - [Migration Plan Format](docs/plan-spec.md)
+- [Feature Flags](docs/feature-flags.md)
 - [Developer Setup](docs/developer-setup.md)
 - [Security Model](docs/security.md)
 - [Dogfooding Guide](docs/dogfooding.md)
