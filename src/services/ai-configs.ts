@@ -113,9 +113,11 @@ export class AIConfigManager {
     }
 
     if (this.config.aiConfigs.provider === "launchdarkly") {
-      // In a real implementation, this would fetch all flags matching our pattern
-      // For now, return empty object as LaunchDarkly doesn't have a simple way to list all flags
-      logger.warn("Listing LaunchDarkly prompts not implemented")
+      // LaunchDarkly client SDK doesn't provide a method to list all flags
+      // Users should use the hachiko-list-flags script which uses the Management API
+      logger.warn(
+        "Listing LaunchDarkly prompts requires the Management API. Use 'pnpm scripts:list-flags' instead."
+      )
       return {}
     }
     return this.getLocalPrompts()

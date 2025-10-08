@@ -28,7 +28,8 @@
     "docs:check": "node scripts/check-docs-links.js",
     "scripts:fire-webhook": "ts-node scripts/send-webhook.ts",
     "scripts:assert-state": "ts-node scripts/assert-state.ts",
-    "scripts:simulate-merge": "ts-node scripts/sim-merge.ts"
+    "scripts:simulate-merge": "ts-node scripts/sim-merge.ts",
+    "scripts:list-flags": "tsx src/scripts/hachiko-list-flags.ts"
   },
   "dependencies": {
     "@launchdarkly/node-server-sdk": "^9.6.3",
