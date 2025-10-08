@@ -6,12 +6,12 @@ export declare const AgentCliConfigSchema: z.ZodObject<{
     timeout: z.ZodOptional<z.ZodNumber>;
 }, "strip", z.ZodTypeAny, {
     args: string[];
-    kind: "cli";
     command: string;
+    kind: "cli";
     timeout?: number | undefined;
 }, {
-    kind: "cli";
     command: string;
+    kind: "cli";
     args?: string[] | undefined;
     timeout?: number | undefined;
 }>;
@@ -53,12 +53,12 @@ export declare const AgentConfigSchema: z.ZodUnion<[z.ZodObject<{
     timeout: z.ZodOptional<z.ZodNumber>;
 }, "strip", z.ZodTypeAny, {
     args: string[];
-    kind: "cli";
     command: string;
+    kind: "cli";
     timeout?: number | undefined;
 }, {
-    kind: "cli";
     command: string;
+    kind: "cli";
     args?: string[] | undefined;
     timeout?: number | undefined;
 }>, z.ZodObject<{
@@ -270,12 +270,12 @@ export declare const HachikoConfigSchema: z.ZodObject<{
         timeout: z.ZodOptional<z.ZodNumber>;
     }, "strip", z.ZodTypeAny, {
         args: string[];
-        kind: "cli";
         command: string;
+        kind: "cli";
         timeout?: number | undefined;
     }, {
-        kind: "cli";
         command: string;
+        kind: "cli";
         args?: string[] | undefined;
         timeout?: number | undefined;
     }>, z.ZodObject<{
@@ -344,8 +344,8 @@ export declare const HachikoConfigSchema: z.ZodObject<{
     };
     agents: Record<string, {
         args: string[];
-        kind: "cli";
         command: string;
+        kind: "cli";
         timeout?: number | undefined;
     } | {
         kind: "api";
@@ -390,8 +390,8 @@ export declare const HachikoConfigSchema: z.ZodObject<{
         updateStrategy?: "manual" | "auto" | undefined;
     } | undefined;
     agents?: Record<string, {
-        kind: "cli";
         command: string;
+        kind: "cli";
         args?: string[] | undefined;
         timeout?: number | undefined;
     } | {
