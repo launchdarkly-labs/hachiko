@@ -1,5 +1,5 @@
-import { describe, expect, it, beforeEach, afterEach } from "vitest"
-import { createLogger, withRequestId, logger } from "../../../src/utils/logger.js"
+import { afterEach, beforeEach, describe, expect, it } from "vitest"
+import { createLogger, logger, withRequestId } from "../../../src/utils/logger.js"
 
 describe("Logger utilities", () => {
   describe("createLogger", () => {
@@ -35,17 +35,17 @@ describe("Logger utilities", () => {
       if (originalNodeEnv !== undefined) {
         process.env.NODE_ENV = originalNodeEnv
       } else {
-        delete process.env.NODE_ENV
+        process.env.NODE_ENV = undefined
       }
       if (originalLogLevel !== undefined) {
         process.env.LOG_LEVEL = originalLogLevel
       } else {
-        delete process.env.LOG_LEVEL
+        process.env.LOG_LEVEL = undefined
       }
     })
 
     it("should use default log level when LOG_LEVEL not set", () => {
-      delete process.env.LOG_LEVEL
+      process.env.LOG_LEVEL = undefined
       // logger is already created, but we can test the exports exist
       expect(logger).toBeDefined()
       expect(typeof logger.info).toBe("function")
