@@ -12,7 +12,8 @@
       "**/dist/**",
       "**/coverage/**",
       "**/.git/**",
-      "test/unit/webhooks/push.test.ts"
+      "test/unit/webhooks/push.test.ts",
+      "**/scripts/**"
     ]
   },
   "organizeImports": {

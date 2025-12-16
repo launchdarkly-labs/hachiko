@@ -1,5 +1,5 @@
-import type { Context } from "probot"
 import { promises as fs } from "node:fs"
+import type { Context } from "probot"
 import { loadHachikoConfig } from "../services/config.js"
 import { createMigrationIssue, createPlanReviewPR } from "../services/issues.js"
 import { parsePlanFile } from "../services/plans.js"
