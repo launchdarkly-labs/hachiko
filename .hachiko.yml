@@ -3,41 +3,84 @@ plans:
   filenamePattern: "*.md"
 
 defaults:
-  agent: claude-cli
+  agent: devin
   prParallelism: 1
   rebase:
     when: behind-base-branch
     allowManual: true
-  labels: [hachiko, migration]
+  labels: [hachiko, self-test, migration]
   requirePlanReview: true
 
 aiConfigs:
   provider: launchdarkly
-  flagKeyPrefix: hachiko_prompts_
+  flagKeyPrefix: hachiko_self_test_
 
 policy:
   allowWorkflowEdits: false
-  network: none
+  network: restricted
   maxAttemptsPerStep: 2
-  stepTimeoutMinutes: 15
-  perRepoMaxConcurrentMigrations: 3
+  stepTimeoutMinutes: 30
+  perRepoMaxConcurrentMigrations: 1
   riskyGlobs:
     - ".github/workflows/**"
     - ".git/**"
     - "**/*.sh"
+    - "package.json"
+    - "package-lock.json"
+    - "pnpm-lock.yaml"
+    - ".env*"
+    - "**/*.key"
+    - "**/*.pem"
   allowlistGlobs:
     - "src/**"
     - "self-test/**"
-    - "examples/fixtures/**"
+    - "examples/**"
     - "test/**"
-    - "**/*.test.tsx"
-    - "**/*.test.ts"
+    - "migrations/**"
+    - "docs/**"
+    - "*.md"
+    - "scripts/**"
 
 dependencies:
   conflictResolution: fail
   updateStrategy: manual
 
 agents:
+  # Cloud agents for production testing
+  devin:
+    kind: cloud
+    provider: devin
+    apiVersion: v2
+    timeout: 900
+    # apiKey: configured via DEVIN_API_KEY environment variable
+    # organizationId: configured via DEVIN_ORG_ID environment variable
+
+  cursor:
+    kind: cloud
+    provider: cursor
+    timeout: 1200
+    repositoryUrl: "https://github.com/launchdarkly-labs/hachiko"
+    branch: main
+    # apiKey: configured via CURSOR_API_KEY environment variable
+    # webhookUrl: configured via CURSOR_WEBHOOK_URL environment variable
+
+  codex:
+    kind: cloud
+    provider: codex
+    model: gpt-4-turbo
+    maxTokens: 4000
+    temperature: 0.1
+    timeout: 300
+    # apiKey: configured via OPENAI_API_KEY environment variable
+
+  # Mock agent for safe testing without external APIs
+  mock:
+    kind: cli
+    command: echo
+    args: ["Mock agent executed successfully for:", "{prompt}"]
+    timeout: 60
+
+  # Legacy CLI agents (deprecated)
   claude-cli:
     kind: cli
     command: claude
@@ -46,7 +89,3 @@ agents:
     kind: cli
     command: cursor
     args: ["--headless", "apply"]
-  mock-agent:
-    kind: cli
-    command: echo
-    args: ["Mock agent executed successfully"]
