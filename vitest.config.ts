@@ -10,8 +10,7 @@ export default defineConfig({
       "node_modules/**",
       "dist/**",
       "test/integration/**", // Temporarily disable integration tests
-      "test/unit/services/config.test.ts", // Temporarily disable while fixing
-      "test/unit/webhooks/push.test.ts", // Temporarily disable while fixing complex mocking
+      "test/unit/webhooks/push.test.ts", // Complex test needs fixing - TODO for future iteration
     ],
     coverage: {
       provider: "v8",
@@ -46,11 +45,12 @@ export default defineConfig({
       ],
       thresholds: {
         // Meaningful coverage thresholds focusing on testable business logic
-        // Current: 39.88% with high coverage in utils, config, and core services
-        statements: 39.8,
-        branches: 85,
-        functions: 75,
-        lines: 39.8,
+        // Current: 55.53% with comprehensive coverage in utils, config, services, and key webhooks
+        // Major achievements: Plans (75%), Issues (98%), Config (100%), PR webhook (94%)
+        statements: 55,
+        branches: 88,
+        functions: 84,
+        lines: 55,
       },
     },
     setupFiles: ["./test/setup.ts"],
