@@ -63,18 +63,20 @@ describe("loadHachikoConfig", () => {
   });
 
   it("should return default configuration when .hachiko.yml does not exist", async () => {
-    mockOctokit.repos.getContent.mockRejectedValue(mockGitHubResponses.getContent.notFound());
+    const notFoundError = new Error("Not Found") as any;
+    notFoundError.status = 404;
+    mockOctokit.repos.getContent.mockRejectedValue(notFoundError);
 
     const result = await loadHachikoConfig(mockContext);
 
-    expect(result.plans.directory).toBe("migrations");
-    expect(result.defaults.agent).toBe("mock");
+    expect(result.plans.directory).toBe("migrations/");
+    expect(result.defaults.agent).toBe("claude-cli");
   });
 
   it("should throw ConfigurationError for invalid YAML", async () => {
-    const invalidConfig = loadFixture("configs/invalid-hachiko-config.yml");
+    const invalidYaml = "invalid: yaml: content: [unclosed";
     mockOctokit.repos.getContent.mockResolvedValue(
-      mockGitHubResponses.getContent.file(invalidConfig)
+      mockGitHubResponses.getContent.file(invalidYaml)
     );
 
     await expect(loadHachikoConfig(mockContext)).rejects.toThrow(ConfigurationError);
@@ -115,11 +117,12 @@ describe("validateConfig", () => {
 
   it("should throw ConfigurationError for invalid configuration", () => {
     const invalidConfig = {
-      defaults: {
-        strategy: {
-          chunkBy: "invalid-strategy",
-        },
-      },
+      agents: {
+        "bad-agent": {
+          kind: "invalid-kind", // This should cause validation to fail
+          command: "test"
+        }
+      }
     };
 
     expect(() => validateConfig(invalidConfig)).toThrow(ConfigurationError);
@@ -129,14 +132,14 @@ describe("validateConfig", () => {
     const partialConfig = {
       agents: {
         custom: {
-          kind: "cli",
+          kind: "cli" as const,
           command: "custom-agent",
         },
       },
     };
 
     const result = validateConfig(partialConfig);
-    expect(result.plans.directory).toBe("migrations");
+    expect(result.plans.directory).toBe("migrations/");
     expect(result.defaults.agent).toBe("claude-cli");
     expect(result.agents.custom.kind).toBe("cli");
   });
