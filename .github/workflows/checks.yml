@@ -45,12 +45,18 @@ jobs:
           pnpm build
           
           # Check for changes excluding source maps which can vary between environments
-          if git diff --exit-code dist/ -- ':(exclude)*.map'; then
+          # First get all changed files, then filter out .map files
+          CHANGED_FILES=$(git diff --name-only dist/ | grep -v '\.map$' || true)
+          
+          if [ -z "$CHANGED_FILES" ]; then
             echo "✅ Build artifacts are up to date"
           else
             echo "❌ Build artifacts are out of date. Please run 'pnpm build' and commit the changes."
             echo "Changed files (excluding source maps):"
-            git diff --name-only dist/ -- ':(exclude)*.map' || true
+            echo "$CHANGED_FILES"
+            echo ""
+            echo "Diff of changes:"
+            git diff dist/ | grep -v -E '\.(js|d\.ts)\.map$' || true
             exit 1
           fi
 
