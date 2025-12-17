@@ -9,98 +9,98 @@ import { execa } from "execa";
 import { z } from "zod";
 // Event payload schema
 const HachikoEventSchema = z.object({
-  planId: z.string(),
-  stepId: z.string(),
-  chunk: z.string().optional(),
-  promptConfigRef: z.string().optional(),
-  commitMessage: z.string(),
-  branchName: z.string(),
+    planId: z.string(),
+    stepId: z.string(),
+    chunk: z.string().optional(),
+    promptConfigRef: z.string().optional(),
+    commitMessage: z.string(),
+    branchName: z.string(),
 });
 async function main() {
-  const eventJson = process.argv[2];
-  if (!eventJson) {
-    console.error("❌ Missing event payload argument");
-    process.exit(1);
-  }
-  let event;
-  try {
-    event = HachikoEventSchema.parse(JSON.parse(eventJson));
-  } catch (error) {
-    console.error("❌ Invalid event payload:", error);
-    process.exit(1);
-  }
-  // Check if we have any changes to push
-  const hasChanges = await checkForChanges();
-  if (!hasChanges) {
-    return;
-  }
-  // Push branch to remote
-  await pushBranch(event.branchName);
-  // Create or update PR
-  await createOrUpdatePR(event);
+    const eventJson = process.argv[2];
+    if (!eventJson) {
+        console.error("❌ Missing event payload argument");
+        process.exit(1);
+    }
+    let event;
+    try {
+        event = HachikoEventSchema.parse(JSON.parse(eventJson));
+    }
+    catch (error) {
+        console.error("❌ Invalid event payload:", error);
+        process.exit(1);
+    }
+    // Check if we have any changes to push
+    const hasChanges = await checkForChanges();
+    if (!hasChanges) {
+        return;
+    }
+    // Push branch to remote
+    await pushBranch(event.branchName);
+    // Create or update PR
+    await createOrUpdatePR(event);
 }
 async function checkForChanges() {
-  try {
-    const result = await execa("git", ["diff", "--name-only", "HEAD~1"]);
-    const changedFiles = result.stdout.split("\n").filter(Boolean);
-    if (changedFiles.length > 0) {
-      for (const _file of changedFiles) {
-      }
+    try {
+        const result = await execa("git", ["diff", "--name-only", "HEAD~1"]);
+        const changedFiles = result.stdout.split("\n").filter(Boolean);
+        if (changedFiles.length > 0) {
+            for (const _file of changedFiles) {
+            }
+        }
+        return changedFiles.length > 0;
     }
-    return changedFiles.length > 0;
-  } catch (_error) {
-    return false;
-  }
+    catch (_error) {
+        return false;
+    }
 }
 async function pushBranch(branchName) {
-  try {
-    await execa("git", ["push", "-u", "origin", branchName], {
-      stdio: "inherit",
-    });
-  } catch (error) {
-    console.error("❌ Failed to push branch:", error);
-    throw error;
-  }
+    try {
+        await execa("git", ["push", "-u", "origin", branchName], {
+            stdio: "inherit",
+        });
+    }
+    catch (error) {
+        console.error("❌ Failed to push branch:", error);
+        throw error;
+    }
 }
 async function createOrUpdatePR(event) {
-  // For now, just log what we would do
-  // TODO: Use GitHub CLI or Octokit to create actual PR
-  const chunkText = event.chunk ? ` (${event.chunk})` : "";
-  const title = `Hachiko: ${event.planId} - ${event.stepId}${chunkText}`;
-  const body = generatePRBody(event);
-  // Try to create PR using GitHub CLI if available
-  try {
-    const _result = await execa(
-      "gh",
-      [
-        "pr",
-        "create",
-        "--title",
-        title,
-        "--body",
-        body,
-        "--head",
-        event.branchName,
-        "--base",
-        "main",
-        "--label",
-        "hachiko",
-        "--label",
-        "migration",
-        "--label",
-        `hachiko:plan:${event.planId}`,
-        "--label",
-        `hachiko:step:${event.planId}:${event.stepId}${event.chunk ? `:${event.chunk}` : ""}`,
-      ],
-      {
-        stdio: "inherit",
-      }
-    );
-  } catch (_error) {}
+    // For now, just log what we would do
+    // TODO: Use GitHub CLI or Octokit to create actual PR
+    const chunkText = event.chunk ? ` (${event.chunk})` : "";
+    const title = `Hachiko: ${event.planId} - ${event.stepId}${chunkText}`;
+    const body = generatePRBody(event);
+    // Try to create PR using GitHub CLI if available
+    try {
+        const _result = await execa("gh", [
+            "pr",
+            "create",
+            "--title",
+            title,
+            "--body",
+            body,
+            "--head",
+            event.branchName,
+            "--base",
+            "main",
+            "--label",
+            "hachiko",
+            "--label",
+            "migration",
+            "--label",
+            `hachiko:plan:${event.planId}`,
+            "--label",
+            `hachiko:step:${event.planId}:${event.stepId}${event.chunk ? `:${event.chunk}` : ""}`,
+        ], {
+            stdio: "inherit",
+        });
+    }
+    catch (_error) { }
 }
 function generatePRBody(event) {
-  const chunkText = event.chunk ? `\n- **Chunk**: ${event.chunk}` : "";
-  return `This pull request was automatically generated by Hachiko as part of a migration.
+    const chunkText = event.chunk ? `\n- **Chunk**: ${event.chunk}` : "";
+    return `This pull request was automatically generated by Hachiko as part of a migration.
 
 ## Migration Details
 - **Plan**: ${event.planId}
@@ -124,9 +124,9 @@ function generatePRBody(event) {
 *Generated by [Hachiko](https://github.com/launchdarkly/hachiko)*`;
 }
 if (import.meta.url === `file://${process.argv[1]}`) {
-  main().catch((error) => {
-    console.error("❌ Fatal error:", error);
-    process.exit(1);
-  });
+    main().catch((error) => {
+        console.error("❌ Fatal error:", error);
+        process.exit(1);
+    });
 }
 //# sourceMappingURL=hachiko-open-pr.js.map
