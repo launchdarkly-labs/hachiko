@@ -1,6 +1,8 @@
 import { z } from "zod";
 
 // Agent configuration schemas
+
+// Deprecated CLI agent config (kept for backward compatibility)
 export const AgentCliConfigSchema = z.object({
   kind: z.literal("cli"),
   command: z.string(),
@@ -8,6 +10,7 @@ export const AgentCliConfigSchema = z.object({
   timeout: z.number().optional(),
 });
 
+// Deprecated API agent config (kept for backward compatibility)
 export const AgentApiConfigSchema = z.object({
   kind: z.literal("api"),
   endpoint: z.string(),
@@ -20,7 +23,36 @@ export const AgentApiConfigSchema = z.object({
   timeout: z.number().optional(),
 });
 
-export const AgentConfigSchema = z.union([AgentCliConfigSchema, AgentApiConfigSchema]);
+// Modern cloud agent configuration
+export const AgentCloudConfigSchema = z.object({
+  kind: z.literal("cloud"),
+  provider: z.enum(["devin", "cursor", "codex"]),
+  // Common cloud agent settings
+  apiKey: z.string().optional(), // Can be provided via environment variable
+  baseUrl: z.string().optional(), // Custom base URL for self-hosted instances
+  timeout: z.number().min(30).max(3600).optional(), // 30s to 1h
+  webhookUrl: z.string().optional(), // For completion notifications
+  
+  // Provider-specific settings
+  // Devin settings
+  apiVersion: z.enum(["v1", "v2", "v3beta1"]).optional(),
+  organizationId: z.string().optional(),
+  
+  // Cursor settings
+  repositoryUrl: z.string().optional(),
+  branch: z.string().optional(),
+  
+  // Codex settings
+  model: z.string().optional(), // e.g. "gpt-4-turbo"
+  maxTokens: z.number().min(100).max(8000).optional(),
+  temperature: z.number().min(0).max(2).optional(),
+});
+
+export const AgentConfigSchema = z.union([
+  AgentCloudConfigSchema,
+  AgentCliConfigSchema, // Deprecated
+  AgentApiConfigSchema, // Deprecated
+]);
 
 // Policy configuration schema
 export const PolicyConfigSchema = z.object({
@@ -71,7 +103,7 @@ export const HachikoConfigSchema = z.object({
   plans: PlansConfigSchema.default({}),
   defaults: z
     .object({
-      agent: z.string().default("claude-cli"),
+      agent: z.string().default("devin"),
       prParallelism: z.number().min(1).max(5).default(1),
       rebase: RebaseConfigSchema.default({}),
       labels: z.array(z.string()).default(["hachiko", "migration"]),
@@ -82,6 +114,26 @@ export const HachikoConfigSchema = z.object({
   policy: PolicyConfigSchema.default({}),
   dependencies: DependenciesConfigSchema.default({}),
   agents: z.record(z.string(), AgentConfigSchema).default({
+    "devin": {
+      kind: "cloud",
+      provider: "devin",
+      apiVersion: "v1",
+      timeout: 600,
+    },
+    "cursor": {
+      kind: "cloud", 
+      provider: "cursor",
+      timeout: 1200,
+    },
+    "codex": {
+      kind: "cloud",
+      provider: "codex",
+      model: "gpt-4-turbo",
+      timeout: 120,
+      maxTokens: 4000,
+      temperature: 0.1,
+    },
+    // Deprecated CLI agents (backward compatibility)
     "claude-cli": {
       kind: "cli",
       command: "claude",
@@ -97,6 +149,9 @@ export const HachikoConfigSchema = z.object({
 
 export type HachikoConfig = z.infer<typeof HachikoConfigSchema>;
 export type AgentConfig = z.infer<typeof AgentConfigSchema>;
+export type AgentCloudConfig = z.infer<typeof AgentCloudConfigSchema>;
+export type AgentCliConfig = z.infer<typeof AgentCliConfigSchema>;
+export type AgentApiConfig = z.infer<typeof AgentApiConfigSchema>;
 export type PolicyConfig = z.infer<typeof PolicyConfigSchema>;
 export type StrategyConfig = z.infer<typeof StrategyConfigSchema>;
 

@@ -48,7 +48,7 @@ describe("HachikoConfigSchema", () => {
 
     expect(result.plans.directory).toBe("migrations/");
     expect(result.plans.filenamePattern).toBe("*.md");
-    expect(result.defaults.agent).toBe("claude-cli");
+    expect(result.defaults.agent).toBe("devin");
     expect(result.defaults.prParallelism).toBe(1);
     expect(result.policy.maxAttemptsPerStep).toBe(2);
     expect(result.aiConfigs.provider).toBe("launchdarkly");
@@ -151,6 +151,111 @@ describe("HachikoConfigSchema", () => {
     const config = {
       policy: {
         stepTimeoutMinutes: 0, // Min is 1
+      },
+    };
+
+    expect(() => validateHachikoConfig(config)).toThrow();
+  });
+
+  it("should validate cloud agent configuration - devin", () => {
+    const config = {
+      agents: {
+        devin: {
+          kind: "cloud" as const,
+          provider: "devin" as const,
+          apiVersion: "v2" as const,
+          organizationId: "org-123",
+          timeout: 600,
+        },
+      },
+    };
+
+    const result = validateHachikoConfig(config);
+    expect(result.agents.devin.kind).toBe("cloud");
+    expect(result.agents.devin.provider).toBe("devin");
+    expect(result.agents.devin.apiVersion).toBe("v2");
+  });
+
+  it("should validate cloud agent configuration - cursor", () => {
+    const config = {
+      agents: {
+        cursor: {
+          kind: "cloud" as const,
+          provider: "cursor" as const,
+          repositoryUrl: "https://github.com/test/repo",
+          branch: "main",
+          webhookUrl: "https://api.test.com/webhook",
+        },
+      },
+    };
+
+    const result = validateHachikoConfig(config);
+    expect(result.agents.cursor.kind).toBe("cloud");
+    expect(result.agents.cursor.provider).toBe("cursor");
+    expect(result.agents.cursor.repositoryUrl).toBe("https://github.com/test/repo");
+  });
+
+  it("should validate cloud agent configuration - codex", () => {
+    const config = {
+      agents: {
+        codex: {
+          kind: "cloud" as const,
+          provider: "codex" as const,
+          model: "gpt-4-turbo",
+          maxTokens: 4000,
+          temperature: 0.2,
+        },
+      },
+    };
+
+    const result = validateHachikoConfig(config);
+    expect(result.agents.codex.kind).toBe("cloud");
+    expect(result.agents.codex.provider).toBe("codex");
+    expect(result.agents.codex.model).toBe("gpt-4-turbo");
+  });
+
+  it("should validate API agent configuration", () => {
+    const config = {
+      agents: {
+        apiAgent: {
+          kind: "api" as const,
+          endpoint: "https://api.example.com",
+          auth: {
+            type: "bearer" as const,
+            token: "test-token",
+          },
+          timeout: 120,
+        },
+      },
+    };
+
+    const result = validateHachikoConfig(config);
+    expect(result.agents.apiAgent.kind).toBe("api");
+    expect(result.agents.apiAgent.endpoint).toBe("https://api.example.com");
+    expect(result.agents.apiAgent.auth?.type).toBe("bearer");
+  });
+
+  it("should reject invalid cloud agent timeout", () => {
+    const config = {
+      agents: {
+        invalidAgent: {
+          kind: "cloud" as const,
+          provider: "devin" as const,
+          timeout: 20, // Min is 30
+        },
+      },
+    };
+
+    expect(() => validateHachikoConfig(config)).toThrow();
+  });
+
+  it("should reject invalid cloud agent provider", () => {
+    const config = {
+      agents: {
+        invalidAgent: {
+          kind: "cloud" as const,
+          provider: "invalid" as const,
+        },
       },
     };
 
