@@ -51,6 +51,11 @@ describe("parseHachikoCommand", () => {
     expect(result).toBeNull()
   })
 
+  it("should return null for whitespace-only comments", () => {
+    const result = parseHachikoCommand("   \n  \t  ")
+    expect(result).toBeNull()
+  })
+
   it("should return null for just /hachi without action", () => {
     const result = parseHachikoCommand("/hachi")
     expect(result).toBeNull()
