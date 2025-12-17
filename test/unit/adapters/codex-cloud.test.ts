@@ -416,6 +416,57 @@ describe("CodexCloudAdapter", () => {
       // Should still make API call even if files can't be read
       expect(mockHttpClient.post).toHaveBeenCalled();
     });
+
+    it("should handle file operation errors", async () => {
+      // Mock writeFile to throw an error to trigger the error handling branch
+      mockFs.writeFile.mockRejectedValue(new Error("Write permission denied"));
+      
+      const chatResponse = {
+        id: "chatcmpl-123",
+        object: "chat.completion",
+        created: 1234567890,
+        model: "gpt-4-turbo",
+        choices: [
+          {
+            index: 0,
+            message: {
+              role: "assistant",
+              content: "I'll modify the file.",
+              tool_calls: [
+                {
+                  id: "call_modify",
+                  type: "function",
+                  function: {
+                    name: "modify_file",
+                    arguments: JSON.stringify({
+                      path: "src/utils.ts",
+                      content: "// Modified content",
+                      reason: "Update implementation",
+                    }),
+                  },
+                },
+              ],
+            },
+            finish_reason: "tool_calls",
+          },
+        ],
+        usage: { prompt_tokens: 50, completion_tokens: 25, total_tokens: 75 },
+      };
+
+      mockHttpClient.post.mockResolvedValue({
+        ok: true,
+        json: () => Promise.resolve(chatResponse),
+        headers: { get: () => "application/json" },
+      });
+
+      const result = await adapter.execute(mockInput);
+
+      // Should still be successful overall, just log the file operation error
+      expect(result.success).toBe(true);
+      expect(mockFs.writeFile).toHaveBeenCalled();
+      // File operation should have failed, so no files should be reported as modified
+      expect(result.modifiedFiles).toEqual([]);
+    });
   });
 
   describe("prompt building", () => {

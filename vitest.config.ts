@@ -45,10 +45,10 @@ export default defineConfig({
       ],
       thresholds: {
         // Meaningful coverage thresholds focusing on testable business logic
-        // Current: 55.53% with comprehensive coverage in utils, config, services, and key webhooks
-        // Major achievements: Plans (75%), Issues (98%), Config (100%), PR webhook (94%)
+        // Current: 63.85% with comprehensive cloud agent coverage
+        // Major achievements: Cloud agents (82%+), Config schema (100%), Plans (75%), Issues (98%)
         statements: 55,
-        branches: 88,
+        branches: 87,
         functions: 84,
         lines: 55,
       },

@@ -329,4 +329,14 @@ describe("CursorCloudAdapter", () => {
       expect(headers["User-Agent"]).toBe("Hachiko/1.0");
     });
   });
+
+  describe("repository URL inference", () => {
+    it("should infer repository URL from repo path", () => {
+      const inferMethod = (adapter as any).inferRepositoryUrl.bind(adapter);
+      
+      expect(inferMethod("/path/to/my-project")).toBe("https://github.com/example/my-project");
+      expect(inferMethod("/nested/path/to/another-repo")).toBe("https://github.com/example/another-repo");
+      expect(inferMethod("/")).toBe("https://github.com/example/unknown");
+    });
+  });
 });
