@@ -7,7 +7,7 @@ Hachiko is a GitHub App that orchestrates technical migrations in large legacy c
 ## ✨ Features
 
 - **📋 Plan-Driven Migrations**: Define migrations as markdown files with structured frontmatter
-- **🤖 Agent Orchestration**: Support for multiple AI coding agents (Claude, Cursor, custom CLIs)
+- **🤖 Agent Orchestration**: Support for cloud-based AI coding agents (Devin, Cursor, Codex)
 - **🛡️ Safety First**: Comprehensive policy engine with filesystem allowlists and risky change detection
 - **⚡ Fast Feedback**: Immediate CI checks, linting, testing, and coverage reporting
 - **🔄 Smart State Management**: Automatic progress tracking, rollback support, and conflict resolution
@@ -33,15 +33,25 @@ plans:
   filenamePattern: "*.md"
 
 defaults:
-  agent: claude-cli
+  agent: devin
   prParallelism: 1
   requirePlanReview: true
 
 agents:
-  claude-cli:
-    kind: cli
-    command: claude
-    args: ["code", "--apply"]
+  devin:
+    kind: cloud
+    provider: devin
+    apiVersion: v1
+    timeout: 600
+  cursor:
+    kind: cloud
+    provider: cursor
+    timeout: 1200
+  codex:
+    kind: cloud
+    provider: codex
+    model: gpt-4-turbo
+    maxTokens: 4000
 ```
 
 ### 3. Create a Migration Plan
@@ -105,7 +115,7 @@ Control your migrations using GitHub issue comments:
 
 - Node.js 22+
 - pnpm 9+
-- Docker (for agent sandboxing)
+- API keys for chosen cloud agents (Devin, Cursor, or OpenAI)
 
 ### Setup
 
@@ -114,6 +124,11 @@ Control your migrations using GitHub issue comments:
 git clone https://github.com/launchdarkly/hachiko.git
 cd hachiko
 pnpm install
+
+# Set up environment variables for cloud agents
+export DEVIN_API_KEY="your-devin-api-key"
+export CURSOR_API_KEY="your-cursor-api-key"  
+export OPENAI_API_KEY="your-openai-api-key"
 
 # Build the app
 pnpm build
@@ -154,11 +169,11 @@ pnpm scripts:fire-webhook push examples/migrations/react-class-to-hooks.md
 Hachiko takes security seriously:
 
 - **🔒 Least Privilege**: Minimal GitHub App permissions
-- **📦 Container Sandboxing**: Agents run in isolated Docker containers
+- **☁️ Cloud-Native Security**: Agents run in secure cloud environments with enterprise SLAs
 - **🚫 Filesystem Allowlists**: Strict control over what files can be modified
 - **📝 Policy Engine**: Configurable rules for risky change detection
 - **🔍 Audit Trail**: Complete history of all migration actions
-- **🔐 No Network Access**: Agents run without network by default
+- **🔑 API Authentication**: Secure token-based authentication with cloud providers
 
 See [Security Model](docs/security.md) for details.
 

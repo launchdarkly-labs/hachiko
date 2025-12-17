@@ -40,20 +40,7 @@ export interface AgentResult {
   executionTime: number;
 }
 
-export interface ContainerConfig {
-  /** Docker image to use */
-  image: string;
-  /** Execution timeout in seconds */
-  timeout: number;
-  /** Memory limit in MB */
-  memoryLimit?: number | undefined;
-  /** CPU limit (as fraction, e.g., 0.5 for half a CPU) */
-  cpuLimit?: number | undefined;
-  /** Environment variables */
-  env?: Record<string, string>;
-  /** Working directory inside container */
-  workdir?: string;
-}
+// ContainerConfig removed - deprecated with CLI agents
 
 export interface PolicyConfig {
   /** Allowed file patterns (glob patterns) */
@@ -85,25 +72,7 @@ export interface AgentAdapter {
   getConfig(): Record<string, unknown>;
 }
 
-/**
- * Container execution context
- */
-export interface ContainerContext {
-  /** Container ID */
-  containerId: string;
-  /** Container image */
-  image: string;
-  /** Working directory inside container */
-  workdir: string;
-  /** Mounted paths */
-  mounts: Array<{
-    hostPath: string;
-    containerPath: string;
-    readonly: boolean;
-  }>;
-  /** Environment variables */
-  env: Record<string, string>;
-}
+// ContainerContext removed - deprecated with CLI agents
 
 /**
  * Policy enforcement result

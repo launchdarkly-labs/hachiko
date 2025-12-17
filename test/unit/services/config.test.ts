@@ -70,7 +70,7 @@ describe("loadHachikoConfig", () => {
     const result = await loadHachikoConfig(mockContext);
 
     expect(result.plans.directory).toBe("migrations/");
-    expect(result.defaults.agent).toBe("claude-cli");
+    expect(result.defaults.agent).toBe("devin");
   });
 
   it("should throw ConfigurationError for invalid YAML", async () => {
@@ -140,7 +140,7 @@ describe("validateConfig", () => {
 
     const result = validateConfig(partialConfig);
     expect(result.plans.directory).toBe("migrations/");
-    expect(result.defaults.agent).toBe("claude-cli");
+    expect(result.defaults.agent).toBe("devin");
     expect(result.agents.custom.kind).toBe("cli");
   });
 });

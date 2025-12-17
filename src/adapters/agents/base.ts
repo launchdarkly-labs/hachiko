@@ -12,15 +12,73 @@ import type {
   PolicyViolation,
 } from "../types.js";
 
+/**
+ * HTTP client for making requests to cloud agent APIs
+ */
+export interface HttpClient {
+  get(url: string, options?: RequestInit): Promise<Response>;
+  post(url: string, body?: unknown, options?: RequestInit): Promise<Response>;
+  put(url: string, body?: unknown, options?: RequestInit): Promise<Response>;
+  delete(url: string, options?: RequestInit): Promise<Response>;
+}
+
+/**
+ * Default HTTP client implementation using fetch
+ */
+export class DefaultHttpClient implements HttpClient {
+  async get(url: string, options: RequestInit = {}): Promise<Response> {
+    return fetch(url, { method: "GET", ...options });
+  }
+
+  async post(url: string, body?: unknown, options: RequestInit = {}): Promise<Response> {
+    const requestInit: RequestInit = {
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...options.headers },
+      ...options,
+    };
+    
+    if (body !== undefined) {
+      requestInit.body = JSON.stringify(body);
+    }
+    
+    return fetch(url, requestInit);
+  }
+
+  async put(url: string, body?: unknown, options: RequestInit = {}): Promise<Response> {
+    const requestInit: RequestInit = {
+      method: "PUT", 
+      headers: { "Content-Type": "application/json", ...options.headers },
+      ...options,
+    };
+    
+    if (body !== undefined) {
+      requestInit.body = JSON.stringify(body);
+    }
+    
+    return fetch(url, requestInit);
+  }
+
+  async delete(url: string, options: RequestInit = {}): Promise<Response> {
+    return fetch(url, { method: "DELETE", ...options });
+  }
+}
+
 const logger = createLogger("agent-adapter");
 
 /**
- * Base agent adapter with common functionality
+ * Base agent adapter with common functionality for cloud-based agents
  */
 export abstract class BaseAgentAdapter implements AgentAdapter {
   abstract readonly name: string;
 
-  constructor(protected readonly policyConfig: PolicyConfig) {}
+  protected readonly httpClient: HttpClient;
+
+  constructor(
+    protected readonly policyConfig: PolicyConfig,
+    httpClient?: HttpClient
+  ) {
+    this.httpClient = httpClient || new DefaultHttpClient();
+  }
 
   abstract execute(input: AgentInput): Promise<AgentResult>;
   abstract validate(): Promise<boolean>;
@@ -245,5 +303,117 @@ export abstract class BaseAgentAdapter implements AgentAdapter {
     } catch (error) {
       logger.warn({ error, workspacePath }, "Failed to cleanup workspace");
     }
+  }
+
+  /**
+   * Make authenticated HTTP request with error handling
+   */
+  protected async makeAuthenticatedRequest<T>(
+    method: "GET" | "POST" | "PUT" | "DELETE",
+    url: string,
+    options: {
+      body?: unknown;
+      headers?: Record<string, string>;
+      timeout?: number;
+    } = {}
+  ): Promise<T> {
+    const { body, headers = {}, timeout = 30000 } = options;
+    
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), timeout);
+
+      let response: Response;
+      
+      switch (method) {
+        case "GET":
+          response = await this.httpClient.get(url, { headers, signal: controller.signal });
+          break;
+        case "POST":
+          response = await this.httpClient.post(url, body, { headers, signal: controller.signal });
+          break;
+        case "PUT":
+          response = await this.httpClient.put(url, body, { headers, signal: controller.signal });
+          break;
+        case "DELETE":
+          response = await this.httpClient.delete(url, { headers, signal: controller.signal });
+          break;
+      }
+
+      clearTimeout(timeoutId);
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`HTTP ${response.status}: ${errorText}`);
+      }
+
+      const contentType = response.headers.get("content-type");
+      if (contentType && contentType.includes("application/json")) {
+        return response.json() as Promise<T>;
+      } else {
+        return response.text() as Promise<T>;
+      }
+    } catch (error) {
+      logger.error({ error, method, url }, "HTTP request failed");
+      throw new AgentExecutionError(
+        `HTTP request failed: ${error instanceof Error ? error.message : String(error)}`,
+        this.name
+      );
+    }
+  }
+
+  /**
+   * Poll for completion status with exponential backoff
+   */
+  protected async pollForCompletion<T>(
+    statusUrl: string,
+    options: {
+      headers?: Record<string, string>;
+      maxAttempts?: number;
+      initialDelay?: number;
+      maxDelay?: number;
+      isComplete?: (response: T) => boolean;
+      timeout?: number;
+    } = {}
+  ): Promise<T> {
+    const {
+      headers = {},
+      maxAttempts = 60,
+      initialDelay = 1000,
+      maxDelay = 30000,
+      isComplete = () => false,
+      timeout = 300000, // 5 minutes
+    } = options;
+
+    const startTime = Date.now();
+    let attempt = 0;
+    let delay = initialDelay;
+
+    while (attempt < maxAttempts && Date.now() - startTime < timeout) {
+      try {
+        const response = await this.makeAuthenticatedRequest<T>("GET", statusUrl, { headers });
+        
+        if (isComplete(response)) {
+          return response;
+        }
+
+        attempt++;
+        await new Promise((resolve) => setTimeout(resolve, delay));
+        delay = Math.min(delay * 1.5, maxDelay);
+      } catch (error) {
+        logger.warn({ error, attempt, statusUrl }, "Polling attempt failed");
+        if (attempt >= maxAttempts - 1) {
+          throw error;
+        }
+        attempt++;
+        await new Promise((resolve) => setTimeout(resolve, delay));
+        delay = Math.min(delay * 1.5, maxDelay);
+      }
+    }
+
+    throw new AgentExecutionError(
+      `Polling timeout after ${maxAttempts} attempts or ${timeout}ms`,
+      this.name
+    );
   }
 }

@@ -1,8 +1,16 @@
 import type { HachikoConfig } from "../config/schema.js";
 import { createLogger } from "../utils/logger.js";
-import { ClaudeCliAdapter, type ClaudeCliConfig } from "./agents/claude-cli.js";
-import { CursorCliAdapter, type CursorCliConfig } from "./agents/cursor-cli.js";
+
+// Cloud-based agents (recommended)
+import { DevinCloudAdapter, type DevinCloudConfig } from "./agents/devin-cloud.js";
+import { CursorCloudAdapter, type CursorCloudConfig } from "./agents/cursor-cloud.js";
+import { CodexCloudAdapter, type CodexCloudConfig } from "./agents/codex-cloud.js";
+
+// CLI-based agents (deprecated - removed from imports)
+
+// Development and testing
 import { MockAgentAdapter } from "./agents/mock.js";
+
 import type { AgentAdapter, PolicyConfig } from "./types.js";
 
 const logger = createLogger("agent-registry");
@@ -147,34 +155,55 @@ export class AgentRegistry {
 
     switch (kind) {
       case "cli": {
-        if (agentConfig.command === "claude") {
-          const claudeConfig: ClaudeCliConfig = {
-            image: "anthropic/claude-cli:latest",
-            timeout: agentConfig.timeout || 300, // 5 minutes
-            memoryLimit: 1024, // 1GB
-            cpuLimit: 1.0,
-            apiKey: process.env.ANTHROPIC_API_KEY,
+        logger.warn("CLI agents deprecated, please migrate to 'cloud' agents. Using mock adapter");
+        return new MockAgentAdapter(policyConfig);
+      }
+
+      case "cloud": {
+        // Modern cloud-based agents
+        if (agentConfig.provider === "devin") {
+          const devinConfig: DevinCloudConfig = {
+            apiKey: process.env.DEVIN_API_KEY || agentConfig.apiKey,
+            baseUrl: agentConfig.baseUrl || "https://api.devin.ai",
+            apiVersion: agentConfig.apiVersion || "v1",
+            organizationId: agentConfig.organizationId,
+            timeout: agentConfig.timeout || 600, // 10 minutes
+            webhookUrl: agentConfig.webhookUrl,
           };
-          return new ClaudeCliAdapter(policyConfig, claudeConfig);
+          return new DevinCloudAdapter(policyConfig, devinConfig);
         }
 
-        if (agentConfig.command === "cursor") {
-          const cursorConfig: CursorCliConfig = {
-            image: "cursor/cli:latest",
-            timeout: agentConfig.timeout || 300, // 5 minutes
-            memoryLimit: 1024, // 1GB
-            cpuLimit: 1.0,
-            apiKey: process.env.CURSOR_API_KEY,
+        if (agentConfig.provider === "cursor") {
+          const cursorConfig: CursorCloudConfig = {
+            apiKey: process.env.CURSOR_API_KEY || agentConfig.apiKey,
+            baseUrl: agentConfig.baseUrl || "https://api.cursor.com",
+            timeout: agentConfig.timeout || 1200, // 20 minutes
+            webhookUrl: agentConfig.webhookUrl,
+            repositoryUrl: agentConfig.repositoryUrl,
+            branch: agentConfig.branch || "main",
           };
-          return new CursorCliAdapter(policyConfig, cursorConfig);
+          return new CursorCloudAdapter(policyConfig, cursorConfig);
         }
 
-        logger.warn({ command: agentConfig.command }, "Unknown CLI command, using mock adapter");
+        if (agentConfig.provider === "codex") {
+          const codexConfig: CodexCloudConfig = {
+            apiKey: process.env.OPENAI_API_KEY || agentConfig.apiKey,
+            baseUrl: agentConfig.baseUrl || "https://api.openai.com",
+            model: agentConfig.model || "gpt-4-turbo",
+            timeout: agentConfig.timeout || 120, // 2 minutes
+            maxTokens: agentConfig.maxTokens || 4000,
+            temperature: agentConfig.temperature || 0.1,
+            repositoryUrl: agentConfig.repositoryUrl,
+          };
+          return new CodexCloudAdapter(policyConfig, codexConfig);
+        }
+
+        logger.warn({ provider: agentConfig.provider }, "Unknown cloud provider, using mock adapter");
         return new MockAgentAdapter(policyConfig);
       }
 
       case "api": {
-        logger.warn("API agents not yet implemented, using mock adapter");
+        logger.warn("Legacy API agent type deprecated, use 'cloud' instead. Using mock adapter");
         return new MockAgentAdapter(policyConfig);
       }
 

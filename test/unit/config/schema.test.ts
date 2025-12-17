@@ -48,7 +48,7 @@ describe("HachikoConfigSchema", () => {
 
     expect(result.plans.directory).toBe("migrations/");
     expect(result.plans.filenamePattern).toBe("*.md");
-    expect(result.defaults.agent).toBe("claude-cli");
+    expect(result.defaults.agent).toBe("devin");
     expect(result.defaults.prParallelism).toBe(1);
     expect(result.policy.maxAttemptsPerStep).toBe(2);
     expect(result.aiConfigs.provider).toBe("launchdarkly");
