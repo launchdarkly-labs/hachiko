@@ -52,12 +52,14 @@ This migration tests Hachiko's ability to handle the full spectrum of React clas
 ## Migration Strategy
 
 ### Step 1: Simple Components (UserCard)
+
 - Convert basic state to `useState`
 - Transform event handlers to arrow functions
 - Maintain existing prop interfaces
 - Test hover state functionality
 
 **Before:**
+
 ```typescript
 class UserCard extends React.Component<UserCardProps, UserCardState> {
   constructor(props: UserCardProps) {
@@ -74,6 +76,7 @@ class UserCard extends React.Component<UserCardProps, UserCardState> {
 ```
 
 **After:**
+
 ```typescript
 const UserCard: React.FC<UserCardProps> = ({ user, onClick, showAvatar = true }) => {
   const [isHovered, setIsHovered] = useState(false)
@@ -85,12 +88,14 @@ const UserCard: React.FC<UserCardProps> = ({ user, onClick, showAvatar = true })
 ```
 
 ### Step 2: Lifecycle Components (DataFetcher)
+
 - Convert `componentDidMount` to `useEffect(() => {}, [])`
 - Convert `componentDidUpdate` to `useEffect(() => {}, [dependencies])`
 - Convert `componentWillUnmount` cleanup to `useEffect` return function
 - Handle AbortController cleanup properly
 
 **Before:**
+
 ```typescript
 componentDidMount() {
   this.fetchData()
@@ -110,6 +115,7 @@ componentWillUnmount() {
 ```
 
 **After:**
+
 ```typescript
 useEffect(() => {
   fetchData()
@@ -129,6 +135,7 @@ useEffect(() => {
 ```
 
 ### Step 3: Complex Components (FormWizard)
+
 - Convert refs using `useRef`
 - Replace `getDerivedStateFromProps` with `useEffect` and state derivation
 - Handle complex state with multiple `useState` calls or `useReducer`
@@ -136,6 +143,7 @@ useEffect(() => {
 - Maintain event listener cleanup and auto-save functionality
 
 **Complex Patterns to Handle:**
+
 - Multiple refs stored in object → `useRef` for each
 - `getDerivedStateFromProps` → `useEffect` with dependency on props
 - Complex state updates → Consider `useReducer`
@@ -154,8 +162,9 @@ useEffect(() => {
 ## Testing Notes
 
 This migration serves as a comprehensive test of Hachiko's capabilities:
+
 - **Step 1** tests basic state conversion
-- **Step 2** tests lifecycle method conversion  
+- **Step 2** tests lifecycle method conversion
 - **Step 3** tests complex patterns and edge cases
 
 The components are intentionally designed with realistic complexity patterns found in production React codebases.
@@ -163,6 +172,7 @@ The components are intentionally designed with realistic complexity patterns fou
 ## Rollback Plan
 
 If any step fails:
+
 1. Revert the specific problematic commit
 2. Address issues in development
 3. Re-run migration step once fixes are validated

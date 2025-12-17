@@ -4,68 +4,68 @@
 
 export interface AgentInput {
   /** Migration plan ID */
-  planId: string
+  planId: string;
   /** Current step ID */
-  stepId: string
+  stepId: string;
   /** Chunk identifier (optional) */
-  chunk?: string | undefined
+  chunk?: string | undefined;
   /** Repository root path */
-  repoPath: string
+  repoPath: string;
   /** Files to operate on */
-  files: string[]
+  files: string[];
   /** Agent prompt/instructions */
-  prompt: string
+  prompt: string;
   /** Execution timeout in seconds */
-  timeout?: number
+  timeout?: number;
   /** Additional metadata */
-  metadata?: Record<string, unknown>
+  metadata?: Record<string, unknown>;
 }
 
 export interface AgentResult {
   /** Whether the agent execution was successful */
-  success: boolean
+  success: boolean;
   /** Files that were modified */
-  modifiedFiles: string[]
+  modifiedFiles: string[];
   /** Files that were created */
-  createdFiles: string[]
+  createdFiles: string[];
   /** Files that were deleted */
-  deletedFiles: string[]
+  deletedFiles: string[];
   /** Agent output/logs */
-  output: string
+  output: string;
   /** Error message if execution failed */
-  error?: string | undefined
+  error?: string | undefined;
   /** Exit code from agent execution */
-  exitCode: number
+  exitCode: number;
   /** Execution time in milliseconds */
-  executionTime: number
+  executionTime: number;
 }
 
 export interface ContainerConfig {
   /** Docker image to use */
-  image: string
+  image: string;
   /** Execution timeout in seconds */
-  timeout: number
+  timeout: number;
   /** Memory limit in MB */
-  memoryLimit?: number | undefined
+  memoryLimit?: number | undefined;
   /** CPU limit (as fraction, e.g., 0.5 for half a CPU) */
-  cpuLimit?: number | undefined
+  cpuLimit?: number | undefined;
   /** Environment variables */
-  env?: Record<string, string>
+  env?: Record<string, string>;
   /** Working directory inside container */
-  workdir?: string
+  workdir?: string;
 }
 
 export interface PolicyConfig {
   /** Allowed file patterns (glob patterns) */
-  allowedPaths: string[]
+  allowedPaths: string[];
   /** Blocked file patterns (glob patterns) */
-  blockedPaths: string[]
+  blockedPaths: string[];
   /** Maximum file size in bytes */
-  maxFileSize: number
+  maxFileSize: number;
   /** Dangerous command patterns */
-  dangerousPatterns: string[]
+  dangerousPatterns: string[];
   /** Network isolation level */
-  networkIsolation: "none" | "restricted" | "full"
+  networkIsolation: "none" | "restricted" | "full";
 }
 
 /**
@@ -73,16 +73,16 @@ export interface PolicyConfig {
  */
 export interface AgentAdapter {
   /** Adapter name/identifier */
-  readonly name: string
+  readonly name: string;
 
   /** Execute the agent with given input */
-  execute(input: AgentInput): Promise<AgentResult>
+  execute(input: AgentInput): Promise<AgentResult>;
 
   /** Validate that the agent is available and configured correctly */
-  validate(): Promise<boolean>
+  validate(): Promise<boolean>;
 
   /** Get adapter-specific configuration */
-  getConfig(): Record<string, unknown>
+  getConfig(): Record<string, unknown>;
 }
 
 /**
@@ -90,19 +90,19 @@ export interface AgentAdapter {
  */
 export interface ContainerContext {
   /** Container ID */
-  containerId: string
+  containerId: string;
   /** Container image */
-  image: string
+  image: string;
   /** Working directory inside container */
-  workdir: string
+  workdir: string;
   /** Mounted paths */
   mounts: Array<{
-    hostPath: string
-    containerPath: string
-    readonly: boolean
-  }>
+    hostPath: string;
+    containerPath: string;
+    readonly: boolean;
+  }>;
   /** Environment variables */
-  env: Record<string, string>
+  env: Record<string, string>;
 }
 
 /**
@@ -110,18 +110,18 @@ export interface ContainerContext {
  */
 export interface PolicyViolation {
   /** Type of violation */
-  type: "file_access" | "command_execution" | "network_access" | "file_size"
+  type: "file_access" | "command_execution" | "network_access" | "file_size";
   /** Violation message */
-  message: string
+  message: string;
   /** Violating pattern/path */
-  pattern: string
+  pattern: string;
   /** Severity level */
-  severity: "warning" | "error"
+  severity: "warning" | "error";
 }
 
 export interface PolicyEnforcementResult {
   /** Whether the operation is allowed */
-  allowed: boolean
+  allowed: boolean;
   /** List of violations found */
-  violations: PolicyViolation[]
+  violations: PolicyViolation[];
 }

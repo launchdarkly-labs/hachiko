@@ -4,7 +4,7 @@
 export function extractChangedFiles(
   commits: Array<{ added?: string[]; modified?: string[]; removed?: string[] }>
 ): string[] {
-  const changedFiles = new Set<string>()
+  const changedFiles = new Set<string>();
 
   for (const commit of commits) {
     // Add files that were added, modified, or removed
@@ -12,14 +12,14 @@ export function extractChangedFiles(
       ...(commit.added || []),
       ...(commit.modified || []),
       ...(commit.removed || []),
-    ]
+    ];
 
     for (const file of allFiles) {
-      changedFiles.add(file)
+      changedFiles.add(file);
     }
   }
 
-  return Array.from(changedFiles)
+  return Array.from(changedFiles);
 }
 
 /**
@@ -27,8 +27,8 @@ export function extractChangedFiles(
  */
 export function isDefaultBranch(ref: string, defaultBranch: string): boolean {
   // GitHub refs come in the format "refs/heads/branch-name"
-  const branchName = ref.replace("refs/heads/", "")
-  return branchName === defaultBranch
+  const branchName = ref.replace("refs/heads/", "");
+  return branchName === defaultBranch;
 }
 
 /**
@@ -39,34 +39,34 @@ export function generateMigrationBranchName(
   stepId: string,
   chunk?: string
 ): string {
-  const chunkSuffix = chunk ? `/${chunk}` : ""
-  return `hachi/${planId}/${stepId}${chunkSuffix}`
+  const chunkSuffix = chunk ? `/${chunk}` : "";
+  return `hachi/${planId}/${stepId}${chunkSuffix}`;
 }
 
 /**
  * Parse a migration branch name to extract metadata
  */
 export function parseMigrationBranchName(branchName: string): {
-  planId: string
-  stepId: string
-  chunk: string | undefined
+  planId: string;
+  stepId: string;
+  chunk: string | undefined;
 } | null {
-  const match = branchName.match(/^hachi\/([^/]+)\/([^/]+)(?:\/(.+))?$/)
+  const match = branchName.match(/^hachi\/([^/]+)\/([^/]+)(?:\/(.+))?$/);
 
   if (!match || !match[1] || !match[2]) {
-    return null
+    return null;
   }
 
   return {
     planId: match[1],
     stepId: match[2],
     chunk: match[3] || undefined,
-  }
+  };
 }
 
 /**
  * Check if a branch name is a Hachiko migration branch
  */
 export function isMigrationBranch(branchName: string): boolean {
-  return branchName.startsWith("hachi/")
+  return branchName.startsWith("hachi/");
 }

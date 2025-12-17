@@ -1,5 +1,5 @@
-import type { Context } from "probot"
-import { vi } from "vitest"
+import type { Context } from "probot";
+import { vi } from "vitest";
 
 /**
  * Create a mock Octokit instance with all the methods we use
@@ -28,7 +28,7 @@ export function createMockOctokit() {
     actions: {
       listJobsForWorkflowRun: vi.fn(),
     },
-  }
+  };
 }
 
 /**
@@ -73,7 +73,7 @@ export function createMockContext<T extends string>(
       pull_number: payload.pull_request?.number || 1,
       ...params,
     })),
-  } as any
+  } as any;
 }
 
 /**
@@ -89,9 +89,9 @@ export const mockGitHubResponses = {
       },
     }),
     notFound: () => {
-      const error = new Error("Not Found") as any
-      error.status = 404
-      throw error
+      const error = new Error("Not Found") as any;
+      error.status = 404;
+      throw error;
     },
   },
 
@@ -142,7 +142,7 @@ export const mockGitHubResponses = {
       },
     }),
   },
-}
+};
 
 /**
  * Mock repository data
@@ -155,7 +155,7 @@ export const mockRepository = {
     login: "test-owner",
   },
   default_branch: "main",
-}
+};
 
 /**
  * Mock pull request data
@@ -175,7 +175,7 @@ export const mockPullRequest = {
     { name: "hachiko:plan:test-migration" },
     { name: "hachiko:step:test-migration:step-1" },
   ],
-}
+};
 
 /**
  * Mock workflow run data
@@ -190,4 +190,4 @@ export const mockWorkflowRun = {
   head_commit: {
     message: "Hachiko: test-migration - step-1",
   },
-}
+};

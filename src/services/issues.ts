@@ -1,8 +1,8 @@
-import type { HachikoConfig } from "../config/schema.js"
-import type { ContextWithRepository } from "../types/context.js"
-import type { Logger } from "../utils/logger.js"
-import type { MigrationPlan } from "./plans.js"
-import { generateNormalizedFrontmatter, serializeFrontmatter } from "./plans.js"
+import type { HachikoConfig } from "../config/schema.js";
+import type { ContextWithRepository } from "../types/context.js";
+import type { Logger } from "../utils/logger.js";
+import type { MigrationPlan } from "./plans.js";
+import { generateNormalizedFrontmatter, serializeFrontmatter } from "./plans.js";
 
 /**
  * Create a Migration Issue for a new plan
@@ -13,17 +13,17 @@ export async function createMigrationIssue(
   config: HachikoConfig,
   logger: Logger
 ): Promise<void> {
-  logger.info({ planId: plan.id }, "Creating Migration Issue")
+  logger.info({ planId: plan.id }, "Creating Migration Issue");
 
-  const title = `[Migration] ${plan.frontmatter.title}`
-  const body = generateMigrationIssueBody(plan, config)
+  const title = `[Migration] ${plan.frontmatter.title}`;
+  const body = generateMigrationIssueBody(plan, config);
   const labels = [
     "hachiko",
     "migration",
     `hachiko:plan:${plan.id}`,
     `hachiko:status:${plan.frontmatter.status}`,
     ...config.defaults.labels,
-  ]
+  ];
 
   try {
     const issue = await context.octokit.issues.create({
@@ -32,7 +32,7 @@ export async function createMigrationIssue(
       title,
       body,
       labels,
-    })
+    });
 
     logger.info(
       {
@@ -41,10 +41,10 @@ export async function createMigrationIssue(
         issueUrl: issue.data.html_url,
       },
       "Created Migration Issue"
-    )
+    );
   } catch (error) {
-    logger.error({ error, planId: plan.id }, "Failed to create Migration Issue")
-    throw error
+    logger.error({ error, planId: plan.id }, "Failed to create Migration Issue");
+    throw error;
   }
 }
 
@@ -57,26 +57,26 @@ export async function createPlanReviewPR(
   config: HachikoConfig,
   logger: Logger
 ): Promise<void> {
-  logger.info({ planId: plan.id }, "Creating Plan Review PR")
+  logger.info({ planId: plan.id }, "Creating Plan Review PR");
 
   try {
     // Generate normalized frontmatter
-    const normalized = generateNormalizedFrontmatter(plan.frontmatter, config)
-    const normalizedYaml = serializeFrontmatter(normalized)
+    const normalized = generateNormalizedFrontmatter(plan.frontmatter, config);
+    const normalizedYaml = serializeFrontmatter(normalized);
 
     // Create a new branch for the plan review
-    const baseSha = await getLatestCommitSha(context)
-    const branchName = `hachi/plan-review/${plan.id}`
+    const baseSha = await getLatestCommitSha(context);
+    const branchName = `hachi/plan-review/${plan.id}`;
 
     await context.octokit.git.createRef({
       owner: context.payload.repository.owner.login,
       repo: context.payload.repository.name,
       ref: `refs/heads/${branchName}`,
       sha: baseSha,
-    })
+    });
 
     // Update the plan file with normalized frontmatter
-    const updatedContent = `---\n${normalizedYaml}\n---\n${plan.content}`
+    const updatedContent = `---\n${normalizedYaml}\n---\n${plan.content}`;
 
     await context.octokit.repos.createOrUpdateFileContents({
       owner: context.payload.repository.owner.login,
@@ -85,11 +85,11 @@ export async function createPlanReviewPR(
       message: `Hachiko: Normalize plan frontmatter for ${plan.id}`,
       content: Buffer.from(updatedContent).toString("base64"),
       branch: branchName,
-    })
+    });
 
     // Create the PR
-    const title = `[Plan Review] ${plan.frontmatter.title}`
-    const body = generatePlanReviewPRBody(plan, normalized)
+    const title = `[Plan Review] ${plan.frontmatter.title}`;
+    const body = generatePlanReviewPRBody(plan, normalized);
 
     const pr = await context.octokit.pulls.create({
       owner: context.payload.repository.owner.login,
@@ -98,7 +98,7 @@ export async function createPlanReviewPR(
       body,
       head: branchName,
       base: context.payload.repository.default_branch,
-    })
+    });
 
     // Add labels
     await context.octokit.issues.addLabels({
@@ -106,7 +106,7 @@ export async function createPlanReviewPR(
       repo: context.payload.repository.name,
       issue_number: pr.data.number,
       labels: ["hachiko", "plan-review", `hachiko:plan:${plan.id}`],
-    })
+    });
 
     logger.info(
       {
@@ -115,10 +115,10 @@ export async function createPlanReviewPR(
         prUrl: pr.data.html_url,
       },
       "Created Plan Review PR"
-    )
+    );
   } catch (error) {
-    logger.error({ error, planId: plan.id }, "Failed to create Plan Review PR")
-    throw error
+    logger.error({ error, planId: plan.id }, "Failed to create Plan Review PR");
+    throw error;
   }
 }
 
@@ -126,12 +126,12 @@ export async function createPlanReviewPR(
  * Generate the body content for a Migration Issue
  */
 function generateMigrationIssueBody(plan: MigrationPlan, config: HachikoConfig): string {
-  const { frontmatter } = plan
+  const { frontmatter } = plan;
 
   // Generate step checklist
   const stepsChecklist = frontmatter.steps
     .map((step) => `- [ ] **${step.id}**: ${step.description}`)
-    .join("\n")
+    .join("\n");
 
   // Generate metadata section
   const metadata = [
@@ -140,14 +140,14 @@ function generateMigrationIssueBody(plan: MigrationPlan, config: HachikoConfig):
     `**Status**: ${frontmatter.status}`,
     `**Agent**: ${frontmatter.agent || config.defaults.agent}`,
     `**Strategy**: ${frontmatter.strategy.chunkBy} (max ${frontmatter.strategy.maxOpenPRs} PRs)`,
-  ]
+  ];
 
   if (frontmatter.dependsOn.length > 0) {
-    metadata.push(`**Dependencies**: ${frontmatter.dependsOn.join(", ")}`)
+    metadata.push(`**Dependencies**: ${frontmatter.dependsOn.join(", ")}`);
   }
 
   if (frontmatter.touches.length > 0) {
-    metadata.push(`**Touches**: ${frontmatter.touches.join(", ")}`)
+    metadata.push(`**Touches**: ${frontmatter.touches.join(", ")}`);
   }
 
   return `# ${frontmatter.title}
@@ -171,7 +171,7 @@ ${frontmatter.successCriteria.map((criteria) => `- ${criteria}`).join("\n") || "
 
 **Commands**: Use \`/hachi status\`, \`/hachi pause\`, \`/hachi resume\` to control this migration.
 
-*This issue is automatically managed by [Hachiko](https://github.com/launchdarkly/hachiko)*`
+*This issue is automatically managed by [Hachiko](https://github.com/launchdarkly/hachiko)*`;
 }
 
 /**
@@ -203,7 +203,7 @@ function generatePlanReviewPRBody(original: MigrationPlan, _normalized: any): st
 **Note**: Merging this PR will activate the migration and create the first step.
 
 ---
-*Generated by [Hachiko](https://github.com/launchdarkly/hachiko)*`
+*Generated by [Hachiko](https://github.com/launchdarkly/hachiko)*`;
 }
 
 /**
@@ -214,7 +214,7 @@ async function getLatestCommitSha(context: ContextWithRepository): Promise<strin
     owner: context.payload.repository.owner.login,
     repo: context.payload.repository.name,
     branch: context.payload.repository.default_branch,
-  })
+  });
 
-  return branch.data.commit.sha
+  return branch.data.commit.sha;
 }

@@ -2,10 +2,10 @@
  * Agent adapter exports
  */
 
-export { BaseAgentAdapter } from "./base.js"
-export { ClaudeCliAdapter, type ClaudeCliConfig } from "./claude-cli.js"
-export { CursorCliAdapter, type CursorCliConfig } from "./cursor-cli.js"
-export { MockAgentAdapter, type MockAgentConfig } from "./mock.js"
+export { BaseAgentAdapter } from "./base.js";
+export { ClaudeCliAdapter, type ClaudeCliConfig } from "./claude-cli.js";
+export { CursorCliAdapter, type CursorCliConfig } from "./cursor-cli.js";
+export { MockAgentAdapter, type MockAgentConfig } from "./mock.js";
 
 // Re-export types
 export type {
@@ -17,4 +17,4 @@ export type {
   ContainerContext,
   PolicyViolation,
   PolicyEnforcementResult,
-} from "../types.js"
+} from "../types.js";

@@ -1,9 +1,9 @@
-import type { AgentResult } from "../adapters/types.js"
-import type { HachikoConfig } from "../config/schema.js"
-import { createLogger } from "../utils/logger.js"
-import type { MigrationProgress } from "./state.js"
+import type { AgentResult } from "../adapters/types.js";
+import type { HachikoConfig } from "../config/schema.js";
+import { createLogger } from "../utils/logger.js";
+import type { MigrationProgress } from "./state.js";
 
-const logger = createLogger("metrics")
+const logger = createLogger("metrics");
 
 /**
  * Metric types
@@ -13,82 +13,82 @@ export const MetricType = {
   GAUGE: "gauge",
   HISTOGRAM: "histogram",
   TIMER: "timer",
-} as const
+} as const;
 
-export type MetricTypeType = (typeof MetricType)[keyof typeof MetricType]
+export type MetricTypeType = (typeof MetricType)[keyof typeof MetricType];
 
 /**
  * Metric data structure
  */
 export interface Metric {
-  name: string
-  type: MetricTypeType
-  value: number
-  timestamp: number
-  tags: Record<string, string>
-  metadata?: Record<string, unknown> | undefined
+  name: string;
+  type: MetricTypeType;
+  value: number;
+  timestamp: number;
+  tags: Record<string, string>;
+  metadata?: Record<string, unknown> | undefined;
 }
 
 /**
  * Migration metrics
  */
 export interface MigrationMetrics {
-  planId: string
-  totalExecutionTime: number
-  totalSteps: number
-  successfulSteps: number
-  failedSteps: number
-  skippedSteps: number
-  avgStepExecutionTime: number
-  agentSuccessRate: number
-  policyViolations: number
-  retryCount: number
-  filesModified: number
-  filesCreated: number
-  linesChanged: number
+  planId: string;
+  totalExecutionTime: number;
+  totalSteps: number;
+  successfulSteps: number;
+  failedSteps: number;
+  skippedSteps: number;
+  avgStepExecutionTime: number;
+  agentSuccessRate: number;
+  policyViolations: number;
+  retryCount: number;
+  filesModified: number;
+  filesCreated: number;
+  linesChanged: number;
 }
 
 /**
  * Performance metrics
  */
 export interface PerformanceMetrics {
-  timestamp: number
+  timestamp: number;
   memoryUsage: {
-    heapUsed: number
-    heapTotal: number
-    external: number
-    rss: number
-  }
+    heapUsed: number;
+    heapTotal: number;
+    external: number;
+    rss: number;
+  };
   cpuUsage: {
-    user: number
-    system: number
-  }
-  eventLoopDelay: number
+    user: number;
+    system: number;
+  };
+  eventLoopDelay: number;
   gcMetrics?: {
-    minor: number
-    major: number
-    incremental: number
-  }
+    minor: number;
+    major: number;
+    incremental: number;
+  };
 }
 
 /**
  * Metrics collector and reporter
  */
 export class MetricsCollector {
-  private static instance: MetricsCollector | null = null
-  private metrics: Metric[] = []
-  private migrationMetrics = new Map<string, MigrationMetrics>()
-  private config: HachikoConfig | null = null
-  private initialized = false
-  private reportingInterval: NodeJS.Timeout | null = null
+  private static instance: MetricsCollector | null = null;
+  private metrics: Metric[] = [];
+  private migrationMetrics = new Map<string, MigrationMetrics>();
+  private config: HachikoConfig | null = null;
+  private initialized = false;
+  private reportingInterval: NodeJS.Timeout | null = null;
 
   private constructor() {}
 
   static getInstance(): MetricsCollector {
     if (!MetricsCollector.instance) {
-      MetricsCollector.instance = new MetricsCollector()
+      MetricsCollector.instance = new MetricsCollector();
     }
-    return MetricsCollector.instance
+    return MetricsCollector.instance;
   }
 
   /**
@@ -96,16 +96,16 @@ export class MetricsCollector {
    */
   async initialize(config: HachikoConfig): Promise<void> {
     if (this.initialized) {
-      return
+      return;
     }
 
-    this.config = config
-    this.initialized = true
+    this.config = config;
+    this.initialized = true;
 
     // Start periodic performance metric collection
-    this.startPerformanceCollection()
+    this.startPerformanceCollection();
 
-    logger.info("Metrics collector initialized")
+    logger.info("Metrics collector initialized");
   }
 
   /**
@@ -125,16 +125,16 @@ export class MetricsCollector {
       timestamp: Date.now(),
       tags,
       metadata: metadata || undefined,
-    }
+    };
 
-    this.metrics.push(metric)
+    this.metrics.push(metric);
 
     // Keep only last 10000 metrics to prevent memory issues
     if (this.metrics.length > 10000) {
-      this.metrics = this.metrics.slice(-5000)
+      this.metrics = this.metrics.slice(-5000);
     }
 
-    logger.debug({ metric }, "Metric recorded")
+    logger.debug({ metric }, "Metric recorded");
   }
 
   /**
@@ -155,9 +155,9 @@ export class MetricsCollector {
       filesModified: 0,
       filesCreated: 0,
       linesChanged: 0,
-    })
+    });
 
-    this.recordMetric("migration_started", MetricType.COUNTER, 1, { planId })
+    this.recordMetric("migration_started", MetricType.COUNTER, 1, { planId });
   }
 
   /**
@@ -169,30 +169,30 @@ export class MetricsCollector {
     agentResult: AgentResult,
     policyViolations = 0
   ): void {
-    const migrationMetrics = this.migrationMetrics.get(planId)
+    const migrationMetrics = this.migrationMetrics.get(planId);
     if (!migrationMetrics) {
-      logger.warn({ planId }, "Migration metrics not found for step execution")
-      return
+      logger.warn({ planId }, "Migration metrics not found for step execution");
+      return;
     }
 
     // Update migration metrics
     if (agentResult.success) {
-      migrationMetrics.successfulSteps++
+      migrationMetrics.successfulSteps++;
     } else {
-      migrationMetrics.failedSteps++
+      migrationMetrics.failedSteps++;
     }
 
-    migrationMetrics.filesModified += agentResult.modifiedFiles.length
-    migrationMetrics.filesCreated += agentResult.createdFiles.length
-    migrationMetrics.policyViolations += policyViolations
+    migrationMetrics.filesModified += agentResult.modifiedFiles.length;
+    migrationMetrics.filesCreated += agentResult.createdFiles.length;
+    migrationMetrics.policyViolations += policyViolations;
 
     // Recalculate averages
     const completedSteps =
       migrationMetrics.successfulSteps +
       migrationMetrics.failedSteps +
-      migrationMetrics.skippedSteps
+      migrationMetrics.skippedSteps;
     if (completedSteps > 0) {
-      migrationMetrics.agentSuccessRate = migrationMetrics.successfulSteps / completedSteps
+      migrationMetrics.agentSuccessRate = migrationMetrics.successfulSteps / completedSteps;
     }
 
     // Record individual metrics
@@ -200,23 +200,23 @@ export class MetricsCollector {
       planId,
       stepId,
       success: agentResult.success.toString(),
-    })
+    });
 
     this.recordMetric("step_files_modified", MetricType.GAUGE, agentResult.modifiedFiles.length, {
       planId,
       stepId,
-    })
+    });
 
     this.recordMetric("step_files_created", MetricType.GAUGE, agentResult.createdFiles.length, {
       planId,
       stepId,
-    })
+    });
 
     if (policyViolations > 0) {
       this.recordMetric("policy_violations", MetricType.COUNTER, policyViolations, {
         planId,
         stepId,
-      })
+      });
     }
 
     logger.debug(
@@ -228,31 +228,31 @@ export class MetricsCollector {
         filesModified: agentResult.modifiedFiles.length,
       },
       "Step execution metrics recorded"
-    )
+    );
   }
 
   /**
    * Record migration completion
    */
   recordMigrationCompletion(planId: string, progress: MigrationProgress): void {
-    const migrationMetrics = this.migrationMetrics.get(planId)
+    const migrationMetrics = this.migrationMetrics.get(planId);
     if (!migrationMetrics) {
-      logger.warn({ planId }, "Migration metrics not found for completion")
-      return
+      logger.warn({ planId }, "Migration metrics not found for completion");
+      return;
     }
 
     // Calculate total execution time
     if (progress.startedAt && progress.completedAt) {
-      const startTime = new Date(progress.startedAt).getTime()
-      const endTime = new Date(progress.completedAt).getTime()
-      migrationMetrics.totalExecutionTime = endTime - startTime
+      const startTime = new Date(progress.startedAt).getTime();
+      const endTime = new Date(progress.completedAt).getTime();
+      migrationMetrics.totalExecutionTime = endTime - startTime;
     }
 
     // Record completion metrics
     this.recordMetric("migration_completed", MetricType.COUNTER, 1, {
       planId,
       state: progress.state,
-    })
+    });
 
     this.recordMetric(
       "migration_total_time",
@@ -261,7 +261,7 @@ export class MetricsCollector {
       {
         planId,
       }
-    )
+    );
 
     this.recordMetric(
       "migration_success_rate",
@@ -270,7 +270,7 @@ export class MetricsCollector {
       {
         planId,
       }
-    )
+    );
 
     this.recordMetric(
       "migration_files_modified",
@@ -279,7 +279,7 @@ export class MetricsCollector {
       {
         planId,
       }
-    )
+    );
 
     logger.info(
       {
@@ -290,29 +290,29 @@ export class MetricsCollector {
         filesModified: migrationMetrics.filesModified,
       },
       "Migration completion metrics recorded"
-    )
+    );
   }
 
   /**
    * Get metrics for a time range
    */
   getMetrics(startTime?: number, endTime?: number, namePattern?: string): Metric[] {
-    let filtered = this.metrics
+    let filtered = this.metrics;
 
     if (startTime) {
-      filtered = filtered.filter((m) => m.timestamp >= startTime)
+      filtered = filtered.filter((m) => m.timestamp >= startTime);
     }
 
     if (endTime) {
-      filtered = filtered.filter((m) => m.timestamp <= endTime)
+      filtered = filtered.filter((m) => m.timestamp <= endTime);
     }
 
     if (namePattern) {
-      const regex = new RegExp(namePattern)
-      filtered = filtered.filter((m) => regex.test(m.name))
+      const regex = new RegExp(namePattern);
+      filtered = filtered.filter((m) => regex.test(m.name));
     }
 
-    return filtered
+    return filtered;
   }
 
   /**
@@ -320,19 +320,19 @@ export class MetricsCollector {
    */
   getMigrationMetrics(planId?: string): MigrationMetrics[] {
     if (planId) {
-      const metrics = this.migrationMetrics.get(planId)
-      return metrics ? [metrics] : []
+      const metrics = this.migrationMetrics.get(planId);
+      return metrics ? [metrics] : [];
     }
 
-    return Array.from(this.migrationMetrics.values())
+    return Array.from(this.migrationMetrics.values());
   }
 
   /**
    * Get performance metrics
    */
   getPerformanceMetrics(): PerformanceMetrics {
-    const memUsage = process.memoryUsage()
-    const cpuUsage = process.cpuUsage()
+    const memUsage = process.memoryUsage();
+    const cpuUsage = process.cpuUsage();
 
     return {
       timestamp: Date.now(),
@@ -347,46 +347,46 @@ export class MetricsCollector {
         system: cpuUsage.system,
       },
       eventLoopDelay: 0, // Would need perf_hooks.monitorEventLoopDelay for real implementation
-    }
+    };
   }
 
   /**
    * Generate metrics summary
    */
   generateSummary(timeRangeHours = 24): {
-    totalMigrations: number
-    successfulMigrations: number
-    failedMigrations: number
-    avgExecutionTime: number
-    totalStepsExecuted: number
-    avgSuccessRate: number
-    topErrors: Array<{ error: string; count: number }>
+    totalMigrations: number;
+    successfulMigrations: number;
+    failedMigrations: number;
+    avgExecutionTime: number;
+    totalStepsExecuted: number;
+    avgSuccessRate: number;
+    topErrors: Array<{ error: string; count: number }>;
   } {
-    const cutoffTime = Date.now() - timeRangeHours * 60 * 60 * 1000
-    const recentMetrics = this.getMetrics(cutoffTime)
+    const cutoffTime = Date.now() - timeRangeHours * 60 * 60 * 1000;
+    const recentMetrics = this.getMetrics(cutoffTime);
 
-    const migrationStarts = recentMetrics.filter((m) => m.name === "migration_started").length
-    const migrationCompletions = recentMetrics.filter((m) => m.name === "migration_completed")
+    const migrationStarts = recentMetrics.filter((m) => m.name === "migration_started").length;
+    const migrationCompletions = recentMetrics.filter((m) => m.name === "migration_completed");
     const successfulMigrations = migrationCompletions.filter(
       (m) => m.tags.state === "completed"
-    ).length
-    const failedMigrations = migrationCompletions.filter((m) => m.tags.state === "failed").length
+    ).length;
+    const failedMigrations = migrationCompletions.filter((m) => m.tags.state === "failed").length;
 
     const executionTimes = recentMetrics
       .filter((m) => m.name === "migration_total_time")
-      .map((m) => m.value)
+      .map((m) => m.value);
     const avgExecutionTime =
       executionTimes.length > 0
         ? executionTimes.reduce((a, b) => a + b, 0) / executionTimes.length
-        : 0
+        : 0;
 
-    const stepExecutions = recentMetrics.filter((m) => m.name === "step_execution_time").length
+    const stepExecutions = recentMetrics.filter((m) => m.name === "step_execution_time").length;
 
     const successRates = recentMetrics
       .filter((m) => m.name === "migration_success_rate")
-      .map((m) => m.value)
+      .map((m) => m.value);
     const avgSuccessRate =
-      successRates.length > 0 ? successRates.reduce((a, b) => a + b, 0) / successRates.length : 0
+      successRates.length > 0 ? successRates.reduce((a, b) => a + b, 0) / successRates.length : 0;
 
     return {
       totalMigrations: migrationStarts,
@@ -396,56 +396,56 @@ export class MetricsCollector {
       totalStepsExecuted: stepExecutions,
       avgSuccessRate,
       topErrors: [], // Would implement error tracking for this
-    }
+    };
   }
 
   /**
    * Export metrics in Prometheus format
    */
   exportPrometheusMetrics(): string {
-    const lines: string[] = []
-    const metricGroups = new Map<string, Metric[]>()
+    const lines: string[] = [];
+    const metricGroups = new Map<string, Metric[]>();
 
     // Group metrics by name
     for (const metric of this.metrics) {
       if (!metricGroups.has(metric.name)) {
-        metricGroups.set(metric.name, [])
+        metricGroups.set(metric.name, []);
       }
-      metricGroups.get(metric.name)?.push(metric)
+      metricGroups.get(metric.name)?.push(metric);
     }
 
     // Generate Prometheus format
     for (const [name, metrics] of metricGroups) {
-      const latestMetric = metrics[metrics.length - 1]!
+      const latestMetric = metrics[metrics.length - 1]!;
 
       // Add help and type comments
-      lines.push(`# HELP ${name} Hachiko metric`)
-      lines.push(`# TYPE ${name} ${latestMetric.type}`)
+      lines.push(`# HELP ${name} Hachiko metric`);
+      lines.push(`# TYPE ${name} ${latestMetric.type}`);
 
       // Add metric values
       for (const metric of metrics.slice(-10)) {
         // Last 10 values
         const tags = Object.entries(metric.tags)
           .map(([key, value]) => `${key}="${value}"`)
-          .join(",")
+          .join(",");
 
-        const tagString = tags ? `{${tags}}` : ""
-        lines.push(`${name}${tagString} ${metric.value} ${metric.timestamp}`)
+        const tagString = tags ? `{${tags}}` : "";
+        lines.push(`${name}${tagString} ${metric.value} ${metric.timestamp}`);
       }
 
-      lines.push("")
+      lines.push("");
     }
 
-    return lines.join("\n")
+    return lines.join("\n");
   }
 
   /**
    * Clear all metrics
    */
   clearMetrics(): void {
-    this.metrics = []
-    this.migrationMetrics.clear()
-    logger.info("All metrics cleared")
+    this.metrics = [];
+    this.migrationMetrics.clear();
+    logger.info("All metrics cleared");
   }
 
   /**
@@ -453,12 +453,12 @@ export class MetricsCollector {
    */
   async shutdown(): Promise<void> {
     if (this.reportingInterval) {
-      clearInterval(this.reportingInterval)
-      this.reportingInterval = null
+      clearInterval(this.reportingInterval);
+      this.reportingInterval = null;
     }
 
-    this.initialized = false
-    logger.info("Metrics collector shutdown")
+    this.initialized = false;
+    logger.info("Metrics collector shutdown");
   }
 
   /**
@@ -466,14 +466,14 @@ export class MetricsCollector {
    */
   private startPerformanceCollection(): void {
     this.reportingInterval = setInterval(() => {
-      const perfMetrics = this.getPerformanceMetrics()
+      const perfMetrics = this.getPerformanceMetrics();
 
-      this.recordMetric("memory_heap_used", MetricType.GAUGE, perfMetrics.memoryUsage.heapUsed)
-      this.recordMetric("memory_heap_total", MetricType.GAUGE, perfMetrics.memoryUsage.heapTotal)
-      this.recordMetric("memory_rss", MetricType.GAUGE, perfMetrics.memoryUsage.rss)
-      this.recordMetric("cpu_user", MetricType.GAUGE, perfMetrics.cpuUsage.user)
-      this.recordMetric("cpu_system", MetricType.GAUGE, perfMetrics.cpuUsage.system)
-    }, 30000) // Every 30 seconds
+      this.recordMetric("memory_heap_used", MetricType.GAUGE, perfMetrics.memoryUsage.heapUsed);
+      this.recordMetric("memory_heap_total", MetricType.GAUGE, perfMetrics.memoryUsage.heapTotal);
+      this.recordMetric("memory_rss", MetricType.GAUGE, perfMetrics.memoryUsage.rss);
+      this.recordMetric("cpu_user", MetricType.GAUGE, perfMetrics.cpuUsage.user);
+      this.recordMetric("cpu_system", MetricType.GAUGE, perfMetrics.cpuUsage.system);
+    }, 30000); // Every 30 seconds
   }
 }
 
@@ -481,14 +481,14 @@ export class MetricsCollector {
  * Factory function to get metrics collector instance
  */
 export function createMetricsCollector(): MetricsCollector {
-  return MetricsCollector.getInstance()
+  return MetricsCollector.getInstance();
 }
 
 /**
  * Initialize metrics collector from configuration
  */
 export async function initializeMetrics(config: HachikoConfig): Promise<MetricsCollector> {
-  const collector = createMetricsCollector()
-  await collector.initialize(config)
-  return collector
+  const collector = createMetricsCollector();
+  await collector.initialize(config);
+  return collector;
 }

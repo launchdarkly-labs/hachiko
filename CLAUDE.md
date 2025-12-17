@@ -4,10 +4,11 @@ This file provides guidance to Claude Code when working with code in this reposi
 
 ## Project Overview
 
-Hachiko is a GitHub App that orchestrates technical migrations in large legacy codebases using configurable LLM coding agents. 
+Hachiko is a GitHub App that orchestrates technical migrations in large legacy codebases using configurable LLM coding agents.
 
 **Current Architecture**: TypeScript monorepo with pnpm workspaces
-- `packages/app/` - Main Probot GitHub App 
+
+- `packages/app/` - Main Probot GitHub App
 - `packages/runner-scripts/` - CLI scripts for GitHub Actions
 - **Note**: Planning to flatten to single package structure for better developer experience
 
@@ -18,10 +19,10 @@ Hachiko is a GitHub App that orchestrates technical migrations in large legacy c
 pnpm install
 pnpm build
 
-# Development  
+# Development
 pnpm dev                           # Run GitHub App locally
 pnpm test                          # Run tests (delegates to app package)
-pnpm biome ci                      # Lint and format check
+pnpm lint && pnpm format           # Lint and format check
 pnpm typecheck                     # TypeScript validation
 
 # Package-specific (current workaround)
@@ -48,13 +49,15 @@ pnpm --filter @hachiko/app test:coverage          # Tests with coverage
 
 ## Development Context
 
-**Current Issues**: 
+**Current Issues**:
+
 - Monorepo complexity causing scope confusion with commands
 - Low test coverage (7.4%) due to excluded integration tests
 - CI pipeline works but requires package-specific commands
 
 **Next Steps**:
-- Flatten monorepo to single package structure  
+
+- Flatten monorepo to single package structure
 - Fix integration test fixtures and improve coverage
 - Simplify development workflow
 

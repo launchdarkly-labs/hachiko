@@ -17,12 +17,14 @@ Hachiko is a GitHub App that orchestrates technical migrations in large legacy c
 ## 🚀 Quick Start
 
 ### 1. Install the GitHub App
+
 ```bash
 # Install Hachiko on your repository
 # TODO (Installation instructions will be added once the app is deployed)
 ```
 
 ### 2. Configure Your Repository
+
 Create `.hachiko.yml` in your repository root:
 
 ```yaml
@@ -43,6 +45,7 @@ agents:
 ```
 
 ### 3. Create a Migration Plan
+
 Create `migrations/my-migration.md`:
 
 ```markdown
@@ -69,6 +72,7 @@ This migration will upgrade all Node.js dependencies to their latest stable vers
 ```
 
 ### 4. Activate the Migration
+
 1. Push your migration plan to the default branch
 2. Hachiko will create a Migration Issue and Plan Review PR
 3. Review and merge the Plan Review PR to activate the migration
@@ -98,11 +102,13 @@ Control your migrations using GitHub issue comments:
 ## 🏗️ Development
 
 ### Prerequisites
+
 - Node.js 22+
 - pnpm 9+
 - Docker (for agent sandboxing)
 
 ### Setup
+
 ```bash
 # Clone and install dependencies
 git clone https://github.com/launchdarkly/hachiko.git
@@ -117,6 +123,7 @@ pnpm dev
 ```
 
 ### Testing
+
 ```bash
 # Run all tests
 pnpm test
@@ -133,6 +140,7 @@ pnpm typecheck
 ```
 
 ### Dogfooding
+
 ```bash
 # Run end-to-end migration simulation
 pnpm scripts:simulate-migration
@@ -159,6 +167,7 @@ See [Security Model](docs/security.md) for details.
 We welcome contributions! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
 
 ### Development Workflow
+
 1. Fork the repository
 2. Create a feature branch
 3. Make your changes with tests
@@ -177,4 +186,4 @@ We welcome contributions! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for guid
 
 ---
 
-*"Just as Hachikō waited faithfully for his owner, Hachiko faithfully manages your code migrations from start to finish."* 🐕
+_"Just as Hachikō waited faithfully for his owner, Hachiko faithfully manages your code migrations from start to finish."_ 🐕

@@ -1,4 +1,4 @@
-import pino from "pino"
+import pino from "pino";
 
 // Create a logger instance with structured JSON output
 export const logger = pino({
@@ -17,12 +17,12 @@ export const logger = pino({
       },
     },
   }),
-})
+});
 
 // Create child loggers for different components
-export const createLogger = (component: string) => logger.child({ component })
+export const createLogger = (component: string) => logger.child({ component });
 
 // Request ID tracking for webhook deliveries
-export const withRequestId = (requestId: string) => logger.child({ requestId })
+export const withRequestId = (requestId: string) => logger.child({ requestId });
 
-export type Logger = typeof logger
+export type Logger = typeof logger;

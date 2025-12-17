@@ -1,8 +1,8 @@
-import type { ContextWithRepository } from "../types/context.js"
-import { MigrationStateError } from "../utils/errors.js"
-import { createLogger } from "../utils/logger.js"
+import type { ContextWithRepository } from "../types/context.js";
+import { MigrationStateError } from "../utils/errors.js";
+import { createLogger } from "../utils/logger.js";
 
-const logger = createLogger("state-service")
+const logger = createLogger("state-service");
 
 /**
  * Migration state enumeration
@@ -17,9 +17,9 @@ export const MigrationState = {
   FAILED: "failed",
   CANCELLED: "cancelled",
   PAUSED: "paused",
-} as const
+} as const;
 
-export type MigrationStateType = (typeof MigrationState)[keyof typeof MigrationState]
+export type MigrationStateType = (typeof MigrationState)[keyof typeof MigrationState];
 
 /**
  * Step state enumeration
@@ -31,73 +31,73 @@ export const StepState = {
   FAILED: "failed",
   SKIPPED: "skipped",
   PAUSED: "paused",
-} as const
+} as const;
 
-export type StepStateType = (typeof StepState)[keyof typeof StepState]
+export type StepStateType = (typeof StepState)[keyof typeof StepState];
 
 /**
  * Migration progress data structure
  */
 export interface MigrationProgress {
-  planId: string
-  state: MigrationStateType
-  issueNumber: number
-  totalSteps: number
-  completedSteps: number
-  failedSteps: number
-  skippedSteps: number
-  currentStep?: string | undefined
-  startedAt?: string
-  completedAt?: string
-  lastUpdatedAt: string
-  steps: Record<string, StepProgress>
+  planId: string;
+  state: MigrationStateType;
+  issueNumber: number;
+  totalSteps: number;
+  completedSteps: number;
+  failedSteps: number;
+  skippedSteps: number;
+  currentStep?: string | undefined;
+  startedAt?: string;
+  completedAt?: string;
+  lastUpdatedAt: string;
+  steps: Record<string, StepProgress>;
   metadata: {
-    owner: string
-    repository: string
-    baseBranch: string
-    [key: string]: unknown
-  }
+    owner: string;
+    repository: string;
+    baseBranch: string;
+    [key: string]: unknown;
+  };
 }
 
 /**
  * Step progress data structure
  */
 export interface StepProgress {
-  stepId: string
-  state: StepStateType
-  startedAt?: string
-  completedAt?: string
+  stepId: string;
+  state: StepStateType;
+  startedAt?: string;
+  completedAt?: string;
   pullRequest?: {
-    number: number
-    url: string
-    merged: boolean
-  }
+    number: number;
+    url: string;
+    merged: boolean;
+  };
   workflowRun?: {
-    id: number
-    url: string
-    conclusion: string
-  }
-  agent?: string
-  error?: string
-  retryCount: number
-  chunks?: Record<string, ChunkProgress>
+    id: number;
+    url: string;
+    conclusion: string;
+  };
+  agent?: string;
+  error?: string;
+  retryCount: number;
+  chunks?: Record<string, ChunkProgress>;
 }
 
 /**
  * Chunk progress data structure
  */
 export interface ChunkProgress {
-  chunkId: string
-  state: StepStateType
-  startedAt?: string
-  completedAt?: string
+  chunkId: string;
+  state: StepStateType;
+  startedAt?: string;
+  completedAt?: string;
   pullRequest?: {
-    number: number
-    url: string
-    merged: boolean
-  }
-  files: string[]
-  error?: string
+    number: number;
+    url: string;
+    merged: boolean;
+  };
+  files: string[];
+  error?: string;
 }
 
 /**
@@ -132,7 +132,7 @@ const VALID_STATE_TRANSITIONS: Record<MigrationStateType, MigrationStateType[]> 
   [MigrationState.FAILED]: [MigrationState.QUEUED, MigrationState.CANCELLED], // Can retry
   [MigrationState.CANCELLED]: [], // Terminal state
   [MigrationState.PAUSED]: [MigrationState.RUNNING, MigrationState.CANCELLED],
-}
+};
 
 const VALID_STEP_TRANSITIONS: Record<StepStateType, StepStateType[]> = {
   [StepState.PENDING]: [StepState.RUNNING, StepState.SKIPPED],
@@ -141,21 +141,21 @@ const VALID_STEP_TRANSITIONS: Record<StepStateType, StepStateType[]> = {
   [StepState.FAILED]: [StepState.RUNNING], // Can retry
   [StepState.SKIPPED]: [], // Terminal state
   [StepState.PAUSED]: [StepState.RUNNING],
-}
+};
 
 /**
  * State management service using GitHub Issues as the backend
  */
 export class StateManager {
-  private static instance: StateManager | null = null
+  private static instance: StateManager | null = null;
 
   private constructor() {}
 
   static getInstance(): StateManager {
     if (!StateManager.instance) {
-      StateManager.instance = new StateManager()
+      StateManager.instance = new StateManager();
     }
-    return StateManager.instance
+    return StateManager.instance;
   }
 
   /**
@@ -168,7 +168,7 @@ export class StateManager {
     totalSteps: number,
     stepIds: string[]
   ): Promise<MigrationProgress> {
-    const now = new Date().toISOString()
+    const now = new Date().toISOString();
 
     const initialProgress: MigrationProgress = {
       planId,
@@ -185,7 +185,7 @@ export class StateManager {
         repository: context.payload.repository.name,
         baseBranch: context.payload.repository.default_branch,
       },
-    }
+    };
 
     // Initialize step states
     for (const stepId of stepIds) {
@@ -193,10 +193,10 @@ export class StateManager {
         stepId,
         state: StepState.PENDING,
         retryCount: 0,
-      }
+      };
     }
 
-    await this.persistState(context, initialProgress)
+    await this.persistState(context, initialProgress);
 
     logger.info(
       {
@@ -206,9 +206,9 @@ export class StateManager {
         state: initialProgress.state,
       },
       "Created migration state"
-    )
+    );
 
-    return initialProgress
+    return initialProgress;
   }
 
   /**
@@ -225,18 +225,18 @@ export class StateManager {
         repo: context.payload.repository.name,
         labels: `hachiko:plan:${planId}`,
         state: "open",
-      })
+      });
 
       if (issues.data.length === 0) {
-        logger.debug({ planId }, "No migration issue found")
-        return null
+        logger.debug({ planId }, "No migration issue found");
+        return null;
       }
 
-      const issue = issues.data[0]!
-      return this.parseStateFromIssue(issue.body || "")
+      const issue = issues.data[0]!;
+      return this.parseStateFromIssue(issue.body || "");
     } catch (error) {
-      logger.error({ error, planId }, "Failed to load migration state")
-      throw new MigrationStateError(`Failed to load state for plan ${planId}`, planId, "unknown")
+      logger.error({ error, planId }, "Failed to load migration state");
+      throw new MigrationStateError(`Failed to load state for plan ${planId}`, planId, "unknown");
     }
   }
 
@@ -248,43 +248,43 @@ export class StateManager {
     planId: string,
     newState: MigrationStateType
   ): Promise<MigrationProgress> {
-    const currentProgress = await this.loadMigrationState(context, planId)
+    const currentProgress = await this.loadMigrationState(context, planId);
     if (!currentProgress) {
       throw new MigrationStateError(
         `Migration state not found for plan ${planId}`,
         planId,
         "unknown"
-      )
+      );
     }
 
     // Validate state transition
-    const validTransitions = VALID_STATE_TRANSITIONS[currentProgress.state]
+    const validTransitions = VALID_STATE_TRANSITIONS[currentProgress.state];
     if (!validTransitions.includes(newState)) {
       throw new MigrationStateError(
         `Invalid state transition from ${currentProgress.state} to ${newState}`,
         planId,
         currentProgress.state
-      )
+      );
     }
 
     // Update state
-    currentProgress.state = newState
-    currentProgress.lastUpdatedAt = new Date().toISOString()
+    currentProgress.state = newState;
+    currentProgress.lastUpdatedAt = new Date().toISOString();
 
     if (newState === MigrationState.RUNNING && !currentProgress.startedAt) {
-      currentProgress.startedAt = currentProgress.lastUpdatedAt
+      currentProgress.startedAt = currentProgress.lastUpdatedAt;
     }
 
     const terminalStates: MigrationStateType[] = [
       MigrationState.COMPLETED,
       MigrationState.FAILED,
       MigrationState.CANCELLED,
-    ]
+    ];
     if (terminalStates.includes(newState)) {
-      currentProgress.completedAt = currentProgress.lastUpdatedAt
+      currentProgress.completedAt = currentProgress.lastUpdatedAt;
     }
 
-    await this.persistState(context, currentProgress)
+    await this.persistState(context, currentProgress);
 
     logger.info(
       {
@@ -293,9 +293,9 @@ export class StateManager {
         newState,
       },
       "Updated migration state"
-    )
+    );
 
-    return currentProgress
+    return currentProgress;
   }
 
   /**
@@ -308,61 +308,61 @@ export class StateManager {
     newState: StepStateType,
     metadata?: Partial<StepProgress>
   ): Promise<MigrationProgress> {
-    const currentProgress = await this.loadMigrationState(context, planId)
+    const currentProgress = await this.loadMigrationState(context, planId);
     if (!currentProgress) {
       throw new MigrationStateError(
         `Migration state not found for plan ${planId}`,
         planId,
         "unknown"
-      )
+      );
     }
 
-    const step = currentProgress.steps[stepId]
+    const step = currentProgress.steps[stepId];
     if (!step) {
       throw new MigrationStateError(
         `Step ${stepId} not found in plan ${planId}`,
         planId,
         currentProgress.state
-      )
+      );
     }
 
     // Validate step state transition
-    const validTransitions = VALID_STEP_TRANSITIONS[step.state]
+    const validTransitions = VALID_STEP_TRANSITIONS[step.state];
     if (!validTransitions.includes(newState)) {
       throw new MigrationStateError(
         `Invalid step state transition from ${step.state} to ${newState}`,
         planId,
         currentProgress.state
-      )
+      );
     }
 
     // Update step state
-    const now = new Date().toISOString()
-    step.state = newState
+    const now = new Date().toISOString();
+    step.state = newState;
 
     if (newState === StepState.RUNNING && !step.startedAt) {
-      step.startedAt = now
+      step.startedAt = now;
     }
 
     const terminalStepStates: StepStateType[] = [
       StepState.COMPLETED,
       StepState.FAILED,
       StepState.SKIPPED,
-    ]
+    ];
     if (terminalStepStates.includes(newState)) {
-      step.completedAt = now
+      step.completedAt = now;
     }
 
     // Apply metadata updates
     if (metadata) {
-      Object.assign(step, metadata)
+      Object.assign(step, metadata);
     }
 
     // Recalculate progress counters
-    this.recalculateProgress(currentProgress)
-    currentProgress.lastUpdatedAt = now
+    this.recalculateProgress(currentProgress);
+    currentProgress.lastUpdatedAt = now;
 
-    await this.persistState(context, currentProgress)
+    await this.persistState(context, currentProgress);
 
     logger.info(
       {
@@ -372,9 +372,9 @@ export class StateManager {
         newState,
       },
       "Updated step state"
-    )
+    );
 
-    return currentProgress
+    return currentProgress;
   }
 
   /**
@@ -384,7 +384,7 @@ export class StateManager {
     context: ContextWithRepository,
     planId: string
   ): Promise<MigrationProgress | null> {
-    return this.loadMigrationState(context, planId)
+    return this.loadMigrationState(context, planId);
   }
 
   /**
@@ -397,28 +397,28 @@ export class StateManager {
         repo: context.payload.repository.name,
         labels: "hachiko,migration",
         state: "open",
-      })
+      });
 
-      const migrations: MigrationProgress[] = []
+      const migrations: MigrationProgress[] = [];
 
       for (const issue of issues.data) {
         try {
-          const progress = this.parseStateFromIssue(issue.body || "")
+          const progress = this.parseStateFromIssue(issue.body || "");
           if (progress) {
-            migrations.push(progress)
+            migrations.push(progress);
           }
         } catch (error) {
           logger.warn(
             { error, issueNumber: issue.number },
             "Failed to parse migration state from issue"
-          )
+          );
         }
       }
 
-      return migrations
+      return migrations;
     } catch (error) {
-      logger.error({ error }, "Failed to list active migrations")
-      return []
+      logger.error({ error }, "Failed to list active migrations");
+      return [];
     }
   }
 
@@ -429,15 +429,15 @@ export class StateManager {
     context: ContextWithRepository,
     progress: MigrationProgress
   ): Promise<void> {
-    const stateJson = JSON.stringify(progress, null, 2)
-    const body = this.generateIssueBody(progress, stateJson)
+    const stateJson = JSON.stringify(progress, null, 2);
+    const body = this.generateIssueBody(progress, stateJson);
 
     await context.octokit.issues.update({
       owner: context.payload.repository.owner.login,
       repo: context.payload.repository.name,
       issue_number: progress.issueNumber,
       body,
-    })
+    });
   }
 
   /**
@@ -445,16 +445,16 @@ export class StateManager {
    */
   private parseStateFromIssue(body: string): MigrationProgress | null {
     // Look for state JSON in code block
-    const stateMatch = body.match(/```json\n([\s\S]*?)\n```/)
+    const stateMatch = body.match(/```json\n([\s\S]*?)\n```/);
     if (!stateMatch) {
-      return null
+      return null;
     }
 
     try {
-      return JSON.parse(stateMatch[1]!) as MigrationProgress
+      return JSON.parse(stateMatch[1]!) as MigrationProgress;
     } catch (error) {
-      logger.error({ error }, "Failed to parse state JSON")
-      return null
+      logger.error({ error }, "Failed to parse state JSON");
+      return null;
     }
   }
 
@@ -462,8 +462,8 @@ export class StateManager {
    * Generate issue body with embedded state
    */
   private generateIssueBody(progress: MigrationProgress, stateJson: string): string {
-    const { planId, state, totalSteps, completedSteps, failedSteps, skippedSteps } = progress
-    const progressPercent = Math.round((completedSteps / totalSteps) * 100)
+    const { planId, state, totalSteps, completedSteps, failedSteps, skippedSteps } = progress;
+    const progressPercent = Math.round((completedSteps / totalSteps) * 100);
 
     return `# Migration Progress: ${planId}
 
@@ -488,9 +488,9 @@ ${Object.values(progress.steps)
               ? "⏭️"
               : step.state === StepState.PAUSED
                 ? "⏸️"
-                : "⏳"
+                : "⏳";
 
-    return `- ${icon} **${step.stepId}**: ${step.state}`
+    return `- ${icon} **${step.stepId}**: ${step.state}`;
   })
   .join("\n")}
 
@@ -499,35 +499,35 @@ ${Object.values(progress.steps)
 <!-- Hachiko State Data - DO NOT EDIT -->
 \`\`\`json
 ${stateJson}
-\`\`\``
+\`\`\``;
   }
 
   /**
    * Recalculate progress counters
    */
   private recalculateProgress(progress: MigrationProgress): void {
-    progress.completedSteps = 0
-    progress.failedSteps = 0
-    progress.skippedSteps = 0
+    progress.completedSteps = 0;
+    progress.failedSteps = 0;
+    progress.skippedSteps = 0;
 
     for (const step of Object.values(progress.steps)) {
       switch (step.state) {
         case StepState.COMPLETED:
-          progress.completedSteps++
-          break
+          progress.completedSteps++;
+          break;
         case StepState.FAILED:
-          progress.failedSteps++
-          break
+          progress.failedSteps++;
+          break;
         case StepState.SKIPPED:
-          progress.skippedSteps++
-          break
+          progress.skippedSteps++;
+          break;
       }
     }
 
     // Update current step
     progress.currentStep =
       Object.values(progress.steps).find((step) => step.state === StepState.RUNNING)?.stepId ||
-      undefined
+      undefined;
   }
 }
 
@@ -535,5 +535,5 @@ ${stateJson}
  * Factory function to get state manager instance
  */
 export function createStateManager(): StateManager {
-  return StateManager.getInstance()
+  return StateManager.getInstance();
 }

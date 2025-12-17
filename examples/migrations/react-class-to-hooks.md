@@ -56,6 +56,7 @@ This migration plan will convert all React class components to functional compon
 ## Context
 
 Our React codebase currently uses a mix of class and functional components. Converting to hooks provides:
+
 - Simplified component logic and better readability
 - Easier state management and side effects
 - Better performance with React's optimization features
@@ -77,6 +78,7 @@ Our React codebase currently uses a mix of class and functional components. Conv
 ### Key Transformations
 
 **Simple Class Component:**
+
 ```typescript
 // Before
 class Button extends React.Component<Props> {
@@ -92,15 +94,16 @@ const Button: React.FC<Props> = ({ onClick, children }) => {
 ```
 
 **Stateful Component:**
+
 ```typescript
 // Before
 class Counter extends React.Component<Props, State> {
   state = { count: 0 }
-  
+
   increment = () => {
     this.setState({ count: this.state.count + 1 })
   }
-  
+
   render() {
     return <button onClick={this.increment}>{this.state.count}</button>
   }
@@ -109,14 +112,15 @@ class Counter extends React.Component<Props, State> {
 // After
 const Counter: React.FC<Props> = () => {
   const [count, setCount] = useState(0)
-  
+
   const increment = () => setCount(count + 1)
-  
+
   return <button onClick={increment}>{count}</button>
 }
 ```
 
 **Lifecycle Methods:**
+
 ```typescript
 // Before
 componentDidMount() {
@@ -135,11 +139,13 @@ useEffect(() => {
 ```
 
 ### Risk Assessment
+
 - **Low Risk**: Simple presentational components (80% of components)
 - **Medium Risk**: Components with basic state and simple lifecycle methods
 - **High Risk**: Components with complex lifecycle logic, refs, or legacy patterns
 
 ### Success Metrics
+
 - 100% class components converted to functional components
 - All existing tests continue to pass
 - No performance regressions
@@ -149,6 +155,7 @@ useEffect(() => {
 ## Rollback Plan
 
 If issues are discovered:
+
 1. Revert the specific problematic module
 2. Fix issues in a separate branch
 3. Re-apply migration once fixes are validated
