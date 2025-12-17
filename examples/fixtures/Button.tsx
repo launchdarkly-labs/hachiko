@@ -1,10 +1,10 @@
-import React from "react"
+import React from "react";
 
 interface ButtonProps {
-  onClick: () => void
-  disabled?: boolean
-  variant?: "primary" | "secondary"
-  children: React.ReactNode
+  onClick: () => void;
+  disabled?: boolean;
+  variant?: "primary" | "secondary";
+  children: React.ReactNode;
 }
 
 /**
@@ -13,7 +13,7 @@ interface ButtonProps {
  */
 class Button extends React.Component<ButtonProps> {
   render() {
-    const { onClick, disabled = false, variant = "primary", children } = this.props
+    const { onClick, disabled = false, variant = "primary", children } = this.props;
 
     return (
       <button
@@ -25,8 +25,8 @@ class Button extends React.Component<ButtonProps> {
       >
         {children}
       </button>
-    )
+    );
   }
 }
 
-export default Button
+export default Button;

@@ -1,23 +1,23 @@
-import { spawn } from "node:child_process"
-import { promises as fs } from "node:fs"
-import { join } from "node:path"
-import { AgentExecutionError } from "../utils/errors.js"
-import { createLogger } from "../utils/logger.js"
-import type { ContainerConfig, ContainerContext } from "./types.js"
+import { spawn } from "node:child_process";
+import { promises as fs } from "node:fs";
+import { join } from "node:path";
+import { AgentExecutionError } from "../utils/errors.js";
+import { createLogger } from "../utils/logger.js";
+import type { ContainerConfig, ContainerContext } from "./types.js";
 
-const logger = createLogger("container")
+const logger = createLogger("container");
 
 /**
  * Container execution utilities for agent sandboxing
  */
 export class ContainerExecutor {
-  private static instance: ContainerExecutor | null = null
+  private static instance: ContainerExecutor | null = null;
 
   static getInstance(): ContainerExecutor {
     if (!ContainerExecutor.instance) {
-      ContainerExecutor.instance = new ContainerExecutor()
+      ContainerExecutor.instance = new ContainerExecutor();
     }
-    return ContainerExecutor.instance
+    return ContainerExecutor.instance;
   }
 
   /**
@@ -25,10 +25,10 @@ export class ContainerExecutor {
    */
   async isDockerAvailable(): Promise<boolean> {
     try {
-      const result = await this.executeCommand("docker", ["--version"])
-      return result.exitCode === 0
+      const result = await this.executeCommand("docker", ["--version"]);
+      return result.exitCode === 0;
     } catch {
-      return false
+      return false;
     }
   }
 
@@ -40,7 +40,7 @@ export class ContainerExecutor {
     workspacePath: string,
     repoPath: string
   ): Promise<ContainerContext> {
-    const containerId = `hachiko-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+    const containerId = `hachiko-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 
     const dockerArgs = [
       "run",
@@ -87,16 +87,16 @@ export class ContainerExecutor {
       // Keep container running
       "sleep",
       "infinity",
-    ]
+    ];
 
     try {
-      const result = await this.executeCommand("docker", dockerArgs)
+      const result = await this.executeCommand("docker", dockerArgs);
 
       if (result.exitCode !== 0) {
-        throw new Error(`Docker run failed: ${result.stderr}`)
+        throw new Error(`Docker run failed: ${result.stderr}`);
       }
 
-      logger.info({ containerId, image: config.image }, "Container created")
+      logger.info({ containerId, image: config.image }, "Container created");
 
       return {
         containerId,
@@ -107,13 +107,13 @@ export class ContainerExecutor {
           { hostPath: repoPath, containerPath: "/repo", readonly: true },
         ],
         env: config.env || {},
-      }
+      };
     } catch (error) {
-      logger.error({ error, config }, "Failed to create container")
+      logger.error({ error, config }, "Failed to create container");
       throw new AgentExecutionError(
         `Failed to create container: ${error instanceof Error ? error.message : String(error)}`,
         "container"
-      )
+      );
     }
   }
 
@@ -125,7 +125,7 @@ export class ContainerExecutor {
     command: string[],
     timeout = 300000 // 5 minutes default
   ): Promise<{ exitCode: number; stdout: string; stderr: string; executionTime: number }> {
-    const startTime = Date.now()
+    const startTime = Date.now();
 
     const dockerArgs = [
       "exec",
@@ -134,11 +134,11 @@ export class ContainerExecutor {
       ...Object.entries(context.env).flatMap(([key, value]) => ["-e", `${key}=${value}`]),
       context.containerId,
       ...command,
-    ]
+    ];
 
     try {
-      const result = await this.executeCommand("docker", dockerArgs, timeout)
-      const executionTime = Date.now() - startTime
+      const result = await this.executeCommand("docker", dockerArgs, timeout);
+      const executionTime = Date.now() - startTime;
 
       logger.debug(
         {
@@ -148,16 +148,16 @@ export class ContainerExecutor {
           executionTime,
         },
         "Command executed in container"
-      )
+      );
 
       return {
         exitCode: result.exitCode,
         stdout: result.stdout,
         stderr: result.stderr,
         executionTime,
-      }
+      };
     } catch (error) {
-      const executionTime = Date.now() - startTime
+      const executionTime = Date.now() - startTime;
       logger.error(
         {
           error,
@@ -166,12 +166,12 @@ export class ContainerExecutor {
           executionTime,
         },
         "Container command execution failed"
-      )
+      );
 
       throw new AgentExecutionError(
         `Container execution failed: ${error instanceof Error ? error.message : String(error)}`,
         "container"
-      )
+      );
     }
   }
 
@@ -181,10 +181,10 @@ export class ContainerExecutor {
   async destroyContainer(containerId: string): Promise<void> {
     try {
       // Stop the container (this will also remove it due to --rm flag)
-      await this.executeCommand("docker", ["stop", containerId])
-      logger.info({ containerId }, "Container destroyed")
+      await this.executeCommand("docker", ["stop", containerId]);
+      logger.info({ containerId }, "Container destroyed");
     } catch (error) {
-      logger.warn({ error, containerId }, "Failed to destroy container")
+      logger.warn({ error, containerId }, "Failed to destroy container");
     }
   }
 
@@ -199,44 +199,44 @@ export class ContainerExecutor {
     return new Promise((resolve, reject) => {
       const process = spawn(command, args, {
         stdio: ["pipe", "pipe", "pipe"],
-      })
+      });
 
-      let stdout = ""
-      let stderr = ""
-      let timedOut = false
+      let stdout = "";
+      let stderr = "";
+      let timedOut = false;
 
       const timer = setTimeout(() => {
-        timedOut = true
-        process.kill("SIGKILL")
-        reject(new Error(`Command timed out after ${timeout}ms`))
-      }, timeout)
+        timedOut = true;
+        process.kill("SIGKILL");
+        reject(new Error(`Command timed out after ${timeout}ms`));
+      }, timeout);
 
       process.stdout.on("data", (data) => {
-        stdout += data.toString()
-      })
+        stdout += data.toString();
+      });
 
       process.stderr.on("data", (data) => {
-        stderr += data.toString()
-      })
+        stderr += data.toString();
+      });
 
       process.on("close", (code) => {
-        clearTimeout(timer)
+        clearTimeout(timer);
         if (!timedOut) {
           resolve({
             exitCode: code || 0,
             stdout: stdout.trim(),
             stderr: stderr.trim(),
-          })
+          });
         }
-      })
+      });
 
       process.on("error", (error) => {
-        clearTimeout(timer)
+        clearTimeout(timer);
         if (!timedOut) {
-          reject(error)
+          reject(error);
         }
-      })
-    })
+      });
+    });
   }
 }
 
@@ -244,5 +244,5 @@ export class ContainerExecutor {
  * Factory function to create container executor
  */
 export function createContainerExecutor(): ContainerExecutor {
-  return ContainerExecutor.getInstance()
+  return ContainerExecutor.getInstance();
 }

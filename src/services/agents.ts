@@ -1,26 +1,26 @@
-import { createAgentRegistry, initializeAgents } from "../adapters/registry.js"
-import type { AgentInput, AgentResult } from "../adapters/types.js"
-import type { HachikoConfig } from "../config/schema.js"
-import type { ContextWithRepository } from "../types/context.js"
-import { AgentExecutionError } from "../utils/errors.js"
-import { createLogger } from "../utils/logger.js"
+import { createAgentRegistry, initializeAgents } from "../adapters/registry.js";
+import type { AgentInput, AgentResult } from "../adapters/types.js";
+import type { HachikoConfig } from "../config/schema.js";
+import type { ContextWithRepository } from "../types/context.js";
+import { AgentExecutionError } from "../utils/errors.js";
+import { createLogger } from "../utils/logger.js";
 
-const logger = createLogger("agent-service")
+const logger = createLogger("agent-service");
 
 /**
  * Service for executing agents
  */
 export class AgentService {
-  private static instance: AgentService | null = null
-  private initialized = false
+  private static instance: AgentService | null = null;
+  private initialized = false;
 
   private constructor() {}
 
   static getInstance(): AgentService {
     if (!AgentService.instance) {
-      AgentService.instance = new AgentService()
+      AgentService.instance = new AgentService();
     }
-    return AgentService.instance
+    return AgentService.instance;
   }
 
   /**
@@ -28,16 +28,16 @@ export class AgentService {
    */
   async initialize(config: HachikoConfig): Promise<void> {
     if (this.initialized) {
-      return
+      return;
     }
 
     try {
-      await initializeAgents(config)
-      this.initialized = true
-      logger.info("Agent service initialized")
+      await initializeAgents(config);
+      this.initialized = true;
+      logger.info("Agent service initialized");
     } catch (error) {
-      logger.error({ error }, "Failed to initialize agent service")
-      throw error
+      logger.error({ error }, "Failed to initialize agent service");
+      throw error;
     }
   }
 
@@ -46,14 +46,14 @@ export class AgentService {
    */
   async executeAgent(agentName: string, input: AgentInput): Promise<AgentResult> {
     if (!this.initialized) {
-      throw new AgentExecutionError("Agent service not initialized", agentName)
+      throw new AgentExecutionError("Agent service not initialized", agentName);
     }
 
-    const registry = createAgentRegistry()
-    const adapter = registry.getAdapter(agentName)
+    const registry = createAgentRegistry();
+    const adapter = registry.getAdapter(agentName);
 
     if (!adapter) {
-      throw new AgentExecutionError(`Agent ${agentName} not found`, agentName)
+      throw new AgentExecutionError(`Agent ${agentName} not found`, agentName);
     }
 
     logger.info(
@@ -64,10 +64,10 @@ export class AgentService {
         files: input.files.length,
       },
       "Executing agent"
-    )
+    );
 
     try {
-      const result = await adapter.execute(input)
+      const result = await adapter.execute(input);
 
       logger.info(
         {
@@ -80,9 +80,9 @@ export class AgentService {
           createdFiles: result.createdFiles.length,
         },
         "Agent execution completed"
-      )
+      );
 
-      return result
+      return result;
     } catch (error) {
       logger.error(
         {
@@ -92,7 +92,7 @@ export class AgentService {
           stepId: input.stepId,
         },
         "Agent execution failed"
-      )
+      );
 
       throw new AgentExecutionError(
         `Agent execution failed: ${error instanceof Error ? error.message : String(error)}`,
@@ -102,7 +102,7 @@ export class AgentService {
           stepId: input.stepId,
           files: input.files,
         }
-      )
+      );
     }
   }
 
@@ -111,11 +111,11 @@ export class AgentService {
    */
   getAvailableAgents(): string[] {
     if (!this.initialized) {
-      return []
+      return [];
     }
 
-    const registry = createAgentRegistry()
-    return registry.getAdapterNames()
+    const registry = createAgentRegistry();
+    return registry.getAdapterNames();
   }
 
   /**
@@ -123,11 +123,11 @@ export class AgentService {
    */
   async validateAgents(): Promise<Record<string, boolean>> {
     if (!this.initialized) {
-      return {}
+      return {};
     }
 
-    const registry = createAgentRegistry()
-    return registry.validateAllAdapters()
+    const registry = createAgentRegistry();
+    return registry.validateAllAdapters();
   }
 
   /**
@@ -135,11 +135,11 @@ export class AgentService {
    */
   isAgentAvailable(agentName: string): boolean {
     if (!this.initialized) {
-      return false
+      return false;
     }
 
-    const registry = createAgentRegistry()
-    return registry.hasAdapter(agentName)
+    const registry = createAgentRegistry();
+    return registry.hasAdapter(agentName);
   }
 }
 
@@ -147,7 +147,7 @@ export class AgentService {
  * Factory function to get agent service instance
  */
 export function createAgentService(): AgentService {
-  return AgentService.getInstance()
+  return AgentService.getInstance();
 }
 
 /**
@@ -162,13 +162,13 @@ export async function executeMigrationStep(
   prompt: string,
   chunk?: string
 ): Promise<AgentResult> {
-  const agentService = createAgentService()
+  const agentService = createAgentService();
 
   // Ensure agent service is initialized
-  await agentService.initialize(config)
+  await agentService.initialize(config);
 
   // Determine which agent to use
-  const agentName = config.defaults.agent || "mock"
+  const agentName = config.defaults.agent || "mock";
 
   // Prepare agent input
   const agentInput: AgentInput = {
@@ -183,7 +183,7 @@ export async function executeMigrationStep(
       repository: context.payload.repository.full_name,
       actor: context.payload.sender?.login,
     },
-  }
+  };
 
-  return agentService.executeAgent(agentName, agentInput)
+  return agentService.executeAgent(agentName, agentInput);
 }

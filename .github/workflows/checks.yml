@@ -17,37 +17,37 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
-        
+
       - name: Install pnpm
         uses: pnpm/action-setup@fe02b34f77f8bc703788d5817da081398fad5dd2 # v4.0.0
-          
+
       - name: Setup Node.js
         uses: actions/setup-node@60edb5dd545a775178f52524783378180af0d1f8 # v4.0.3
         with:
           node-version: 22
-          cache: 'pnpm'
-          
+          cache: "pnpm"
+
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
-        
+
       - name: Build packages
         run: pnpm build
-        
-      - name: Biome (lint + format)
-        run: pnpm biome ci
-        
+
+      - name: Oxlint & Oxfmt (lint + format)
+        run: pnpm lint && pnpm format
+
       - name: TypeScript type check
         run: pnpm typecheck
-        
+
       - name: Unit & Integration Tests
         run: pnpm test:coverage --reporter=junit
-        
+
       - name: Upload coverage reports
         uses: codecov/codecov-action@v4
         if: always()
         with:
           fail_ci_if_error: false
-          
+
       - name: Docs link check
         run: |
           # Simple link checker - can be enhanced later

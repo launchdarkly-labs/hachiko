@@ -1,0 +1,23 @@
+{
+  "$schema": "https://oxc.rs/schemas/oxlintrc.json",
+  "env": {
+    "browser": false,
+    "node": true,
+    "es6": true
+  },
+  "ignorePatterns": [
+    "**/node_modules/**",
+    "**/dist/**",
+    "**/coverage/**",
+    "**/.git/**",
+    "test/unit/webhooks/push.test.ts",
+    "**/scripts/**"
+  ],
+  "rules": {
+    "no-unused-vars": "warn",
+    "no-console": "warn",
+    "no-eval": "error",
+    "prefer-const": "error",
+    "no-var": "error"
+  }
+}

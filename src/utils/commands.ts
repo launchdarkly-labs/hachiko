@@ -1,42 +1,42 @@
 export interface HachikoCommand {
-  action: string
-  args: string[]
-  rawCommand: string
+  action: string;
+  args: string[];
+  rawCommand: string;
 }
 
 /**
  * Parse a Hachiko command from a comment body
  */
 export function parseHachikoCommand(commentBody: string): HachikoCommand | null {
-  const lines = commentBody.trim().split("\n")
+  const lines = commentBody.trim().split("\n");
 
   // Ensure we have at least one line
   if (lines.length === 0) {
-    return null
+    return null;
   }
 
-  const commandLine = lines[0]?.trim()
+  const commandLine = lines[0]?.trim();
 
   // Must start with /hachi
   if (!commandLine || !commandLine.startsWith("/hachi")) {
-    return null
+    return null;
   }
 
   // Split command into parts
-  const parts = commandLine.split(/\s+/).filter(Boolean)
+  const parts = commandLine.split(/\s+/).filter(Boolean);
 
   if (parts.length < 2) {
-    return null
+    return null;
   }
 
-  const action = parts[1]! // We know this exists due to length check
-  const args = parts.slice(2)
+  const action = parts[1]!; // We know this exists due to length check
+  const args = parts.slice(2);
 
   return {
     action,
     args,
     rawCommand: commandLine,
-  }
+  };
 }
 
 /**
@@ -52,11 +52,11 @@ export function canExecuteCommand(
 
   // Always allow status commands
   if (command.action === "status") {
-    return true
+    return true;
   }
 
   // For other commands, user should be authenticated
-  return user.type !== "Bot" && user.login.length > 0
+  return user.type !== "Bot" && user.login.length > 0;
 }
 
 /**
@@ -68,14 +68,14 @@ export function formatCommandResponse(
   message: string,
   details?: string
 ): string {
-  const emoji = status === "success" ? "✅" : status === "error" ? "❌" : "ℹ️"
-  const title = `${emoji} **Command**: \`${command}\``
+  const emoji = status === "success" ? "✅" : status === "error" ? "❌" : "ℹ️";
+  const title = `${emoji} **Command**: \`${command}\``;
 
-  let response = `${title}\n\n${message}`
+  let response = `${title}\n\n${message}`;
 
   if (details) {
-    response += `\n\n**Details:**\n${details}`
+    response += `\n\n**Details:**\n${details}`;
   }
 
-  return response
+  return response;
 }

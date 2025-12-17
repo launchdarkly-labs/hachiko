@@ -1,4 +1,4 @@
-import type { Context } from "probot"
+import type { Context } from "probot";
 
 /**
  * Context types that have a repository property in their payload
@@ -15,15 +15,15 @@ export type ContextWithRepository =
   | Context<"issue_comment.deleted">
   | Context<"workflow_run">
   | Context<"workflow_run.completed">
-  | Context<"workflow_run.requested">
+  | Context<"workflow_run.requested">;
 
 /**
  * Repository information extracted from context
  */
 export interface RepositoryInfo {
-  owner: string
-  repo: string
-  fullName: string
+  owner: string;
+  repo: string;
+  fullName: string;
 }
 
 /**
@@ -34,5 +34,5 @@ export function extractRepositoryInfo(context: ContextWithRepository): Repositor
     owner: context.payload.repository.owner.login,
     repo: context.payload.repository.name,
     fullName: context.payload.repository.full_name,
-  }
+  };
 }

@@ -7,10 +7,10 @@
  * the configured agent for a migration step.
  */
 
-import { readFile, writeFile } from "node:fs/promises"
-import { join } from "node:path"
-import { execa } from "execa"
-import { z } from "zod"
+import { readFile, writeFile } from "node:fs/promises";
+import { join } from "node:path";
+import { execa } from "execa";
+import { z } from "zod";
 
 // Event payload schema
 const HachikoEventSchema = z.object({
@@ -20,51 +20,51 @@ const HachikoEventSchema = z.object({
   promptConfigRef: z.string().optional(),
   commitMessage: z.string(),
   branchName: z.string(),
-})
+});
 
-type HachikoEvent = z.infer<typeof HachikoEventSchema>
+type HachikoEvent = z.infer<typeof HachikoEventSchema>;
 
 async function main() {
-  const eventJson = process.argv[2]
+  const eventJson = process.argv[2];
   if (!eventJson) {
-    console.error("❌ Missing event payload argument")
-    process.exit(1)
+    console.error("❌ Missing event payload argument");
+    process.exit(1);
   }
 
-  let event: HachikoEvent
+  let event: HachikoEvent;
   try {
-    event = HachikoEventSchema.parse(JSON.parse(eventJson))
+    event = HachikoEventSchema.parse(JSON.parse(eventJson));
   } catch (error) {
-    console.error("❌ Invalid event payload:", error)
-    process.exit(1)
+    console.error("❌ Invalid event payload:", error);
+    process.exit(1);
   }
 
   // Load Hachiko configuration
-  const config = await loadConfig()
-  const agentConfig = config.agents[config.defaults.agent as keyof typeof config.agents]
+  const config = await loadConfig();
+  const agentConfig = config.agents[config.defaults.agent as keyof typeof config.agents];
 
   if (!agentConfig) {
-    console.error(`❌ Agent "${config.defaults.agent}" not found in configuration`)
-    process.exit(1)
+    console.error(`❌ Agent "${config.defaults.agent}" not found in configuration`);
+    process.exit(1);
   }
 
   // Load migration plan
-  const plan = await loadPlan(event.planId, config)
-  const step = plan.steps.find((s) => s.id === event.stepId)
+  const plan = await loadPlan(event.planId, config);
+  const step = plan.steps.find((s) => s.id === event.stepId);
 
   if (!step) {
-    console.error(`❌ Step "${event.stepId}" not found in plan`)
-    process.exit(1)
+    console.error(`❌ Step "${event.stepId}" not found in plan`);
+    process.exit(1);
   }
 
   // Create working branch
-  await createWorkingBranch(event.branchName)
+  await createWorkingBranch(event.branchName);
 
   // Prepare prompt (placeholder for LaunchDarkly integration)
-  const prompt = await preparePrompt(event, plan, step)
+  const prompt = await preparePrompt(event, plan, step);
 
   // Execute agent in sandbox
-  const result = await executeAgent(agentConfig, prompt, event)
+  const result = await executeAgent(agentConfig, prompt, event);
 
   if (result.changedFiles.length > 0) {
     for (const _file of result.changedFiles) {
@@ -72,9 +72,9 @@ async function main() {
   }
 
   if (!result.success) {
-    console.error("❌ Agent execution failed")
-    console.error(result.error)
-    process.exit(1)
+    console.error("❌ Agent execution failed");
+    console.error(result.error);
+    process.exit(1);
   }
 }
 
@@ -90,7 +90,7 @@ async function loadConfig() {
         args: ["Mock agent execution completed"],
       },
     },
-  }
+  };
 }
 
 async function loadPlan(planId: string, _config: any) {
@@ -112,16 +112,16 @@ async function loadPlan(planId: string, _config: any) {
         description: "Verify migration success",
       },
     ],
-  }
+  };
 }
 
 async function createWorkingBranch(branchName: string) {
   try {
     // Check if branch already exists
-    await execa("git", ["show-ref", "--verify", `refs/heads/${branchName}`])
-    await execa("git", ["checkout", branchName])
+    await execa("git", ["show-ref", "--verify", `refs/heads/${branchName}`]);
+    await execa("git", ["checkout", branchName]);
   } catch {
-    await execa("git", ["checkout", "-b", branchName])
+    await execa("git", ["checkout", "-b", branchName]);
   }
 }
 
@@ -137,30 +137,30 @@ Please analyze the codebase and make the necessary changes for this migration st
 Focus only on files that are relevant to this specific step.
 Ensure all changes are safe and well-tested.
 
-When complete, commit your changes with the message: "${event.commitMessage}"`
+When complete, commit your changes with the message: "${event.commitMessage}"`;
 
   // Write prompt to temp file for agent consumption
-  const promptPath = "/tmp/hachiko-prompt.txt"
-  await writeFile(promptPath, prompt)
+  const promptPath = "/tmp/hachiko-prompt.txt";
+  await writeFile(promptPath, prompt);
 
-  return promptPath
+  return promptPath;
 }
 
 async function executeAgent(agentConfig: any, promptPath: string, event: HachikoEvent) {
-  const startTime = Date.now()
+  const startTime = Date.now();
 
   try {
     if (agentConfig.kind === "cli") {
       // For mock agent, just simulate execution
       if (agentConfig.command === "echo") {
         // Simulate making changes to fixture files
-        const changedFiles = await simulateMockChanges(event)
+        const changedFiles = await simulateMockChanges(event);
 
         return {
           success: true,
           changedFiles,
           duration: Date.now() - startTime,
-        }
+        };
       }
 
       // Real agent execution would happen here
@@ -168,60 +168,60 @@ async function executeAgent(agentConfig: any, promptPath: string, event: Hachiko
         ...agentConfig.args,
         "--prompt-file",
         promptPath,
-      ])
+      ]);
 
       return {
         success: result.exitCode === 0,
         changedFiles: await getChangedFiles(),
         duration: Date.now() - startTime,
-      }
+      };
     }
 
-    throw new Error(`Unsupported agent kind: ${agentConfig.kind}`)
+    throw new Error(`Unsupported agent kind: ${agentConfig.kind}`);
   } catch (error) {
     return {
       success: false,
       changedFiles: [],
       duration: Date.now() - startTime,
       error: error instanceof Error ? error.message : String(error),
-    }
+    };
   }
 }
 
 async function simulateMockChanges(event: HachikoEvent): Promise<string[]> {
   // For demonstration, modify one of the fixture files
-  const filePath = "examples/fixtures/SampleTest.java"
+  const filePath = "examples/fixtures/SampleTest.java";
 
   try {
-    const content = await readFile(filePath, "utf-8")
+    const content = await readFile(filePath, "utf-8");
     const modified = content
       .replace("import org.junit.Test;", "import org.junit.jupiter.api.Test;")
       .replace("import org.junit.Assert;", "import org.junit.jupiter.api.Assertions;")
-      .replace("Assert.assertEquals", "Assertions.assertEquals")
+      .replace("Assert.assertEquals", "Assertions.assertEquals");
 
-    await writeFile(filePath, modified)
+    await writeFile(filePath, modified);
 
     // Stage and commit the changes
-    await execa("git", ["add", filePath])
-    await execa("git", ["commit", "-m", event.commitMessage])
-    return [filePath]
+    await execa("git", ["add", filePath]);
+    await execa("git", ["commit", "-m", event.commitMessage]);
+    return [filePath];
   } catch (_error) {
-    return []
+    return [];
   }
 }
 
 async function getChangedFiles(): Promise<string[]> {
   try {
-    const result = await execa("git", ["diff", "--name-only", "HEAD~1"])
-    return result.stdout.split("\n").filter(Boolean)
+    const result = await execa("git", ["diff", "--name-only", "HEAD~1"]);
+    return result.stdout.split("\n").filter(Boolean);
   } catch {
-    return []
+    return [];
   }
 }
 
 if (import.meta.url === `file://${process.argv[1]}`) {
   main().catch((error) => {
-    console.error("❌ Fatal error:", error)
-    process.exit(1)
-  })
+    console.error("❌ Fatal error:", error);
+    process.exit(1);
+  });
 }

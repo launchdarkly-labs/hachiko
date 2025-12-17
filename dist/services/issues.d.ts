@@ -5,9 +5,19 @@ import type { MigrationPlan } from "./plans.js";
 /**
  * Create a Migration Issue for a new plan
  */
-export declare function createMigrationIssue(context: ContextWithRepository, plan: MigrationPlan, config: HachikoConfig, logger: Logger): Promise<void>;
+export declare function createMigrationIssue(
+  context: ContextWithRepository,
+  plan: MigrationPlan,
+  config: HachikoConfig,
+  logger: Logger
+): Promise<void>;
 /**
  * Create a Plan Review PR for a new plan
  */
-export declare function createPlanReviewPR(context: ContextWithRepository, plan: MigrationPlan, config: HachikoConfig, logger: Logger): Promise<void>;
+export declare function createPlanReviewPR(
+  context: ContextWithRepository,
+  plan: MigrationPlan,
+  config: HachikoConfig,
+  logger: Logger
+): Promise<void>;
 //# sourceMappingURL=issues.d.ts.map

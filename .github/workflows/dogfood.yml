@@ -14,26 +14,26 @@ jobs:
   simulate-migration:
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    
+
     steps:
       - name: Checkout
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
-        
+
       - name: Install pnpm
         uses: pnpm/action-setup@fe02b34f77f8bc703788d5817da081398fad5dd2 # v4.0.0
-          
+
       - name: Setup Node.js
         uses: actions/setup-node@60edb5dd545a775178f52524783378180af0d1f8 # v4.0.3
         with:
           node-version: 22
-          cache: 'pnpm'
-          
+          cache: "pnpm"
+
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
-        
+
       - name: Build all packages
         run: pnpm build
-        
+
       - name: Test configuration parsing
         run: |
           echo "Testing Hachiko configuration parsing..."
@@ -46,7 +46,7 @@ jobs:
             const valid = validateHachikoConfig(config);
             console.log('✅ Configuration is valid:', valid.plans.directory);
           "
-          
+
       - name: Test migration plan parsing
         run: |
           echo "Testing migration plan parsing..."
@@ -62,7 +62,7 @@ jobs:
               }
             });
           "
-          
+
       - name: Simulate webhook events (placeholder)
         run: |
           echo "🚧 Webhook simulation not yet implemented"
@@ -73,7 +73,7 @@ jobs:
           echo "  4. Simulate Plan Review PR merge"
           echo "  5. Verify agent dispatch event"
           echo "  6. Assert final state"
-          
+
       - name: Verify example fixtures
         run: |
           echo "Verifying example fixtures exist..."
@@ -82,7 +82,7 @@ jobs:
           test -f examples/fixtures/UserProfile.tsx
           test -f examples/fixtures/package.json
           echo "✅ All React fixtures present"
-          
+
       - name: Summary
         run: |
           echo "🎉 Dogfood simulation completed!"

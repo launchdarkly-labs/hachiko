@@ -4,7 +4,7 @@ This guide walks you through setting up Hachiko for local development and testin
 
 ## Prerequisites
 
-- **Node.js 22+** 
+- **Node.js 22+**
 - **pnpm 9+**
 - **GitHub CLI** (`gh`) - for API interactions
 - **ngrok** or **smee.io** - for webhook proxying (optional)
@@ -109,7 +109,7 @@ defaults:
           const content = fs.readFileSync(path, 'utf8');
           return {
             data: {
-              type: 'file', 
+              type: 'file',
               content: Buffer.from(content).toString('base64')
             }
           };
@@ -147,17 +147,18 @@ node test-webhook.js
 For testing with real GitHub webhooks:
 
 1. **Set up webhook proxy:**
+
    ```bash
    # Install smee-client globally
    npm install -g smee-client
-   
+
    # Start webhook proxy (get URL from https://smee.io)
    smee --url https://smee.io/your-unique-url --target http://localhost:3000/webhooks
    ```
 
 2. **Configure GitHub App:**
    - Create a GitHub App at `https://github.com/settings/apps/new`
-   - Set webhook URL to your smee.io URL  
+   - Set webhook URL to your smee.io URL
    - Enable permissions: Issues (write), Pull requests (write), Repository contents (read)
    - Install the app on your test repository
 
@@ -179,7 +180,7 @@ import('./dist/services/plans.js').then(async ({ parsePlanFile }) => {
 });
 "
 
-# Test configuration loading  
+# Test configuration loading
 node -e "
 import('./dist/services/config.js').then(async ({ loadHachikoConfig }) => {
   // Mock context with repo info
@@ -240,7 +241,7 @@ import('./dist/services/plans.js').then(async ({ parsePlanFile }) => {
 When testing locally, you should see this flow:
 
 1. **Webhook Received**: Push event with migration files detected
-2. **Config Loaded**: `.hachiko.yml` parsed successfully  
+2. **Config Loaded**: `.hachiko.yml` parsed successfully
 3. **Plans Detected**: Migration plans found in `migrations/` directory
 4. **Plan Parsed**: YAML frontmatter and content validated
 5. **Issues Created**: Migration Issue created in repository
@@ -249,21 +250,25 @@ When testing locally, you should see this flow:
 ## Common Issues
 
 ### "No migration plans changed in this push"
+
 - Verify files are in the correct directory (`migrations/` by default)
 - Check that files end with `.md`
 - Ensure the push is to the default branch (`main`)
 
 ### "Failed to load .hachiko.yml"
+
 - Verify `.hachiko.yml` exists in repository root
 - Check YAML syntax is valid
 - Ensure required fields are present
 
-### "Plan validation failed" 
+### "Plan validation failed"
+
 - Check YAML frontmatter syntax in migration plan
 - Verify required fields: `id`, `title`, `steps`
 - Validate step structure and IDs
 
 ### GitHub API Errors
+
 - Verify `GITHUB_TOKEN` has correct permissions
 - Check repository access and API rate limits
 - Ensure GitHub App has required permissions (if using app auth)
@@ -271,12 +276,14 @@ When testing locally, you should see this flow:
 ## Production Deployment
 
 For production deployment, see:
+
 - [Deployment Guide](./deployment.md) (TODO)
 - [GitHub App Setup](./github-app-setup.md) (TODO)
 
 ## Self-Testing Environment
 
 The repository includes a self-testing environment with:
+
 - **3 React class components** in `self-test/src/components/`
 - **Multi-step migration plan** in `migrations/self-test-react-hooks.md`
 - **Intentionally unoptimized plan** in `migrations/unoptimized-test-plan.md`

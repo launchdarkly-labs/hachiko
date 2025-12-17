@@ -1,10 +1,10 @@
-import { minimatch } from "minimatch"
-import type { PolicyViolation } from "../adapters/types.js"
-import type { HachikoConfig } from "../config/schema.js"
-import { PolicyViolationError } from "../utils/errors.js"
-import { createLogger } from "../utils/logger.js"
+import { minimatch } from "minimatch";
+import type { PolicyViolation } from "../adapters/types.js";
+import type { HachikoConfig } from "../config/schema.js";
+import { PolicyViolationError } from "../utils/errors.js";
+import { createLogger } from "../utils/logger.js";
 
-const logger = createLogger("policy-engine")
+const logger = createLogger("policy-engine");
 
 /**
  * Policy rule types
@@ -16,9 +16,9 @@ export const PolicyRuleType = {
   RESOURCE_USAGE: "resource_usage",
   TIME_CONSTRAINTS: "time_constraints",
   USER_PERMISSIONS: "user_permissions",
-} as const
+} as const;
 
-export type PolicyRuleTypeType = (typeof PolicyRuleType)[keyof typeof PolicyRuleType]
+export type PolicyRuleTypeType = (typeof PolicyRuleType)[keyof typeof PolicyRuleType];
 
 /**
  * Policy severity levels
@@ -28,30 +28,30 @@ export const PolicySeverity = {
   WARNING: "warning",
   ERROR: "error",
   CRITICAL: "critical",
-} as const
+} as const;
 
-export type PolicySeverityType = (typeof PolicySeverity)[keyof typeof PolicySeverity]
+export type PolicySeverityType = (typeof PolicySeverity)[keyof typeof PolicySeverity];
 
 /**
  * Policy rule definition
  */
 export interface PolicyRule {
-  id: string
-  name: string
-  description: string
-  type: PolicyRuleTypeType
-  severity: PolicySeverityType
-  enabled: boolean
-  conditions: PolicyCondition[]
-  actions: PolicyAction[]
-  metadata?: Record<string, unknown>
+  id: string;
+  name: string;
+  description: string;
+  type: PolicyRuleTypeType;
+  severity: PolicySeverityType;
+  enabled: boolean;
+  conditions: PolicyCondition[];
+  actions: PolicyAction[];
+  metadata?: Record<string, unknown>;
 }
 
 /**
  * Policy condition
  */
 export interface PolicyCondition {
-  field: string
+  field: string;
   operator:
     | "equals"
     | "not_equals"
@@ -60,18 +60,18 @@ export interface PolicyCondition {
     | "contains"
     | "not_contains"
     | "greater_than"
-    | "less_than"
-  value: string | number | boolean | string[]
-  caseSensitive?: boolean
+    | "less_than";
+  value: string | number | boolean | string[];
+  caseSensitive?: boolean;
 }
 
 /**
  * Policy action
  */
 export interface PolicyAction {
-  type: "block" | "warn" | "log" | "require_approval"
-  message?: string
-  metadata?: Record<string, unknown>
+  type: "block" | "warn" | "log" | "require_approval";
+  message?: string;
+  metadata?: Record<string, unknown>;
 }
 
 /**
@@ -79,67 +79,67 @@ export interface PolicyAction {
  */
 export interface PolicyContext {
   /** Migration plan ID */
-  planId: string
+  planId: string;
   /** Step ID */
-  stepId: string
+  stepId: string;
   /** Repository information */
   repository: {
-    owner: string
-    name: string
-    defaultBranch: string
-    isPrivate?: boolean
-  }
+    owner: string;
+    name: string;
+    defaultBranch: string;
+    isPrivate?: boolean;
+  };
   /** User information */
   user: {
-    login: string
-    type: string
-    permissions?: string[]
-  }
+    login: string;
+    type: string;
+    permissions?: string[];
+  };
   /** Files being accessed */
-  files: string[]
+  files: string[];
   /** Commands being executed */
-  commands?: string[]
+  commands?: string[];
   /** Network requests */
-  networkRequests?: string[]
+  networkRequests?: string[];
   /** Resource usage */
   resourceUsage?: {
-    memory?: number
-    cpu?: number
-    timeout?: number
-  }
+    memory?: number;
+    cpu?: number;
+    timeout?: number;
+  };
   /** Execution environment */
-  environment: string
+  environment: string;
   /** Additional metadata */
-  metadata?: Record<string, unknown>
+  metadata?: Record<string, unknown>;
 }
 
 /**
  * Policy evaluation result
  */
 export interface PolicyEvaluationResult {
-  allowed: boolean
-  violations: PolicyViolation[]
-  warnings: PolicyViolation[]
-  requiresApproval: boolean
-  metadata?: Record<string, unknown>
+  allowed: boolean;
+  violations: PolicyViolation[];
+  warnings: PolicyViolation[];
+  requiresApproval: boolean;
+  metadata?: Record<string, unknown>;
 }
 
 /**
  * Advanced policy engine for security and compliance
  */
 export class PolicyEngine {
-  private static instance: PolicyEngine | null = null
-  private rules: PolicyRule[] = []
-  private config: HachikoConfig | null = null
-  private initialized = false
+  private static instance: PolicyEngine | null = null;
+  private rules: PolicyRule[] = [];
+  private config: HachikoConfig | null = null;
+  private initialized = false;
 
   private constructor() {}
 
   static getInstance(): PolicyEngine {
     if (!PolicyEngine.instance) {
-      PolicyEngine.instance = new PolicyEngine()
+      PolicyEngine.instance = new PolicyEngine();
     }
-    return PolicyEngine.instance
+    return PolicyEngine.instance;
   }
 
   /**
@@ -147,12 +147,12 @@ export class PolicyEngine {
    */
   async initialize(config: HachikoConfig): Promise<void> {
     if (this.initialized) {
-      return
+      return;
     }
 
-    this.config = config
-    this.rules = await this.loadPolicyRules(config)
-    this.initialized = true
+    this.config = config;
+    this.rules = await this.loadPolicyRules(config);
+    this.initialized = true;
 
     logger.info(
       {
@@ -160,7 +160,7 @@ export class PolicyEngine {
         enabledRules: this.rules.filter((r) => r.enabled).length,
       },
       "Policy engine initialized"
-    )
+    );
   }
 
   /**
@@ -168,18 +168,18 @@ export class PolicyEngine {
    */
   async evaluatePolicies(context: PolicyContext): Promise<PolicyEvaluationResult> {
     if (!this.initialized) {
-      throw new PolicyViolationError("Policy engine not initialized", [])
+      throw new PolicyViolationError("Policy engine not initialized", []);
     }
 
-    const violations: PolicyViolation[] = []
-    const warnings: PolicyViolation[] = []
-    let requiresApproval = false
+    const violations: PolicyViolation[] = [];
+    const warnings: PolicyViolation[] = [];
+    let requiresApproval = false;
 
     for (const rule of this.rules) {
-      if (!rule.enabled) continue
+      if (!rule.enabled) continue;
 
       try {
-        const ruleResult = await this.evaluateRule(rule, context)
+        const ruleResult = await this.evaluateRule(rule, context);
 
         if (ruleResult.violated) {
           const violation: PolicyViolation = {
@@ -192,21 +192,21 @@ export class PolicyEngine {
                 : rule.severity === PolicySeverity.ERROR
                   ? "error"
                   : "warning",
-          }
+          };
 
           if (rule.severity === PolicySeverity.ERROR || rule.severity === PolicySeverity.CRITICAL) {
-            violations.push(violation)
+            violations.push(violation);
           } else {
-            warnings.push(violation)
+            warnings.push(violation);
           }
 
           // Check if any actions require approval
           if (rule.actions.some((action) => action.type === "require_approval")) {
-            requiresApproval = true
+            requiresApproval = true;
           }
         }
       } catch (error) {
-        logger.error({ error, rule: rule.id }, "Failed to evaluate policy rule")
+        logger.error({ error, rule: rule.id }, "Failed to evaluate policy rule");
       }
     }
 
@@ -215,7 +215,7 @@ export class PolicyEngine {
       violations,
       warnings,
       requiresApproval,
-    }
+    };
 
     logger.debug(
       {
@@ -227,22 +227,22 @@ export class PolicyEngine {
         requiresApproval,
       },
       "Policy evaluation completed"
-    )
+    );
 
-    return result
+    return result;
   }
 
   /**
    * Add a custom policy rule
    */
   addRule(rule: PolicyRule): void {
-    const existingIndex = this.rules.findIndex((r) => r.id === rule.id)
+    const existingIndex = this.rules.findIndex((r) => r.id === rule.id);
     if (existingIndex >= 0) {
-      this.rules[existingIndex] = rule
-      logger.info({ ruleId: rule.id }, "Policy rule updated")
+      this.rules[existingIndex] = rule;
+      logger.info({ ruleId: rule.id }, "Policy rule updated");
     } else {
-      this.rules.push(rule)
-      logger.info({ ruleId: rule.id }, "Policy rule added")
+      this.rules.push(rule);
+      logger.info({ ruleId: rule.id }, "Policy rule added");
     }
   }
 
@@ -250,47 +250,47 @@ export class PolicyEngine {
    * Remove a policy rule
    */
   removeRule(ruleId: string): boolean {
-    const index = this.rules.findIndex((r) => r.id === ruleId)
+    const index = this.rules.findIndex((r) => r.id === ruleId);
     if (index >= 0) {
-      this.rules.splice(index, 1)
-      logger.info({ ruleId }, "Policy rule removed")
-      return true
+      this.rules.splice(index, 1);
+      logger.info({ ruleId }, "Policy rule removed");
+      return true;
     }
-    return false
+    return false;
   }
 
   /**
    * Get all policy rules
    */
   getRules(): PolicyRule[] {
-    return [...this.rules]
+    return [...this.rules];
   }
 
   /**
    * Get enabled policy rules
    */
   getEnabledRules(): PolicyRule[] {
-    return this.rules.filter((rule) => rule.enabled)
+    return this.rules.filter((rule) => rule.enabled);
   }
 
   /**
    * Enable/disable a policy rule
    */
   setRuleEnabled(ruleId: string, enabled: boolean): boolean {
-    const rule = this.rules.find((r) => r.id === ruleId)
+    const rule = this.rules.find((r) => r.id === ruleId);
     if (rule) {
-      rule.enabled = enabled
-      logger.info({ ruleId, enabled }, "Policy rule enabled/disabled")
-      return true
+      rule.enabled = enabled;
+      logger.info({ ruleId, enabled }, "Policy rule enabled/disabled");
+      return true;
     }
-    return false
+    return false;
   }
 
   /**
    * Load built-in policy rules
    */
   private async loadPolicyRules(config: HachikoConfig): Promise<PolicyRule[]> {
-    const rules: PolicyRule[] = []
+    const rules: PolicyRule[] = [];
 
     // File access rules
     rules.push({
@@ -315,7 +315,7 @@ export class PolicyEngine {
         },
       ],
       actions: [{ type: "block", message: "Access to sensitive files is not allowed" }],
-    })
+    });
 
     // Risky glob patterns from config
     if (config.policy.riskyGlobs.length > 0) {
@@ -334,7 +334,7 @@ export class PolicyEngine {
           },
         ],
         actions: [{ type: "block", message: "Access to risky paths is not allowed" }],
-      })
+      });
     }
 
     // Allowlist enforcement
@@ -354,7 +354,7 @@ export class PolicyEngine {
           },
         ],
         actions: [{ type: "block", message: "File access outside allowlist is not permitted" }],
-      })
+      });
     }
 
     // Resource usage rules
@@ -373,7 +373,7 @@ export class PolicyEngine {
         },
       ],
       actions: [{ type: "block", message: "Execution timeout exceeded" }],
-    })
+    });
 
     // Command execution rules
     rules.push({
@@ -403,7 +403,7 @@ export class PolicyEngine {
         },
       ],
       actions: [{ type: "block", message: "Dangerous command execution is not allowed" }],
-    })
+    });
 
     // Network access rules
     if (config.policy.network === "none") {
@@ -422,7 +422,7 @@ export class PolicyEngine {
           },
         ],
         actions: [{ type: "block", message: "Network access is not allowed" }],
-      })
+      });
     }
 
     // User permission rules
@@ -441,10 +441,10 @@ export class PolicyEngine {
         },
       ],
       actions: [{ type: "block", message: "Bot users cannot execute migrations" }],
-    })
+    });
 
-    logger.debug({ rulesCount: rules.length }, "Built-in policy rules loaded")
-    return rules
+    logger.debug({ rulesCount: rules.length }, "Built-in policy rules loaded");
+    return rules;
   }
 
   /**
@@ -455,17 +455,17 @@ export class PolicyEngine {
     context: PolicyContext
   ): Promise<{ violated: boolean; message?: string }> {
     for (const condition of rule.conditions) {
-      const violated = await this.evaluateCondition(condition, context)
+      const violated = await this.evaluateCondition(condition, context);
       if (violated) {
-        const actionMessage = rule.actions.find((a) => a.message)?.message
+        const actionMessage = rule.actions.find((a) => a.message)?.message;
         return {
           violated: true,
           message: actionMessage || rule.description,
-        }
+        };
       }
     }
 
-    return { violated: false }
+    return { violated: false };
   }
 
   /**
@@ -475,36 +475,36 @@ export class PolicyEngine {
     condition: PolicyCondition,
     context: PolicyContext
   ): Promise<boolean> {
-    const fieldValue = this.getFieldValue(condition.field, context)
+    const fieldValue = this.getFieldValue(condition.field, context);
 
     switch (condition.operator) {
       case "equals":
-        return this.compareValues(fieldValue, condition.value, "equals")
+        return this.compareValues(fieldValue, condition.value, "equals");
 
       case "not_equals":
-        return !this.compareValues(fieldValue, condition.value, "equals")
+        return !this.compareValues(fieldValue, condition.value, "equals");
 
       case "matches":
-        return this.matchesPattern(fieldValue, condition.value)
+        return this.matchesPattern(fieldValue, condition.value);
 
       case "not_matches":
-        return !this.matchesPattern(fieldValue, condition.value)
+        return !this.matchesPattern(fieldValue, condition.value);
 
       case "contains":
-        return this.containsValue(fieldValue, condition.value)
+        return this.containsValue(fieldValue, condition.value);
 
       case "not_contains":
-        return !this.containsValue(fieldValue, condition.value)
+        return !this.containsValue(fieldValue, condition.value);
 
       case "greater_than":
-        return this.compareNumbers(fieldValue, condition.value, "greater")
+        return this.compareNumbers(fieldValue, condition.value, "greater");
 
       case "less_than":
-        return this.compareNumbers(fieldValue, condition.value, "less")
+        return this.compareNumbers(fieldValue, condition.value, "less");
 
       default:
-        logger.warn({ operator: condition.operator }, "Unknown condition operator")
-        return false
+        logger.warn({ operator: condition.operator }, "Unknown condition operator");
+        return false;
     }
   }
 
@@ -512,15 +512,15 @@ export class PolicyEngine {
    * Get field value from context using dot notation
    */
   private getFieldValue(field: string, context: PolicyContext): unknown {
-    const parts = field.split(".")
-    let value: any = context
+    const parts = field.split(".");
+    let value: any = context;
 
     for (const part of parts) {
-      if (value == null) return undefined
-      value = value[part]
+      if (value == null) return undefined;
+      value = value[part];
     }
 
-    return value
+    return value;
   }
 
   /**
@@ -528,9 +528,9 @@ export class PolicyEngine {
    */
   private compareValues(actual: unknown, expected: unknown, _operator: "equals"): boolean {
     if (Array.isArray(actual) && Array.isArray(expected)) {
-      return actual.length === expected.length && actual.every((v) => expected.includes(v))
+      return actual.length === expected.length && actual.every((v) => expected.includes(v));
     }
-    return actual === expected
+    return actual === expected;
   }
 
   /**
@@ -538,16 +538,16 @@ export class PolicyEngine {
    */
   private matchesPattern(actual: unknown, patterns: unknown): boolean {
     if (Array.isArray(actual)) {
-      return actual.some((item) => this.matchesPattern(item, patterns))
+      return actual.some((item) => this.matchesPattern(item, patterns));
     }
 
-    const actualStr = String(actual)
-    const patternArray = Array.isArray(patterns) ? patterns : [patterns]
+    const actualStr = String(actual);
+    const patternArray = Array.isArray(patterns) ? patterns : [patterns];
 
     return patternArray.some((pattern) => {
-      const patternStr = String(pattern)
-      return minimatch(actualStr, patternStr)
-    })
+      const patternStr = String(pattern);
+      return minimatch(actualStr, patternStr);
+    });
   }
 
   /**
@@ -555,13 +555,13 @@ export class PolicyEngine {
    */
   private containsValue(actual: unknown, values: unknown): boolean {
     if (Array.isArray(actual)) {
-      return actual.some((item) => this.containsValue(item, values))
+      return actual.some((item) => this.containsValue(item, values));
     }
 
-    const actualStr = String(actual).toLowerCase()
-    const valueArray = Array.isArray(values) ? values : [values]
+    const actualStr = String(actual).toLowerCase();
+    const valueArray = Array.isArray(values) ? values : [values];
 
-    return valueArray.some((value) => actualStr.includes(String(value).toLowerCase()))
+    return valueArray.some((value) => actualStr.includes(String(value).toLowerCase()));
   }
 
   /**
@@ -572,14 +572,14 @@ export class PolicyEngine {
     expected: unknown,
     operator: "greater" | "less"
   ): boolean {
-    const actualNum = Number(actual)
-    const expectedNum = Number(expected)
+    const actualNum = Number(actual);
+    const expectedNum = Number(expected);
 
     if (Number.isNaN(actualNum) || Number.isNaN(expectedNum)) {
-      return false
+      return false;
     }
 
-    return operator === "greater" ? actualNum > expectedNum : actualNum < expectedNum
+    return operator === "greater" ? actualNum > expectedNum : actualNum < expectedNum;
   }
 
   /**
@@ -588,13 +588,13 @@ export class PolicyEngine {
   private mapRuleTypeToViolationType(ruleType: PolicyRuleTypeType): PolicyViolation["type"] {
     switch (ruleType) {
       case PolicyRuleType.FILE_ACCESS:
-        return "file_access"
+        return "file_access";
       case PolicyRuleType.COMMAND_EXECUTION:
-        return "command_execution"
+        return "command_execution";
       case PolicyRuleType.NETWORK_ACCESS:
-        return "network_access"
+        return "network_access";
       default:
-        return "file_access"
+        return "file_access";
     }
   }
 }
@@ -603,14 +603,14 @@ export class PolicyEngine {
  * Factory function to get policy engine instance
  */
 export function createPolicyEngine(): PolicyEngine {
-  return PolicyEngine.getInstance()
+  return PolicyEngine.getInstance();
 }
 
 /**
  * Initialize policy engine from configuration
  */
 export async function initializePolicyEngine(config: HachikoConfig): Promise<PolicyEngine> {
-  const engine = createPolicyEngine()
-  await engine.initialize(config)
-  return engine
+  const engine = createPolicyEngine();
+  await engine.initialize(config);
+  return engine;
 }

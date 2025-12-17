@@ -43,8 +43,9 @@ This is an intentionally unoptimized migration plan that Hachiko should optimize
 ## Expected Optimizations:
 
 Hachiko should detect these issues and:
+
 - Add specific rollback commands
-- Enhance success criteria with measurable outcomes  
+- Enhance success criteria with measurable outcomes
 - Provide detailed step descriptions
 - Add comprehensive checks including linting
 - Include risk assessment and complexity analysis

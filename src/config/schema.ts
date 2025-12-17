@@ -1,4 +1,4 @@
-import { z } from "zod"
+import { z } from "zod";
 
 // Agent configuration schemas
 export const AgentCliConfigSchema = z.object({
@@ -6,7 +6,7 @@ export const AgentCliConfigSchema = z.object({
   command: z.string(),
   args: z.array(z.string()).default([]),
   timeout: z.number().optional(),
-})
+});
 
 export const AgentApiConfigSchema = z.object({
   kind: z.literal("api"),
@@ -18,9 +18,9 @@ export const AgentApiConfigSchema = z.object({
     })
     .optional(),
   timeout: z.number().optional(),
-})
+});
 
-export const AgentConfigSchema = z.union([AgentCliConfigSchema, AgentApiConfigSchema])
+export const AgentConfigSchema = z.union([AgentCliConfigSchema, AgentApiConfigSchema]);
 
 // Policy configuration schema
 export const PolicyConfigSchema = z.object({
@@ -33,38 +33,38 @@ export const PolicyConfigSchema = z.object({
   allowlistGlobs: z
     .array(z.string())
     .default(["src/**", "services/**", "packages/**", "modules/**"]),
-})
+});
 
 // Rebase strategy configuration
 export const RebaseConfigSchema = z.object({
   when: z.enum(["always", "behind-base-branch", "never"]).default("behind-base-branch"),
   allowManual: z.boolean().default(true),
-})
+});
 
 // AI Configs configuration schema
 export const AiConfigsSchema = z.object({
   provider: z.enum(["launchdarkly", "local"]).default("launchdarkly"),
   flagKeyPrefix: z.string().default("hachiko_prompts_"),
   localPromptsDir: z.string().optional(),
-})
+});
 
 // Migration strategy configuration
 export const StrategyConfigSchema = z.object({
   chunkBy: z.enum(["module", "package", "fileset", "custom"]).default("module"),
   maxOpenPRs: z.number().min(1).max(10).default(1),
-})
+});
 
 // Plans configuration schema
 export const PlansConfigSchema = z.object({
   directory: z.string().default("migrations/"),
   filenamePattern: z.string().default("*.md"),
-})
+});
 
 // Dependencies configuration
 export const DependenciesConfigSchema = z.object({
   conflictResolution: z.enum(["fail", "merge", "override"]).default("fail"),
   updateStrategy: z.enum(["manual", "auto"]).default("manual"),
-})
+});
 
 // Main Hachiko configuration schema
 export const HachikoConfigSchema = z.object({
@@ -93,12 +93,12 @@ export const HachikoConfigSchema = z.object({
       args: ["--headless", "apply"],
     },
   }),
-})
+});
 
-export type HachikoConfig = z.infer<typeof HachikoConfigSchema>
-export type AgentConfig = z.infer<typeof AgentConfigSchema>
-export type PolicyConfig = z.infer<typeof PolicyConfigSchema>
-export type StrategyConfig = z.infer<typeof StrategyConfigSchema>
+export type HachikoConfig = z.infer<typeof HachikoConfigSchema>;
+export type AgentConfig = z.infer<typeof AgentConfigSchema>;
+export type PolicyConfig = z.infer<typeof PolicyConfigSchema>;
+export type StrategyConfig = z.infer<typeof StrategyConfigSchema>;
 
 // Migration plan frontmatter schema
 export const MigrationStepSchema = z.object({
@@ -107,9 +107,9 @@ export const MigrationStepSchema = z.object({
   expectedPR: z.boolean().default(true),
   agent: z.string().optional(),
   timeout: z.number().optional(),
-})
+});
 
-export const MigrationChecksSchema = z.array(z.string()).default([])
+export const MigrationChecksSchema = z.array(z.string()).default([]);
 
 export const MigrationRollbackSchema = z
   .array(
@@ -118,7 +118,7 @@ export const MigrationRollbackSchema = z
       command: z.string().optional(),
     })
   )
-  .default([])
+  .default([]);
 
 export const MigrationStatusSchema = z
   .enum([
@@ -133,7 +133,7 @@ export const MigrationStatusSchema = z
     "cancelled",
     "skipped",
   ])
-  .default("draft")
+  .default("draft");
 
 export const MigrationFrontmatterSchema = z.object({
   id: z.string(),
@@ -151,19 +151,19 @@ export const MigrationFrontmatterSchema = z.object({
   attempts: z.number().default(0),
   lastError: z.string().optional(),
   currentStep: z.string().optional(),
-})
+});
 
-export type MigrationFrontmatter = z.infer<typeof MigrationFrontmatterSchema>
-export type MigrationStep = z.infer<typeof MigrationStepSchema>
-export type MigrationStatus = z.infer<typeof MigrationStatusSchema>
+export type MigrationFrontmatter = z.infer<typeof MigrationFrontmatterSchema>;
+export type MigrationStep = z.infer<typeof MigrationStepSchema>;
+export type MigrationStatus = z.infer<typeof MigrationStatusSchema>;
 
 // Validation utilities
 export function validateHachikoConfig(config: unknown): HachikoConfig {
-  return HachikoConfigSchema.parse(config)
+  return HachikoConfigSchema.parse(config);
 }
 
 export function validateMigrationFrontmatter(frontmatter: unknown): MigrationFrontmatter {
-  return MigrationFrontmatterSchema.parse(frontmatter)
+  return MigrationFrontmatterSchema.parse(frontmatter);
 }
 
 // Configuration merge utility
@@ -177,5 +177,5 @@ export function mergeConfigs(base: HachikoConfig, override: Partial<HachikoConfi
     dependencies: { ...base.dependencies, ...override.dependencies },
     plans: { ...base.plans, ...override.plans },
     agents: { ...base.agents, ...override.agents },
-  })
+  });
 }

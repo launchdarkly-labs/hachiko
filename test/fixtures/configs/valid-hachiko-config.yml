@@ -20,14 +20,14 @@ policies:
     - "src/**"
     - "test/**"
     - "migrations/**"
-  
+
   blockedPaths:
     - ".git/**"
     - "node_modules/**"
     - "dist/**"
 
-  maxFileSize: 1048576  # 1MB
-  
+  maxFileSize: 1048576 # 1MB
+
   dangerousPatterns:
     - "rm -rf"
     - "sudo"

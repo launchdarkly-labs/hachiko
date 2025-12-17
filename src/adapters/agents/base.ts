@@ -1,8 +1,8 @@
-import { promises as fs } from "node:fs"
-import { join, resolve } from "node:path"
-import { minimatch } from "minimatch"
-import { AgentExecutionError } from "../../utils/errors.js"
-import { createLogger } from "../../utils/logger.js"
+import { promises as fs } from "node:fs";
+import { join, resolve } from "node:path";
+import { minimatch } from "minimatch";
+import { AgentExecutionError } from "../../utils/errors.js";
+import { createLogger } from "../../utils/logger.js";
 import type {
   AgentAdapter,
   AgentInput,
@@ -10,21 +10,21 @@ import type {
   PolicyConfig,
   PolicyEnforcementResult,
   PolicyViolation,
-} from "../types.js"
+} from "../types.js";
 
-const logger = createLogger("agent-adapter")
+const logger = createLogger("agent-adapter");
 
 /**
  * Base agent adapter with common functionality
  */
 export abstract class BaseAgentAdapter implements AgentAdapter {
-  abstract readonly name: string
+  abstract readonly name: string;
 
   constructor(protected readonly policyConfig: PolicyConfig) {}
 
-  abstract execute(input: AgentInput): Promise<AgentResult>
-  abstract validate(): Promise<boolean>
-  abstract getConfig(): Record<string, unknown>
+  abstract execute(input: AgentInput): Promise<AgentResult>;
+  abstract validate(): Promise<boolean>;
+  abstract getConfig(): Record<string, unknown>;
 
   /**
    * Enforce policy restrictions on file access
@@ -33,11 +33,11 @@ export abstract class BaseAgentAdapter implements AgentAdapter {
     files: string[],
     repoPath: string
   ): Promise<PolicyEnforcementResult> {
-    const violations: PolicyViolation[] = []
-    let allowed = true
+    const violations: PolicyViolation[] = [];
+    let allowed = true;
 
     for (const file of files) {
-      const relativePath = this.getRelativePath(file, repoPath)
+      const relativePath = this.getRelativePath(file, repoPath);
 
       // Check against blocked paths
       for (const blockedPattern of this.policyConfig.blockedPaths) {
@@ -47,8 +47,8 @@ export abstract class BaseAgentAdapter implements AgentAdapter {
             message: `Access to blocked path: ${relativePath}`,
             pattern: blockedPattern,
             severity: "error",
-          })
-          allowed = false
+          });
+          allowed = false;
         }
       }
 
@@ -56,7 +56,7 @@ export abstract class BaseAgentAdapter implements AgentAdapter {
       if (this.policyConfig.allowedPaths.length > 0) {
         const isAllowed = this.policyConfig.allowedPaths.some((pattern) =>
           minimatch(relativePath, pattern)
-        )
+        );
 
         if (!isAllowed) {
           violations.push({
@@ -64,37 +64,37 @@ export abstract class BaseAgentAdapter implements AgentAdapter {
             message: `Access to non-allowlisted path: ${relativePath}`,
             pattern: "not_in_allowlist",
             severity: "error",
-          })
-          allowed = false
+          });
+          allowed = false;
         }
       }
 
       // Check file size if file exists
       try {
-        const stats = await fs.stat(file)
+        const stats = await fs.stat(file);
         if (stats.size > this.policyConfig.maxFileSize) {
           violations.push({
             type: "file_size",
             message: `File too large: ${relativePath} (${stats.size} bytes > ${this.policyConfig.maxFileSize})`,
             pattern: "max_file_size",
             severity: "error",
-          })
-          allowed = false
+          });
+          allowed = false;
         }
       } catch (_error) {
         // File doesn't exist yet (might be created by agent) - that's okay
       }
     }
 
-    return { allowed, violations }
+    return { allowed, violations };
   }
 
   /**
    * Enforce policy restrictions on command execution
    */
   protected enforceCommandPolicy(command: string): PolicyEnforcementResult {
-    const violations: PolicyViolation[] = []
-    let allowed = true
+    const violations: PolicyViolation[] = [];
+    let allowed = true;
 
     for (const dangerousPattern of this.policyConfig.dangerousPatterns) {
       if (command.includes(dangerousPattern)) {
@@ -103,66 +103,66 @@ export abstract class BaseAgentAdapter implements AgentAdapter {
           message: `Dangerous command detected: ${dangerousPattern}`,
           pattern: dangerousPattern,
           severity: "error",
-        })
-        allowed = false
+        });
+        allowed = false;
       }
     }
 
-    return { allowed, violations }
+    return { allowed, violations };
   }
 
   /**
    * Get relative path from repository root
    */
   protected getRelativePath(filePath: string, repoPath: string): string {
-    const absoluteFilePath = resolve(filePath)
-    const absoluteRepoPath = resolve(repoPath)
+    const absoluteFilePath = resolve(filePath);
+    const absoluteRepoPath = resolve(repoPath);
 
     if (absoluteFilePath.startsWith(absoluteRepoPath)) {
-      return absoluteFilePath.slice(absoluteRepoPath.length + 1)
+      return absoluteFilePath.slice(absoluteRepoPath.length + 1);
     }
 
-    return filePath
+    return filePath;
   }
 
   /**
    * Prepare safe working directory with only allowed files
    */
   protected async prepareSafeWorkspace(input: AgentInput): Promise<string> {
-    const { repoPath, files } = input
+    const { repoPath, files } = input;
 
     // Create temporary workspace
-    const workspaceId = `hachiko-${input.planId}-${input.stepId}-${Date.now()}`
-    const workspacePath = join("/tmp", workspaceId)
+    const workspaceId = `hachiko-${input.planId}-${input.stepId}-${Date.now()}`;
+    const workspacePath = join("/tmp", workspaceId);
 
     try {
-      await fs.mkdir(workspacePath, { recursive: true })
+      await fs.mkdir(workspacePath, { recursive: true });
 
       // Copy allowed files to workspace
       for (const file of files) {
-        const relativePath = this.getRelativePath(file, repoPath)
-        const sourcePath = resolve(repoPath, relativePath)
-        const targetPath = join(workspacePath, relativePath)
+        const relativePath = this.getRelativePath(file, repoPath);
+        const sourcePath = resolve(repoPath, relativePath);
+        const targetPath = join(workspacePath, relativePath);
 
         // Ensure target directory exists
-        await fs.mkdir(join(targetPath, ".."), { recursive: true })
+        await fs.mkdir(join(targetPath, ".."), { recursive: true });
 
         try {
-          await fs.copyFile(sourcePath, targetPath)
-          logger.debug({ sourcePath, targetPath }, "Copied file to workspace")
+          await fs.copyFile(sourcePath, targetPath);
+          logger.debug({ sourcePath, targetPath }, "Copied file to workspace");
         } catch (error) {
           // File might not exist yet - that's okay for files the agent will create
-          logger.debug({ sourcePath, error }, "File not found, skipping copy")
+          logger.debug({ sourcePath, error }, "File not found, skipping copy");
         }
       }
 
-      return workspacePath
+      return workspacePath;
     } catch (error) {
-      logger.error({ error, workspacePath }, "Failed to prepare workspace")
+      logger.error({ error, workspacePath }, "Failed to prepare workspace");
       throw new AgentExecutionError(
         `Failed to prepare workspace: ${error instanceof Error ? error.message : String(error)}`,
         this.name
-      )
+      );
     }
   }
 
@@ -174,64 +174,64 @@ export abstract class BaseAgentAdapter implements AgentAdapter {
     repoPath: string,
     allowedFiles: string[]
   ): Promise<{
-    modifiedFiles: string[]
-    createdFiles: string[]
-    deletedFiles: string[]
+    modifiedFiles: string[];
+    createdFiles: string[];
+    deletedFiles: string[];
   }> {
-    const modifiedFiles: string[] = []
-    const createdFiles: string[] = []
-    const deletedFiles: string[] = []
+    const modifiedFiles: string[] = [];
+    const createdFiles: string[] = [];
+    const deletedFiles: string[] = [];
 
     try {
       // Check each allowed file for changes
       for (const file of allowedFiles) {
-        const relativePath = this.getRelativePath(file, repoPath)
-        const workspaceFilePath = join(workspacePath, relativePath)
-        const repoFilePath = resolve(repoPath, relativePath)
+        const relativePath = this.getRelativePath(file, repoPath);
+        const workspaceFilePath = join(workspacePath, relativePath);
+        const repoFilePath = resolve(repoPath, relativePath);
 
         try {
-          const _workspaceStats = await fs.stat(workspaceFilePath)
+          const _workspaceStats = await fs.stat(workspaceFilePath);
 
           try {
-            const _repoStats = await fs.stat(repoFilePath)
+            const _repoStats = await fs.stat(repoFilePath);
 
             // File exists in both - check if modified
-            const workspaceContent = await fs.readFile(workspaceFilePath, "utf-8")
-            const repoContent = await fs.readFile(repoFilePath, "utf-8")
+            const workspaceContent = await fs.readFile(workspaceFilePath, "utf-8");
+            const repoContent = await fs.readFile(repoFilePath, "utf-8");
 
             if (workspaceContent !== repoContent) {
-              await fs.copyFile(workspaceFilePath, repoFilePath)
-              modifiedFiles.push(relativePath)
-              logger.debug({ file: relativePath }, "File modified")
+              await fs.copyFile(workspaceFilePath, repoFilePath);
+              modifiedFiles.push(relativePath);
+              logger.debug({ file: relativePath }, "File modified");
             }
           } catch {
             // File doesn't exist in repo - it's a new file
-            await fs.mkdir(join(repoFilePath, ".."), { recursive: true })
-            await fs.copyFile(workspaceFilePath, repoFilePath)
-            createdFiles.push(relativePath)
-            logger.debug({ file: relativePath }, "File created")
+            await fs.mkdir(join(repoFilePath, ".."), { recursive: true });
+            await fs.copyFile(workspaceFilePath, repoFilePath);
+            createdFiles.push(relativePath);
+            logger.debug({ file: relativePath }, "File created");
           }
         } catch {
           // File doesn't exist in workspace - might have been deleted
           try {
-            await fs.stat(repoFilePath)
+            await fs.stat(repoFilePath);
             // File exists in repo but not workspace - mark as deleted
             // Note: We don't actually delete it here for safety
-            deletedFiles.push(relativePath)
-            logger.debug({ file: relativePath }, "File marked for deletion")
+            deletedFiles.push(relativePath);
+            logger.debug({ file: relativePath }, "File marked for deletion");
           } catch {
             // File doesn't exist in either place - nothing to do
           }
         }
       }
 
-      return { modifiedFiles, createdFiles, deletedFiles }
+      return { modifiedFiles, createdFiles, deletedFiles };
     } catch (error) {
-      logger.error({ error, workspacePath, repoPath }, "Failed to copy results back")
+      logger.error({ error, workspacePath, repoPath }, "Failed to copy results back");
       throw new AgentExecutionError(
         `Failed to copy results: ${error instanceof Error ? error.message : String(error)}`,
         this.name
-      )
+      );
     }
   }
 
@@ -240,10 +240,10 @@ export abstract class BaseAgentAdapter implements AgentAdapter {
    */
   protected async cleanupWorkspace(workspacePath: string): Promise<void> {
     try {
-      await fs.rm(workspacePath, { recursive: true, force: true })
-      logger.debug({ workspacePath }, "Cleaned up workspace")
+      await fs.rm(workspacePath, { recursive: true, force: true });
+      logger.debug({ workspacePath }, "Cleaned up workspace");
     } catch (error) {
-      logger.warn({ error, workspacePath }, "Failed to cleanup workspace")
+      logger.warn({ error, workspacePath }, "Failed to cleanup workspace");
     }
   }
 }

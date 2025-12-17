@@ -1,47 +1,47 @@
-import { join } from "node:path"
-import { AgentExecutionError } from "../../utils/errors.js"
-import { createLogger } from "../../utils/logger.js"
-import { ContainerExecutor } from "../container.js"
-import type { AgentInput, AgentResult, ContainerConfig, PolicyConfig } from "../types.js"
-import { BaseAgentAdapter } from "./base.js"
+import { join } from "node:path";
+import { AgentExecutionError } from "../../utils/errors.js";
+import { createLogger } from "../../utils/logger.js";
+import { ContainerExecutor } from "../container.js";
+import type { AgentInput, AgentResult, ContainerConfig, PolicyConfig } from "../types.js";
+import { BaseAgentAdapter } from "./base.js";
 
-const logger = createLogger("claude-cli-adapter")
+const logger = createLogger("claude-cli-adapter");
 
 export interface ClaudeCliConfig {
   /** Docker image for Claude CLI */
-  image: string
+  image: string;
   /** Command timeout in seconds */
-  timeout: number
+  timeout: number;
   /** Memory limit in MB */
-  memoryLimit?: number
+  memoryLimit?: number;
   /** CPU limit */
-  cpuLimit?: number
+  cpuLimit?: number;
   /** API key for Claude */
-  apiKey?: string | undefined
+  apiKey?: string | undefined;
 }
 
 /**
  * Claude CLI agent adapter with container sandboxing
  */
 export class ClaudeCliAdapter extends BaseAgentAdapter {
-  readonly name = "claude-cli"
+  readonly name = "claude-cli";
 
-  private readonly containerExecutor: ContainerExecutor
-  private readonly claudeConfig: ClaudeCliConfig
+  private readonly containerExecutor: ContainerExecutor;
+  private readonly claudeConfig: ClaudeCliConfig;
 
   constructor(policyConfig: PolicyConfig, claudeConfig: ClaudeCliConfig) {
-    super(policyConfig)
-    this.containerExecutor = ContainerExecutor.getInstance()
-    this.claudeConfig = claudeConfig
+    super(policyConfig);
+    this.containerExecutor = ContainerExecutor.getInstance();
+    this.claudeConfig = claudeConfig;
   }
 
   async validate(): Promise<boolean> {
     try {
       // Check if Docker is available
-      const dockerAvailable = await this.containerExecutor.isDockerAvailable()
+      const dockerAvailable = await this.containerExecutor.isDockerAvailable();
       if (!dockerAvailable) {
-        logger.error("Docker is not available")
-        return false
+        logger.error("Docker is not available");
+        return false;
       }
 
       // Check if Claude CLI image is available
@@ -49,39 +49,39 @@ export class ClaudeCliAdapter extends BaseAgentAdapter {
         "image",
         "inspect",
         this.claudeConfig.image,
-      ])
+      ]);
 
       if (result.exitCode !== 0) {
         logger.warn(
           { image: this.claudeConfig.image },
           "Claude CLI image not found, will pull on first use"
-        )
+        );
       }
 
-      return true
+      return true;
     } catch (error) {
-      logger.error({ error }, "Claude CLI validation failed")
-      return false
+      logger.error({ error }, "Claude CLI validation failed");
+      return false;
     }
   }
 
   async execute(input: AgentInput): Promise<AgentResult> {
-    const startTime = Date.now()
-    let workspacePath: string | null = null
-    let containerId: string | null = null
+    const startTime = Date.now();
+    let workspacePath: string | null = null;
+    let containerId: string | null = null;
 
     try {
       // Enforce file access policy
-      const policyResult = await this.enforceFilePolicy(input.files, input.repoPath)
+      const policyResult = await this.enforceFilePolicy(input.files, input.repoPath);
       if (!policyResult.allowed) {
         throw new AgentExecutionError(
           `Policy violations: ${policyResult.violations.map((v) => v.message).join(", ")}`,
           this.name
-        )
+        );
       }
 
       // Prepare safe workspace
-      workspacePath = await this.prepareSafeWorkspace(input)
+      workspacePath = await this.prepareSafeWorkspace(input);
 
       // Create container
       const containerConfig: ContainerConfig = {
@@ -96,18 +96,18 @@ export class ClaudeCliAdapter extends BaseAgentAdapter {
           STEP_ID: input.stepId,
           ...(input.chunk && { CHUNK: input.chunk }),
         },
-      }
+      };
 
       const containerContext = await this.containerExecutor.createContainer(
         containerConfig,
         workspacePath,
         input.repoPath
-      )
-      containerId = containerContext.containerId
+      );
+      containerId = containerContext.containerId;
 
       // Create prompt file
-      const promptFile = join(workspacePath, ".hachiko-prompt.md")
-      await this.writePromptFile(promptFile, input)
+      const promptFile = join(workspacePath, ".hachiko-prompt.md");
+      await this.writePromptFile(promptFile, input);
 
       // Execute Claude CLI
       const command = [
@@ -118,19 +118,19 @@ export class ClaudeCliAdapter extends BaseAgentAdapter {
         "--apply-diff",
         "--yes", // Non-interactive mode
         ...input.files.map((f) => this.getRelativePath(f, input.repoPath)),
-      ]
+      ];
 
       const executionResult = await this.containerExecutor.executeInContainer(
         containerContext,
         command,
         this.claudeConfig.timeout * 1000
-      )
+      );
 
       // Copy results back to repository
-      const fileChanges = await this.copyResultsBack(workspacePath, input.repoPath, input.files)
+      const fileChanges = await this.copyResultsBack(workspacePath, input.repoPath, input.files);
 
-      const success = executionResult.exitCode === 0
-      const executionTime = Date.now() - startTime
+      const success = executionResult.exitCode === 0;
+      const executionTime = Date.now() - startTime;
 
       const result: AgentResult = {
         success,
@@ -141,7 +141,7 @@ export class ClaudeCliAdapter extends BaseAgentAdapter {
         error: success ? undefined : executionResult.stderr,
         exitCode: executionResult.exitCode,
         executionTime,
-      }
+      };
 
       logger.info(
         {
@@ -153,11 +153,11 @@ export class ClaudeCliAdapter extends BaseAgentAdapter {
           createdFiles: fileChanges.createdFiles.length,
         },
         "Claude CLI execution completed"
-      )
+      );
 
-      return result
+      return result;
     } catch (error) {
-      const executionTime = Date.now() - startTime
+      const executionTime = Date.now() - startTime;
       logger.error(
         {
           error,
@@ -166,7 +166,7 @@ export class ClaudeCliAdapter extends BaseAgentAdapter {
           executionTime,
         },
         "Claude CLI execution failed"
-      )
+      );
 
       return {
         success: false,
@@ -177,14 +177,14 @@ export class ClaudeCliAdapter extends BaseAgentAdapter {
         error: error instanceof Error ? error.message : String(error),
         exitCode: -1,
         executionTime,
-      }
+      };
     } finally {
       // Cleanup
       if (containerId) {
-        await this.containerExecutor.destroyContainer(containerId)
+        await this.containerExecutor.destroyContainer(containerId);
       }
       if (workspacePath) {
-        await this.cleanupWorkspace(workspacePath)
+        await this.cleanupWorkspace(workspacePath);
       }
     }
   }
@@ -197,7 +197,7 @@ export class ClaudeCliAdapter extends BaseAgentAdapter {
       memoryLimit: this.claudeConfig.memoryLimit,
       cpuLimit: this.claudeConfig.cpuLimit,
       hasApiKey: !!this.claudeConfig.apiKey,
-    }
+    };
   }
 
   /**
@@ -225,9 +225,9 @@ ${input.prompt}
 5. Test your changes before applying
 
 Please analyze the files and apply the necessary changes according to the instructions.
-`
+`;
 
-    const fs = await import("node:fs/promises")
-    await fs.writeFile(promptPath, prompt, "utf-8")
+    const fs = await import("node:fs/promises");
+    await fs.writeFile(promptPath, prompt, "utf-8");
   }
 }
