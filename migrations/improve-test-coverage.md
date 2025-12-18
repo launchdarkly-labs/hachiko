@@ -26,18 +26,21 @@ This migration aims to increase test coverage from the current 55.53% to at leas
 ## Migration Steps
 
 ### Step 1: Add tests for services layer
+
 - Add comprehensive tests for `src/services/agents.ts`
 - Add tests for `src/services/policy-engine.ts`
 - Add tests for `src/services/state.ts`
 - Target: Bring services coverage to 90%
 
 ### Step 2: Add tests for webhooks
+
 - Add tests for `src/webhooks/issue_comment.ts`
-- Add tests for `src/webhooks/workflow_run.ts` 
+- Add tests for `src/webhooks/workflow_run.ts`
 - Mock GitHub API responses properly
 - Target: Bring webhooks coverage to 85%
 
 ### Step 3: Add tests for utilities
+
 - Add comprehensive tests for `src/utils/git.ts`
 - Add tests for `src/utils/pr.ts`
 - Add tests for `src/utils/workflow.ts`
@@ -53,8 +56,9 @@ This migration aims to increase test coverage from the current 55.53% to at leas
 ## Files to Focus On
 
 Priority files with low/missing coverage:
+
 - `src/services/agents.ts`
-- `src/services/policy-engine.ts` 
+- `src/services/policy-engine.ts`
 - `src/services/state.ts`
 - `src/webhooks/issue_comment.ts`
 - `src/webhooks/workflow_run.ts`

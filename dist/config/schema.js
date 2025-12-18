@@ -99,18 +99,18 @@ export const HachikoConfigSchema = z.object({
     policy: PolicyConfigSchema.default({}),
     dependencies: DependenciesConfigSchema.default({}),
     agents: z.record(z.string(), AgentConfigSchema).default({
-        "devin": {
+        devin: {
             kind: "cloud",
             provider: "devin",
             apiVersion: "v1",
             timeout: 600,
         },
-        "cursor": {
+        cursor: {
             kind: "cloud",
             provider: "cursor",
             timeout: 1200,
         },
-        "codex": {
+        codex: {
             kind: "cloud",
             provider: "codex",
             model: "gpt-4-turbo",

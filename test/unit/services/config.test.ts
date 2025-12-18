@@ -120,9 +120,9 @@ describe("validateConfig", () => {
       agents: {
         "bad-agent": {
           kind: "invalid-kind", // This should cause validation to fail
-          command: "test"
-        }
-      }
+          command: "test",
+        },
+      },
     };
 
     expect(() => validateConfig(invalidConfig)).toThrow(ConfigurationError);

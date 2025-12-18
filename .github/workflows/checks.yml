@@ -43,11 +43,11 @@ jobs:
         run: |
           # Rebuild and check if there are any meaningful changes to dist/ (excluding source maps)
           pnpm build
-          
+
           # Check for changes excluding source maps which can vary between environments
           # First get all changed files, then filter out .map files
           CHANGED_FILES=$(git diff --name-only dist/ | grep -v '\.map$' || true)
-          
+
           if [ -z "$CHANGED_FILES" ]; then
             echo "✅ Build artifacts are up to date"
           else

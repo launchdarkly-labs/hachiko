@@ -55,7 +55,7 @@ The utility functions in `src/utils/` currently lack comprehensive documentation
 ## Migration Strategy
 
 1. **Document Git Utils**: Add JSDoc comments to git utility functions
-2. **Document Command Utils**: Add JSDoc comments to command utility functions  
+2. **Document Command Utils**: Add JSDoc comments to command utility functions
 3. **Document PR Utils**: Add JSDoc comments to PR utility functions
 4. **Verify**: Ensure all documentation is complete and consistent
 
@@ -65,10 +65,10 @@ The utility functions in `src/utils/` currently lack comprehensive documentation
 
 All functions should follow this JSDoc format:
 
-```typescript
+````typescript
 /**
  * Brief description of what the function does
- * 
+ *
  * @param paramName - Description of parameter
  * @param optionalParam - Description of optional parameter
  * @returns Description of return value
@@ -82,7 +82,7 @@ All functions should follow this JSDoc format:
 function functionName(paramName: string, optionalParam?: boolean): ReturnType {
   // implementation
 }
-```
+````
 
 ### Documentation Requirements
 

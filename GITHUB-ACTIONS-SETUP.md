@@ -11,7 +11,7 @@ Copy these files from the Hachiko repository to your project:
 ```bash
 # Required GitHub Actions workflows
 .github/workflows/detect-migrations.yml
-.github/workflows/control-plane.yml  
+.github/workflows/control-plane.yml
 .github/workflows/execute-migration.yml
 
 # TypeScript utilities
@@ -51,7 +51,7 @@ Go to **Settings → Secrets and variables → Actions** and add:
 
 ```
 CURSOR_API_KEY=your-cursor-api-key
-DEVIN_API_KEY=your-devin-api-key  
+DEVIN_API_KEY=your-devin-api-key
 OPENAI_API_KEY=your-openai-api-key
 ```
 
@@ -110,6 +110,7 @@ npm run validate:phase1
 ```
 
 **Manual checks**:
+
 - [ ] GitHub Actions workflows appear in `.github/workflows/`
 - [ ] Repository secrets are configured
 - [ ] Migration CLI works: `npm run migration list`
@@ -129,7 +130,7 @@ Once set up, Hachiko creates a **Control Plane Issue** that looks like this:
 ## 🔄 In-Progress Migrations
 ✨ *No active migrations*
 
-## ⏸️ Paused Migrations  
+## ⏸️ Paused Migrations
 ✨ *No paused migrations*
 ```
 
@@ -139,12 +140,14 @@ Once set up, Hachiko creates a **Control Plane Issue** that looks like this:
 ## 🔧 Common Operations
 
 ### Adding a New Migration
+
 1. Create `migrations/your-migration.md` with frontmatter
 2. Push to main branch
 3. Review the enhancement PR that gets created
 4. Merge to add migration to control plane
 
 ### Managing Migration State
+
 ```bash
 # List all migrations
 npm run migration list
@@ -157,6 +160,7 @@ npm run migration update your-migration-id --status paused
 ```
 
 ### Debugging Issues
+
 ```bash
 # Check setup
 npm run validate:phase1
@@ -172,7 +176,7 @@ npm run migration generate-control-plane
 
 1. **Create**: Add migration document to `migrations/`
 2. **Enhance**: GitHub Actions adds proper frontmatter via PR
-3. **Activate**: Check checkbox in control plane issue  
+3. **Activate**: Check checkbox in control plane issue
 4. **Execute**: Agent runs and creates PR with changes
 5. **Advance**: Merge PR to move to next step
 6. **Complete**: Final step completion marks migration done
@@ -187,7 +191,7 @@ npm run migration generate-control-plane
 ## 🚀 Next Steps
 
 - **Test with real agents**: Replace `agent: mock` with `cursor`, `codex`, or `devin`
-- **Create complex migrations**: Use multi-step migrations for larger changes  
+- **Create complex migrations**: Use multi-step migrations for larger changes
 - **Monitor and iterate**: Use control plane to manage ongoing migrations
 - **Scale up**: Add more migrations as needed
 

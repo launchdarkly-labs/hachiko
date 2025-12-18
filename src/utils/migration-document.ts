@@ -35,25 +35,25 @@ export async function parseMigrationDocument(filePath: string): Promise<ParsedMi
 export function parseMigrationDocumentContent(content: string): ParsedMigrationDocument {
   // Extract frontmatter using regex
   const frontmatterMatch = content.match(/^---\n([\s\S]*?)\n---\n([\s\S]*)$/);
-  
+
   if (!frontmatterMatch) {
     throw new Error("Migration document missing frontmatter");
   }
-  
+
   const rawFrontmatter = frontmatterMatch[1];
   const documentContent = frontmatterMatch[2];
-  
+
   if (!rawFrontmatter || documentContent === undefined) {
     throw new Error("Invalid frontmatter format");
   }
-  
+
   try {
     const frontmatter = parseYAML(rawFrontmatter);
-    
+
     if (!validateMigrationFrontmatter(frontmatter)) {
       throw new Error("Invalid migration frontmatter schema");
     }
-    
+
     return {
       frontmatter,
       content: documentContent.trim(),
@@ -74,21 +74,21 @@ export async function updateMigrationDocument(
 ): Promise<void> {
   try {
     const parsed = await parseMigrationDocument(filePath);
-    
+
     // Update frontmatter
     const updatedFrontmatter: MigrationFrontmatter = {
       ...parsed.frontmatter,
       ...updates,
       last_updated: new Date().toISOString(),
     };
-    
+
     // Rebuild document
     const yamlContent = stringifyYAML(updatedFrontmatter);
-    
+
     const updatedContent = `---\n${yamlContent}---\n\n${parsed.content}`;
-    
+
     await writeFile(filePath, updatedContent, "utf-8");
-    
+
     logger.debug({ filePath, updates }, "Updated migration document");
   } catch (error) {
     logger.error({ error, filePath, updates }, "Failed to update migration document");
@@ -106,11 +106,11 @@ export async function createMigrationDocument(
 ): Promise<void> {
   try {
     const yamlContent = stringifyYAML(frontmatter);
-    
+
     const documentContent = `---\n${yamlContent}---\n\n${content.trim()}`;
-    
+
     await writeFile(filePath, documentContent, "utf-8");
-    
+
     logger.debug({ filePath }, "Created migration document");
   } catch (error) {
     logger.error({ error, filePath }, "Failed to create migration document");

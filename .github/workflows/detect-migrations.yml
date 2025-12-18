@@ -4,38 +4,38 @@ name: Detect Migration Documents
 on:
   push:
     branches: [main]
-    paths: ['migrations/*.md']
-  
+    paths: ["migrations/*.md"]
+
   # Allow manual trigger for testing
   workflow_dispatch:
 
 permissions:
-  contents: write  # To create PRs and update files
-  issues: write    # To update control-plane issue
-  pull-requests: write  # To create and manage PRs
+  contents: write # To create PRs and update files
+  issues: write # To update control-plane issue
+  pull-requests: write # To create and manage PRs
 
 jobs:
   detect-migrations:
     name: Process Migration Documents
     runs-on: ubuntu-latest
-    
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0  # Full history for comparison
-      
+          fetch-depth: 0 # Full history for comparison
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
-          cache: 'npm'
-          
+          node-version: "20"
+          cache: "npm"
+
       - name: Install dependencies
         run: |
           npm ci
           npm run build
-      
+
       - name: Detect changed migrations
         id: changes
         run: |
@@ -47,59 +47,59 @@ jobs:
             # Get changed files in migrations/ directory
             CHANGED_FILES=$(git diff --name-only HEAD~1 HEAD | grep "^migrations/.*\.md$" || echo "")
           fi
-          
+
           echo "Changed migration files:"
           echo "$CHANGED_FILES"
-          
+
           # Convert to JSON array for matrix strategy
           MIGRATIONS_JSON=$(echo "$CHANGED_FILES" | jq -R -s -c 'split("\n") | map(select(length > 0))')
           echo "migrations=$MIGRATIONS_JSON" >> $GITHUB_OUTPUT
-          
+
           # Check if we have any migrations to process
           if [ -z "$CHANGED_FILES" ] || [ "$CHANGED_FILES" = "" ]; then
             echo "has_migrations=false" >> $GITHUB_OUTPUT
           else
             echo "has_migrations=true" >> $GITHUB_OUTPUT
           fi
-  
+
   # Process each migration document
   process-migration:
     name: Process Migration
     runs-on: ubuntu-latest
     needs: detect-migrations
     if: needs.detect-migrations.outputs.has_migrations == 'true'
-    
+
     strategy:
       matrix:
         migration: ${{ fromJson(needs.detect-migrations.outputs.migrations) }}
-    
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-      
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
-          cache: 'npm'
-          
+          node-version: "20"
+          cache: "npm"
+
       - name: Install dependencies
         run: |
           npm ci
           npm run build
-      
+
       - name: Validate migration document
         id: validate
         run: |
           MIGRATION_FILE="${{ matrix.migration }}"
           echo "Processing migration: $MIGRATION_FILE"
-          
+
           # Check if file exists
           if [ ! -f "$MIGRATION_FILE" ]; then
             echo "Migration file not found: $MIGRATION_FILE"
             exit 1
           fi
-          
+
           # Extract frontmatter and validate
           # This would use our TypeScript validation logic
           node -e "
@@ -129,17 +129,17 @@ jobs:
               console.log('needs_enhancement=true');
             }
           " >> $GITHUB_OUTPUT
-      
+
       - name: Enhance new migration document
         if: steps.validate.outputs.needs_enhancement == 'true'
         run: |
           echo "Enhancing migration document: ${{ matrix.migration }}"
-          
+
           # This would trigger a cloud agent to analyze and enhance the document
           # For now, we'll create a simple enhancement
           MIGRATION_FILE="${{ matrix.migration }}"
           MIGRATION_ID=$(basename "$MIGRATION_FILE" .md)
-          
+
           # Create enhanced version with frontmatter
           TEMP_FILE=$(mktemp)
           cat > "$TEMP_FILE" << EOF
@@ -154,9 +154,9 @@ jobs:
           created: $(date -u +%Y-%m-%dT%H:%M:%SZ)
           last_updated: $(date -u +%Y-%m-%dT%H:%M:%SZ)
           ---
-          
+
           EOF
-          
+
           # Append original content (skip existing frontmatter if any)
           if grep -q "^---" "$MIGRATION_FILE"; then
             # Skip existing frontmatter
@@ -165,11 +165,11 @@ jobs:
             # No frontmatter, append whole file
             cat "$MIGRATION_FILE" >> "$TEMP_FILE"
           fi
-          
+
           mv "$TEMP_FILE" "$MIGRATION_FILE"
-          
+
           echo "Enhanced migration document with frontmatter"
-      
+
       - name: Create enhancement PR
         if: steps.validate.outputs.needs_enhancement == 'true'
         env:
@@ -178,47 +178,47 @@ jobs:
           MIGRATION_FILE="${{ matrix.migration }}"
           MIGRATION_ID=$(basename "$MIGRATION_FILE" .md)
           BRANCH_NAME="hachiko/enhance-$MIGRATION_ID"
-          
+
           # Configure git
           git config user.name "hachiko[bot]"
           git config user.email "hachiko@users.noreply.github.com"
-          
+
           # Create and switch to enhancement branch
           git checkout -b "$BRANCH_NAME"
           git add "$MIGRATION_FILE"
           git commit -m "Enhance migration document: $MIGRATION_ID
-          
+
           - Add migration frontmatter with metadata
           - Set initial status to pending
           - Ready for review and activation
-          
+
           🤖 Generated by Hachiko Migration Detector"
-          
+
           # Push branch
           git push origin "$BRANCH_NAME"
-          
+
           # Create PR
           gh pr create \
             --title "📋 Enhanced Migration: $MIGRATION_ID" \
             --body "$(cat <<'EOF'
           ## Migration Enhancement
-          
+
           This PR adds structured frontmatter to the migration document \`$MIGRATION_FILE\`.
-          
+
           ### Changes
           - ✅ Added migration metadata (ID, title, agent configuration)
           - ✅ Set initial status to \`pending\`
           - ✅ Ready for review and activation
-          
+
           ### Next Steps
           1. Review the enhanced migration document
           2. Merge this PR to add the migration to the control plane
           3. Check the migration checkbox in the control-plane issue to start execution
-          
+
           🤖 Generated by Hachiko Migration Detector
           EOF
           )"
-      
+
       - name: Update control-plane issue
         if: steps.validate.outputs.new_migration == 'false' && steps.validate.outputs.migration_status == 'pending'
         env:

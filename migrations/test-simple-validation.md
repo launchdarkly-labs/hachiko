@@ -17,6 +17,7 @@ This is a minimal test migration to validate the GitHub Actions workflows during
 ## Purpose
 
 Test basic workflow functionality:
+
 - Migration document detection
 - Control plane issue updates
 - Single-step execution

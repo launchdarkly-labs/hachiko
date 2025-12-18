@@ -36,25 +36,25 @@ export class DefaultHttpClient implements HttpClient {
       headers: { "Content-Type": "application/json", ...options.headers },
       ...options,
     };
-    
+
     if (body !== undefined) {
       requestInit.body = JSON.stringify(body);
     }
-    
+
     return fetch(url, requestInit);
   }
 
   async put(url: string, body?: unknown, options: RequestInit = {}): Promise<Response> {
     const requestInit: RequestInit = {
-      method: "PUT", 
+      method: "PUT",
       headers: { "Content-Type": "application/json", ...options.headers },
       ...options,
     };
-    
+
     if (body !== undefined) {
       requestInit.body = JSON.stringify(body);
     }
-    
+
     return fetch(url, requestInit);
   }
 
@@ -318,13 +318,13 @@ export abstract class BaseAgentAdapter implements AgentAdapter {
     } = {}
   ): Promise<T> {
     const { body, headers = {}, timeout = 30000 } = options;
-    
+
     try {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), timeout);
 
       let response: Response;
-      
+
       switch (method) {
         case "GET":
           response = await this.httpClient.get(url, { headers, signal: controller.signal });
@@ -392,7 +392,7 @@ export abstract class BaseAgentAdapter implements AgentAdapter {
     while (attempt < maxAttempts && Date.now() - startTime < timeout) {
       try {
         const response = await this.makeAuthenticatedRequest<T>("GET", statusUrl, { headers });
-        
+
         if (isComplete(response)) {
           return response;
         }

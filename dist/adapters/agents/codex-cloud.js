@@ -239,7 +239,10 @@ Use the file operation tools to implement the changes.`;
                         type: "object",
                         properties: {
                             path: { type: "string", description: "Relative path to the file to delete" },
-                            reason: { type: "string", description: "Explanation of why this file should be deleted" },
+                            reason: {
+                                type: "string",
+                                description: "Explanation of why this file should be deleted",
+                            },
                         },
                         required: ["path", "reason"],
                     },

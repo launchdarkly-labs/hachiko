@@ -49,7 +49,7 @@ describe("handlePullRequest", () => {
         createComment: vi.fn(),
       },
     };
-    
+
     mockContext = createMockContext(
       "pull_request.closed",
       {
@@ -59,7 +59,7 @@ describe("handlePullRequest", () => {
         },
         pull_request: {
           number: 123,
-          title: "Regular PR", 
+          title: "Regular PR",
           merged: false,
           html_url: "https://github.com/test-owner/test-repo/pull/123",
           merge_commit_sha: null,
@@ -95,7 +95,7 @@ describe("handlePullRequest", () => {
         { name: "hachiko:step:react-upgrade:step1:src" },
       ];
       mockContext.payload.pull_request.head = {
-        ref: "hachiko/react-upgrade/step1/src"
+        ref: "hachiko/react-upgrade/step1/src",
       };
       vi.mocked(loadHachikoConfig).mockResolvedValue({
         plans: { directory: "migrations/" },
@@ -117,7 +117,7 @@ describe("handlePullRequest", () => {
         expect(loadHachikoConfig).toHaveBeenCalledWith(mockContext);
         expect(updateMigrationProgress).toHaveBeenCalledWith(
           mockContext,
-          "react-upgrade", 
+          "react-upgrade",
           "step1",
           "completed",
           {
@@ -130,7 +130,7 @@ describe("handlePullRequest", () => {
         expect(emitNextStep).toHaveBeenCalledWith(
           mockContext,
           "react-upgrade",
-          "step1", 
+          "step1",
           "src",
           mockLogger
         );
@@ -151,7 +151,7 @@ describe("handlePullRequest", () => {
         mockContext.payload.pull_request.merged = false;
         vi.mocked(updateMigrationProgress).mockResolvedValue(undefined);
         mockOctokit.issues.listForRepo.mockResolvedValue({
-          data: [{ number: 456, title: "Migration: react-upgrade" }]
+          data: [{ number: 456, title: "Migration: react-upgrade" }],
         });
         mockOctokit.issues.createComment.mockResolvedValue({});
       });
@@ -162,7 +162,7 @@ describe("handlePullRequest", () => {
         expect(updateMigrationProgress).toHaveBeenCalledWith(
           mockContext,
           "react-upgrade",
-          "step1", 
+          "step1",
           "skipped",
           {
             prNumber: 123,
@@ -185,7 +185,7 @@ describe("handlePullRequest", () => {
 
         expect(mockOctokit.issues.createComment).toHaveBeenCalledWith({
           owner: "test-owner",
-          repo: "test-repo", 
+          repo: "test-repo",
           issue_number: 456,
           body: expect.stringContaining("⚠️ **Step Skipped**: `step1` (src)"),
         });
@@ -217,7 +217,9 @@ describe("handlePullRequest", () => {
       it("should handle invalid migration metadata gracefully", async () => {
         await handlePullRequest(mockContext, mockLogger);
 
-        expect(mockLogger.warn).toHaveBeenCalledWith("Could not extract migration metadata from PR");
+        expect(mockLogger.warn).toHaveBeenCalledWith(
+          "Could not extract migration metadata from PR"
+        );
         expect(updateMigrationProgress).not.toHaveBeenCalled();
         expect(emitNextStep).not.toHaveBeenCalled();
       });
@@ -229,7 +231,9 @@ describe("handlePullRequest", () => {
       });
 
       it("should log error and rethrow", async () => {
-        await expect(handlePullRequest(mockContext, mockLogger)).rejects.toThrow("Config load failed");
+        await expect(handlePullRequest(mockContext, mockLogger)).rejects.toThrow(
+          "Config load failed"
+        );
 
         expect(mockLogger.error).toHaveBeenCalledWith(
           { error: expect.any(Error) },
@@ -249,7 +253,7 @@ describe("handlePullRequest", () => {
         mockContext.payload.pull_request.merged = false;
         vi.mocked(updateMigrationProgress).mockResolvedValue(undefined);
         mockOctokit.issues.listForRepo.mockResolvedValue({
-          data: [{ number: 456, title: "Migration: react-upgrade" }]
+          data: [{ number: 456, title: "Migration: react-upgrade" }],
         });
       });
 
@@ -260,7 +264,7 @@ describe("handlePullRequest", () => {
           mockContext,
           "react-upgrade",
           "step1",
-          "skipped", 
+          "skipped",
           {
             prNumber: 123,
             chunk: undefined,

@@ -1,5 +1,8 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
-import { CodexCloudAdapter, type CodexCloudConfig } from "../../../src/adapters/agents/codex-cloud.js";
+import {
+  CodexCloudAdapter,
+  type CodexCloudConfig,
+} from "../../../src/adapters/agents/codex-cloud.js";
 import type { PolicyConfig, AgentInput } from "../../../src/adapters/types.js";
 
 // Mock fs/promises module
@@ -84,10 +87,10 @@ describe("CodexCloudAdapter", () => {
         temperature: 0.2,
         repositoryUrl: "https://github.com/test/repo",
       };
-      
+
       const customAdapter = new CodexCloudAdapter(policyConfig, customConfig);
       const config = customAdapter.getConfig();
-      
+
       expect(config.model).toBe("gpt-4");
       expect(config.temperature).toBe(0.2);
       expect(config.repositoryUrl).toBe("https://github.com/test/repo");
@@ -420,7 +423,7 @@ describe("CodexCloudAdapter", () => {
     it("should handle file operation errors", async () => {
       // Mock writeFile to throw an error to trigger the error handling branch
       mockFs.writeFile.mockRejectedValue(new Error("Write permission denied"));
-      
+
       const chatResponse = {
         id: "chatcmpl-123",
         object: "chat.completion",
@@ -515,16 +518,12 @@ describe("CodexCloudAdapter", () => {
       expect(tools).toHaveLength(3);
       expect(tools.map((t: any) => t.function.name)).toEqual([
         "modify_file",
-        "create_file", 
+        "create_file",
         "delete_file",
       ]);
 
       const modifyTool = tools.find((t: any) => t.function.name === "modify_file");
-      expect(modifyTool.function.parameters.required).toEqual([
-        "path",
-        "content",
-        "reason",
-      ]);
+      expect(modifyTool.function.parameters.required).toEqual(["path", "content", "reason"]);
     });
   });
 

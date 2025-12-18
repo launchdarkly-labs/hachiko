@@ -1,5 +1,8 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
-import { DevinCloudAdapter, type DevinCloudConfig } from "../../../src/adapters/agents/devin-cloud.js";
+import {
+  DevinCloudAdapter,
+  type DevinCloudConfig,
+} from "../../../src/adapters/agents/devin-cloud.js";
 import type { PolicyConfig, AgentInput } from "../../../src/adapters/types.js";
 
 describe("DevinCloudAdapter", () => {

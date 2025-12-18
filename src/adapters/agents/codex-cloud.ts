@@ -160,8 +160,9 @@ export class CodexCloudAdapter extends BaseAgentAdapter {
 
       // Process the response and extract file operations
       const fileOperations = this.extractFileOperations(response);
-      const success = response.choices[0]?.finish_reason === "stop" || 
-                     response.choices[0]?.finish_reason === "tool_calls";
+      const success =
+        response.choices[0]?.finish_reason === "stop" ||
+        response.choices[0]?.finish_reason === "tool_calls";
 
       // Apply file operations
       let modifiedFiles: string[] = [];
@@ -353,7 +354,10 @@ Use the file operation tools to implement the changes.`;
             type: "object",
             properties: {
               path: { type: "string", description: "Relative path to the file to delete" },
-              reason: { type: "string", description: "Explanation of why this file should be deleted" },
+              reason: {
+                type: "string",
+                description: "Explanation of why this file should be deleted",
+              },
             },
             required: ["path", "reason"],
           },
@@ -396,7 +400,7 @@ Use the file operation tools to implement the changes.`;
         if (toolCall.type === "function") {
           try {
             const args = JSON.parse(toolCall.function.arguments);
-            
+
             switch (toolCall.function.name) {
               case "modify_file":
                 operations.push({
@@ -441,14 +445,14 @@ Use the file operation tools to implement the changes.`;
   ): Promise<{ modified: string[]; created: string[]; deleted: string[] }> {
     const fs = await import("node:fs/promises");
     const path = await import("node:path");
-    
+
     const modified: string[] = [];
     const created: string[] = [];
     const deleted: string[] = [];
 
     for (const operation of operations) {
       const fullPath = path.resolve(repoPath, operation.path);
-      
+
       try {
         switch (operation.type) {
           case "modify":
@@ -486,7 +490,7 @@ Use the file operation tools to implement the changes.`;
    */
   private formatOutput(response: CodexChatResponse, operations: FileOperation[]): string {
     const parts = [];
-    
+
     const choice = response.choices[0];
     if (choice?.message.content) {
       parts.push(`Response: ${choice.message.content}`);

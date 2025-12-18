@@ -22,11 +22,11 @@ vi.mock("../../../src/services/plans.js", () => ({
   serializeFrontmatter: vi.fn(),
 }));
 
+import { createMigrationIssue, createPlanReviewPR } from "../../../src/services/issues.js";
 import {
-  createMigrationIssue,
-  createPlanReviewPR,
-} from "../../../src/services/issues.js";
-import { generateNormalizedFrontmatter, serializeFrontmatter } from "../../../src/services/plans.js";
+  generateNormalizedFrontmatter,
+  serializeFrontmatter,
+} from "../../../src/services/plans.js";
 import { createMockContext } from "../../mocks/github.js";
 import { createLogger } from "../../../src/utils/logger.js";
 
@@ -197,7 +197,7 @@ describe("createPlanReviewPR", () => {
     );
 
     mockLogger = createLogger("test");
-    
+
     // Mock the plans service functions
     vi.mocked(generateNormalizedFrontmatter).mockReturnValue({
       id: "test-plan",
