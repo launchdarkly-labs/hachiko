@@ -198,7 +198,10 @@ export class AgentRegistry {
           return new CodexCloudAdapter(policyConfig, codexConfig);
         }
 
-        logger.warn({ provider: agentConfig.provider }, "Unknown cloud provider, using mock adapter");
+        logger.warn(
+          { provider: agentConfig.provider },
+          "Unknown cloud provider, using mock adapter"
+        );
         return new MockAgentAdapter(policyConfig);
       }
 

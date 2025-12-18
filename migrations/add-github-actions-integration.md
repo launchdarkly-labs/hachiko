@@ -23,28 +23,32 @@ This migration adds GitHub Actions integration support to allow Hachiko to execu
 Current architecture uses GitHub App webhooks for orchestration. This migration adds GitHub Actions as an additional execution environment for specific use cases:
 
 - Repository self-migrations
-- CI-triggered code transformations  
+- CI-triggered code transformations
 - Scheduled maintenance tasks
 
 ## Migration Steps
 
 ### Step 1: Add Actions utilities
+
 - Create `src/actions/` directory
 - Add GitHub Actions context parsing
 - Add utilities for setting outputs and annotations
 - Add environment variable helpers
 
 ### Step 2: Create Actions entry points
+
 - Add `src/actions/execute-agent.ts` for agent execution
 - Add `src/actions/validate-config.ts` for configuration validation
 - Add `src/actions/report-results.ts` for result reporting
 
 ### Step 3: Add workflow templates
+
 - Create `.github/workflows/templates/` directory
 - Add reusable workflow templates for common migrations
 - Add examples for repository consumers
 
 ### Step 4: Update documentation
+
 - Add Actions integration guide
 - Add examples of workflow usage
 - Update README with new capabilities

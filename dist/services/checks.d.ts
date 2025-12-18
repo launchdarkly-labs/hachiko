@@ -3,14 +3,10 @@ import type { Logger } from "../utils/logger.js";
 /**
  * Update GitHub Checks API with agent workflow results
  */
-export declare function updateChecksStatus(
-  context: Context<"workflow_run.completed">,
-  workflowRun: any, // TODO: Type this properly
-  workflowData: {
+export declare function updateChecksStatus(context: Context<"workflow_run.completed">, workflowRun: any, // TODO: Type this properly
+workflowData: {
     planId: string;
     stepId: string;
     chunk: string | undefined;
-  },
-  logger: Logger
-): Promise<void>;
+}, logger: Logger): Promise<void>;
 //# sourceMappingURL=checks.d.ts.map

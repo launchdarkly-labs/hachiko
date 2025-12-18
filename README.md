@@ -18,15 +18,15 @@ Hachiko is a GitHub App that orchestrates technical migrations in large legacy c
 
 Hachiko offers two deployment options:
 
-| Feature | GitHub App | GitHub Actions |
-|---------|------------|----------------|
-| **Setup Time** | 2 minutes | 5 minutes |
-| **Infrastructure** | Managed service | Serverless (your repo) |
-| **Best For** | Organizations, production | Individual repos, dogfooding |
-| **Agent Support** | All agents | All agents |
-| **Control Interface** | Issue comments | Control plane dashboard |
-| **State Management** | Database | Migration documents |
-| **Maintenance** | Zero | Minimal |
+| Feature               | GitHub App                | GitHub Actions               |
+| --------------------- | ------------------------- | ---------------------------- |
+| **Setup Time**        | 2 minutes                 | 5 minutes                    |
+| **Infrastructure**    | Managed service           | Serverless (your repo)       |
+| **Best For**          | Organizations, production | Individual repos, dogfooding |
+| **Agent Support**     | All agents                | All agents                   |
+| **Control Interface** | Issue comments            | Control plane dashboard      |
+| **State Management**  | Database                  | Migration documents          |
+| **Maintenance**       | Zero                      | Minimal                      |
 
 ### Option 1: GitHub App Installation
 
@@ -42,8 +42,9 @@ For a lightweight, self-contained approach, use Hachiko's GitHub Actions workflo
 **Quick Setup** (5 minutes): Follow the [GitHub Actions Setup Guide](GITHUB-ACTIONS-SETUP.md)
 
 **Summary**:
+
 1. Copy workflows and utilities from this repo
-2. Configure repository secrets for cloud agents  
+2. Configure repository secrets for cloud agents
 3. Create your first migration document
 4. Push to main branch and watch the magic happen! ✨
 
@@ -81,6 +82,7 @@ agents:
 ### Create a Migration Plan
 
 #### For GitHub App:
+
 Create `migrations/my-migration.md`:
 
 ```markdown
@@ -107,6 +109,7 @@ This migration will upgrade all Node.js dependencies to their latest stable vers
 ```
 
 #### For GitHub Actions:
+
 Create `migrations/my-migration.md`:
 
 ```markdown
@@ -134,12 +137,14 @@ This migration will upgrade all Node.js dependencies to their latest stable vers
 ### Activate the Migration
 
 #### GitHub App:
+
 1. Push your migration plan to the default branch
 2. Hachiko will create a Migration Issue and Plan Review PR
 3. Review and merge the Plan Review PR to activate the migration
 4. Watch as Hachiko orchestrates the migration step by step!
 
 #### GitHub Actions:
+
 1. Push your migration plan to the main branch
 2. GitHub Actions will detect the new migration and create an enhancement PR
 3. Review and merge the enhancement PR
@@ -162,28 +167,33 @@ This migration will upgrade all Node.js dependencies to their latest stable vers
 ### GitHub Actions Issues
 
 **Workflows not triggering**:
+
 - Ensure workflows are in `.github/workflows/` directory
 - Check that GitHub Actions is enabled for your repository
 - Verify file permissions and YAML syntax
 
 **Agent API failures**:
+
 - Confirm API keys are set as repository secrets
 - Check secret names match workflow requirements:
   - `CURSOR_API_KEY` for Cursor agent
-  - `DEVIN_API_KEY` for Devin agent  
+  - `DEVIN_API_KEY` for Devin agent
   - `OPENAI_API_KEY` for Codex agent
 
 **Control plane issue not created**:
+
 - Check workflow logs for API rate limits
 - Ensure `GITHUB_TOKEN` has `issues: write` permission
 - Manually trigger `control-plane.yml` workflow
 
 **Migration stuck in pending**:
+
 - Verify checkbox was checked in control plane issue
 - Check `execute-migration.yml` workflow logs
 - Confirm agent execution completed successfully
 
 **Validation failing**:
+
 ```bash
 # Run diagnostic checks
 pnpm validate:phase1
@@ -210,7 +220,7 @@ Once set up, Hachiko automatically creates a **Control Plane Issue** that acts l
 - [ ] `upgrade-dependencies` - Upgrade Node.js dependencies to latest versions
 - [ ] `migrate-to-typescript` - Convert JavaScript files to TypeScript
 
-## 🔄 In-Progress Migrations  
+## 🔄 In-Progress Migrations
 - `improve-test-coverage` - Improve test coverage ([PR #123](link)) - 2/3 steps completed
 
 ## ⏸️ Paused Migrations
@@ -284,7 +294,7 @@ pnpm install
 
 # Set up environment variables for cloud agents
 export DEVIN_API_KEY="your-devin-api-key"
-export CURSOR_API_KEY="your-cursor-api-key"  
+export CURSOR_API_KEY="your-cursor-api-key"
 export OPENAI_API_KEY="your-openai-api-key"
 
 # Build the app
@@ -314,6 +324,7 @@ pnpm typecheck
 ### Dogfooding
 
 #### GitHub App Mode:
+
 ```bash
 # Run end-to-end migration simulation
 pnpm scripts:simulate-migration
@@ -323,6 +334,7 @@ pnpm scripts:fire-webhook push examples/migrations/react-class-to-hooks.md
 ```
 
 #### GitHub Actions Mode:
+
 ```bash
 # Validate GitHub Actions setup
 pnpm validate:phase1

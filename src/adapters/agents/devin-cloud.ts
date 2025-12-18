@@ -125,7 +125,10 @@ export class DevinCloudAdapter extends BaseAgentAdapter {
       );
 
       const sessionId = createResponse.session.id;
-      logger.info({ sessionId, planId: input.planId, stepId: input.stepId }, "Devin session created");
+      logger.info(
+        { sessionId, planId: input.planId, stepId: input.stepId },
+        "Devin session created"
+      );
 
       // Poll for completion
       const completedSession = await this.pollForCompletion<DevinSession>(

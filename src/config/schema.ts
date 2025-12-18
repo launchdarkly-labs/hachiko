@@ -32,16 +32,16 @@ export const AgentCloudConfigSchema = z.object({
   baseUrl: z.string().optional(), // Custom base URL for self-hosted instances
   timeout: z.number().min(30).max(3600).optional(), // 30s to 1h
   webhookUrl: z.string().optional(), // For completion notifications
-  
+
   // Provider-specific settings
   // Devin settings
   apiVersion: z.enum(["v1", "v2", "v3beta1"]).optional(),
   organizationId: z.string().optional(),
-  
+
   // Cursor settings
   repositoryUrl: z.string().optional(),
   branch: z.string().optional(),
-  
+
   // Codex settings
   model: z.string().optional(), // e.g. "gpt-4-turbo"
   maxTokens: z.number().min(100).max(8000).optional(),
@@ -114,18 +114,18 @@ export const HachikoConfigSchema = z.object({
   policy: PolicyConfigSchema.default({}),
   dependencies: DependenciesConfigSchema.default({}),
   agents: z.record(z.string(), AgentConfigSchema).default({
-    "devin": {
+    devin: {
       kind: "cloud",
       provider: "devin",
       apiVersion: "v1",
       timeout: 600,
     },
-    "cursor": {
-      kind: "cloud", 
+    cursor: {
+      kind: "cloud",
       provider: "cursor",
       timeout: 1200,
     },
-    "codex": {
+    codex: {
       kind: "cloud",
       provider: "codex",
       model: "gpt-4-turbo",

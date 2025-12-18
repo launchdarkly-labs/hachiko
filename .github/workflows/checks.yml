@@ -39,6 +39,27 @@ jobs:
       - name: TypeScript type check
         run: pnpm typecheck
 
+      - name: Verify build artifacts are up to date
+        run: |
+          # Rebuild and check if there are any meaningful changes to dist/ (excluding source maps)
+          pnpm build
+
+          # Check for changes excluding source maps which can vary between environments
+          # First get all changed files, then filter out .map files
+          CHANGED_FILES=$(git diff --name-only dist/ | grep -v '\.map$' || true)
+
+          if [ -z "$CHANGED_FILES" ]; then
+            echo "✅ Build artifacts are up to date"
+          else
+            echo "❌ Build artifacts are out of date. Please run 'pnpm build' and commit the changes."
+            echo "Changed files (excluding source maps):"
+            echo "$CHANGED_FILES"
+            echo ""
+            echo "Diff of changes:"
+            git diff dist/ | grep -v -E '\.(js|d\.ts)\.map$' || true
+            exit 1
+          fi
+
       - name: Unit & Integration Tests
         run: pnpm test:coverage --reporter=junit
 

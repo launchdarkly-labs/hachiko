@@ -293,15 +293,15 @@ This is part of an automated migration orchestrated by Hachiko. Please work syst
    */
   private formatOutput(agent: CursorAgent): string {
     const parts = [];
-    
+
     if (agent.output?.summary) {
       parts.push(`Summary: ${agent.output.summary}`);
     }
-    
+
     if (agent.output?.pull_request_url) {
       parts.push(`Pull Request: ${agent.output.pull_request_url}`);
     }
-    
+
     if (agent.output?.branch_name) {
       parts.push(`Branch: ${agent.output.branch_name}`);
     }

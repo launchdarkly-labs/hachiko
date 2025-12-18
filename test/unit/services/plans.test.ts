@@ -200,7 +200,7 @@ attempts: 0
     mockReadFile.mockRejectedValue(new Error("File not found"));
 
     const result = await parsePlanFile("nonexistent.md");
-    
+
     expect(result.isValid).toBe(false);
     expect(result.errors[0]).toContain("Failed to read plan file:");
   });
@@ -225,10 +225,10 @@ Content here.
 describe("discoverPlans", () => {
   const mockGlob = vi.mocked(glob);
   const mockConfig = {
-    plans: { 
+    plans: {
       directory: "migrations/",
-      filenamePattern: "*.md" 
-    }
+      filenamePattern: "*.md",
+    },
   };
 
   beforeEach(() => {
@@ -236,10 +236,7 @@ describe("discoverPlans", () => {
   });
 
   it("should discover plan files in directory", async () => {
-    const planFiles = [
-      "/repo/migrations/plan1.md",
-      "/repo/migrations/plan2.md"
-    ];
+    const planFiles = ["/repo/migrations/plan1.md", "/repo/migrations/plan2.md"];
 
     mockGlob.mockResolvedValue(planFiles);
 
@@ -251,7 +248,7 @@ describe("discoverPlans", () => {
       expect.objectContaining({
         cwd: "/repo",
         absolute: true,
-        ignore: ["**/node_modules/**", "**/.git/**"]
+        ignore: ["**/node_modules/**", "**/.git/**"],
       })
     );
   });
@@ -300,7 +297,7 @@ describe("validatePlanDependencies", () => {
         id: "plan1",
         frontmatter: {
           id: "plan1",
-          title: "Plan 1", 
+          title: "Plan 1",
           owner: "@team",
           status: "draft",
           strategy: { chunkBy: "module", maxOpenPRs: 1 },
@@ -320,7 +317,7 @@ describe("validatePlanDependencies", () => {
         frontmatter: {
           id: "plan2",
           title: "Plan 2",
-          owner: "@team", 
+          owner: "@team",
           status: "draft",
           strategy: { chunkBy: "module", maxOpenPRs: 1 },
           checks: [],
@@ -338,7 +335,7 @@ describe("validatePlanDependencies", () => {
 
     const errors = validatePlanDependencies(plans);
 
-    expect(errors.some(error => error.includes("Circular dependency detected"))).toBe(true);
+    expect(errors.some((error) => error.includes("Circular dependency detected"))).toBe(true);
   });
 
   it("should pass validation for valid dependencies", () => {
@@ -363,12 +360,12 @@ describe("validatePlanDependencies", () => {
         filePath: "",
       },
       {
-        id: "plan2", 
+        id: "plan2",
         frontmatter: {
           id: "plan2",
           title: "Plan 2",
           owner: "@team",
-          status: "draft", 
+          status: "draft",
           strategy: { chunkBy: "module", maxOpenPRs: 1 },
           checks: [],
           rollback: [],
@@ -424,7 +421,7 @@ describe("generateNormalizedFrontmatter", () => {
 
     // Should apply default agent
     expect(normalized.agent).toBe("claude-cli");
-    
+
     // Should generate default steps if none provided
     expect(normalized.steps).toHaveLength(3);
     expect(normalized.steps[0].id).toBe("detect");
@@ -486,10 +483,7 @@ describe("serializeFrontmatter", () => {
           commands: ["git revert HEAD"],
         },
       ],
-      successCriteria: [
-        "All TypeScript errors resolved",
-        "Tests pass",
-      ],
+      successCriteria: ["All TypeScript errors resolved", "Tests pass"],
       steps: [
         {
           id: "update-imports",
@@ -511,7 +505,7 @@ describe("serializeFrontmatter", () => {
     expect(yaml).toContain("chunkBy: module");
     expect(yaml).toContain("- name: TypeScript compilation");
     expect(yaml).toContain("- id: update-imports");
-    
+
     // Should be valid YAML (no parsing errors when re-parsing)
     expect(() => {
       const matter = require("gray-matter");

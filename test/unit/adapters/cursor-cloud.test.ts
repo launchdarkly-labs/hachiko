@@ -1,5 +1,8 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
-import { CursorCloudAdapter, type CursorCloudConfig } from "../../../src/adapters/agents/cursor-cloud.js";
+import {
+  CursorCloudAdapter,
+  type CursorCloudConfig,
+} from "../../../src/adapters/agents/cursor-cloud.js";
 import type { PolicyConfig, AgentInput } from "../../../src/adapters/types.js";
 
 describe("CursorCloudAdapter", () => {
@@ -263,9 +266,9 @@ describe("CursorCloudAdapter", () => {
         text: () => Promise.resolve("Agent not found"),
       });
 
-      await expect(
-        adapter.addInstruction("nonexistent", "test instruction")
-      ).rejects.toThrow("Failed to add instruction");
+      await expect(adapter.addInstruction("nonexistent", "test instruction")).rejects.toThrow(
+        "Failed to add instruction"
+      );
     });
   });
 
@@ -333,9 +336,11 @@ describe("CursorCloudAdapter", () => {
   describe("repository URL inference", () => {
     it("should infer repository URL from repo path", () => {
       const inferMethod = (adapter as any).inferRepositoryUrl.bind(adapter);
-      
+
       expect(inferMethod("/path/to/my-project")).toBe("https://github.com/example/my-project");
-      expect(inferMethod("/nested/path/to/another-repo")).toBe("https://github.com/example/another-repo");
+      expect(inferMethod("/nested/path/to/another-repo")).toBe(
+        "https://github.com/example/another-repo"
+      );
       expect(inferMethod("/")).toBe("https://github.com/example/unknown");
     });
   });

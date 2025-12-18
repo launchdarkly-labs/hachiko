@@ -21,21 +21,25 @@ The current monorepo structure with `packages/app/` and `packages/runner-scripts
 ## Migration Steps
 
 ### Step 1: Move source files
+
 - Move `packages/app/src/*` to `src/`
 - Move `packages/app/test/*` to `test/`
 - Move `packages/app/dist/*` to `dist/`
 
 ### Step 2: Update package.json
+
 - Merge `packages/app/package.json` into root `package.json`
 - Update scripts and dependencies
 - Remove workspace configuration
 
 ### Step 3: Update configuration files
+
 - Update `tsconfig.json` paths
 - Update `.github/workflows/*.yml` to remove `--filter` commands
 - Update import paths in source files
 
 ### Step 4: Clean up
+
 - Remove `packages/` directory
 - Update documentation to reflect new structure
 

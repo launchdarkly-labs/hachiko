@@ -6,46 +6,46 @@ on:
     types: [edited]
   pull_request:
     types: [closed]
-  
+
   # Allow manual trigger for testing
   workflow_dispatch:
     inputs:
       action:
-        description: 'Action to perform'
+        description: "Action to perform"
         required: true
         type: choice
         options:
-          - 'update_issue'
-          - 'start_migration'
-          - 'pause_migration'
+          - "update_issue"
+          - "start_migration"
+          - "pause_migration"
 
 permissions:
-  contents: write  # To create PRs and update files
-  issues: write    # To update control-plane issue
-  pull-requests: write  # To create and manage PRs
+  contents: write # To create PRs and update files
+  issues: write # To update control-plane issue
+  pull-requests: write # To create and manage PRs
 
 jobs:
   handle-control-plane:
     name: Handle Control Plane Event
     runs-on: ubuntu-latest
-    
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
-          cache: 'npm'
-          
+          node-version: "20"
+          cache: "npm"
+
       - name: Install dependencies
         run: |
           npm ci
           npm run build
-      
+
       - name: Identify control-plane issue
         id: find-issue
         env:
@@ -53,7 +53,7 @@ jobs:
         run: |
           # Find or create the control-plane issue
           ISSUE_NUMBER=$(gh issue list --label "hachiko:control-plane" --json number --jq '.[0].number // empty')
-          
+
           if [ -z "$ISSUE_NUMBER" ]; then
             echo "Creating control-plane issue..."
             ISSUE_NUMBER=$(gh issue create \
@@ -61,53 +61,53 @@ jobs:
               --label "hachiko:control-plane" \
               --body "$(cat <<'EOF'
           # 🎛️ Hachiko Migration Control Plane
-          
+
           This issue tracks all active migrations in the repository. Use the checkboxes below to control migration execution.
-          
+
           ## 🟡 Pending Migrations
-          
+
           ✨ *No pending migrations*
-          
+
           ## 🔄 In-Progress Migrations
-          
+
           ✨ *No active migrations*
-          
+
           ## ⏸️ Paused Migrations
-          
+
           ✨ *No paused migrations*
-          
+
           ---
-          
+
           **How to use:**
           - ✅ Check a box next to a pending migration to start it
           - ✅ Check a box next to a paused migration to resume it
           - ❌ Closing a Hachiko PR will pause the migration
           - 🔄 This dashboard updates automatically as migrations progress
-          
+
           🤖 *Managed by Hachiko - Do not edit the sections above manually*
           EOF
           )" --json number --jq '.number')
           fi
-          
+
           echo "control_plane_issue=$ISSUE_NUMBER" >> $GITHUB_OUTPUT
           echo "Found/created control-plane issue #$ISSUE_NUMBER"
-      
+
       - name: Handle issue edit
         if: github.event_name == 'issues' && github.event.issue.number == fromJson(steps.find-issue.outputs.control_plane_issue)
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           echo "Control-plane issue edited"
-          
+
           # Parse the issue body to detect checkbox changes
           ISSUE_BODY=$(gh issue view ${{ github.event.issue.number }} --json body --jq '.body')
-          
+
           # Extract checked migrations from Pending section
           CHECKED_PENDING=$(echo "$ISSUE_BODY" | awk '/## 🟡 Pending Migrations/,/## 🔄 In-Progress Migrations/ { if (/^- \[x\]/) print }' | sed 's/^- \[x\] `//' | sed 's/`.*$//')
-          
+
           # Extract checked migrations from Paused section  
           CHECKED_PAUSED=$(echo "$ISSUE_BODY" | awk '/## ⏸️ Paused Migrations/,/---/ { if (/^- \[x\]/) print }' | sed 's/^- \[x\] `//' | sed 's/`.*$//')
-          
+
           # Process checked migrations
           for MIGRATION_ID in $CHECKED_PENDING $CHECKED_PAUSED; do
             if [ -n "$MIGRATION_ID" ] && [ "$MIGRATION_ID" != "✨" ]; then
@@ -119,7 +119,7 @@ jobs:
                 -f step_id="1"
             fi
           done
-      
+
       - name: Handle PR closure
         if: github.event_name == 'pull_request' && github.event.pull_request.state == 'closed'
         env:
@@ -128,7 +128,7 @@ jobs:
         run: |
           echo "PR closed: ${{ github.event.pull_request.title }}"
           echo "Branch: $PR_BRANCH"
-          
+
           # Check if this is a Hachiko migration branch
           if [[ "$PR_BRANCH" == hachiko/* ]]; then
             # Extract migration ID from branch name
@@ -148,19 +148,19 @@ jobs:
               fi
             fi
           fi
-      
+
       - name: Update control-plane issue
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           ISSUE_NUMBER: ${{ steps.find-issue.outputs.control_plane_issue }}
         run: |
           echo "Updating control-plane issue #$ISSUE_NUMBER"
-          
+
           # Scan migrations/ directory and build updated issue body
           PENDING_MIGRATIONS=""
           IN_PROGRESS_MIGRATIONS=""
           PAUSED_MIGRATIONS=""
-          
+
           # Process all migration files
           for MIGRATION_FILE in migrations/*.md; do
             if [ ! -f "$MIGRATION_FILE" ]; then
@@ -199,7 +199,7 @@ jobs:
                 ;;
             esac
           done
-          
+
           # Handle empty sections
           if [ -z "$PENDING_MIGRATIONS" ]; then
             PENDING_MIGRATIONS="\n✨ *No pending migrations*"
@@ -210,7 +210,7 @@ jobs:
           if [ -z "$PAUSED_MIGRATIONS" ]; then
             PAUSED_MIGRATIONS="\n✨ *No paused migrations*"
           fi
-          
+
           # Build complete issue body
           ISSUE_BODY="# 🎛️ Hachiko Migration Control Plane
 
@@ -234,8 +234,8 @@ jobs:
           - 🔄 This dashboard updates automatically as migrations progress
 
           🤖 *Managed by Hachiko - Do not edit the sections above manually*"
-          
+
           # Update the issue
           echo "$ISSUE_BODY" | gh issue edit "$ISSUE_NUMBER" --body-file -
-          
+
           echo "Control-plane issue updated successfully"
