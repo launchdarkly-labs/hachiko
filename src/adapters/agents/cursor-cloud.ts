@@ -57,10 +57,6 @@ interface CreateAgentResponse {
   agent: CursorAgent;
 }
 
-interface AddInstructionRequest {
-  instruction: string;
-}
-
 /**
  * Cursor Cloud Agent API adapter
  */

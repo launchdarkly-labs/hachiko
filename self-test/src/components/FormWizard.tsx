@@ -202,8 +202,6 @@ class FormWizard extends React.Component<FormWizardProps, FormWizardState> {
       localStorage.removeItem("formWizard_autosave");
       this.setState({ hasUnsavedChanges: false });
     } catch (error) {
-      console.error("Form submission failed:", error);
-
       this.setState({
         errors: {
           ...this.state.errors,

@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { handlePush } from "../../../src/webhooks/push.js";
 import { createTestLogger, loadFixture, loadJsonFixture } from "../../helpers/test-utils.js";
-import { createMockContext, mockGitHubResponses, mockRepository } from "../../mocks/github.js";
+import { createMockContext, mockGitHubResponses } from "../../mocks/github.js";
 
 describe("handlePush webhook", () => {
   let mockContext: any;

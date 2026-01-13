@@ -75,7 +75,7 @@ export class MockAgentAdapter extends BaseAgentAdapter {
             const mockModification = `\n// Modified by Hachiko Mock Agent - ${new Date().toISOString()}\n// Plan: ${input.planId}, Step: ${input.stepId}\n`;
             await fs.writeFile(file, content + mockModification, "utf-8");
             modifiedFiles.push(this.getRelativePath(file, input.repoPath));
-          } catch (_error) {
+          } catch {
             // File might not exist - create it
             const mockContent = `// Created by Hachiko Mock Agent\n// Plan: ${input.planId}, Step: ${input.stepId}\n// Prompt: ${input.prompt.slice(0, 100)}...\n`;
             await fs.writeFile(file, mockContent, "utf-8");
