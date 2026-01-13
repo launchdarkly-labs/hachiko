@@ -91,7 +91,7 @@ export async function createMigrationDocument(filePath, frontmatter, content) {
  * Extract migration ID from file path
  */
 export function getMigrationIdFromPath(filePath) {
-    const match = filePath.match(/migrations\/([^\/]+)\.md$/);
+    const match = filePath.match(/migrations\/([^/]+)\.md$/);
     if (!match || !match[1]) {
         throw new Error(`Invalid migration file path: ${filePath}`);
     }

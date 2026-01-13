@@ -93,7 +93,7 @@ export class BaseAgentAdapter {
                     allowed = false;
                 }
             }
-            catch (_error) {
+            catch {
                 // File doesn't exist yet (might be created by agent) - that's okay
             }
         }
