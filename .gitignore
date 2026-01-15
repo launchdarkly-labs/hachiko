@@ -3,6 +3,7 @@ node_modules/
 
 # Test coverage
 coverage/
+html/
 
 # Logs
 *.log
