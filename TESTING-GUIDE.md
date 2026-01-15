@@ -5,6 +5,7 @@
 ## Overview
 
 This guide provides step-by-step instructions for:
+
 1. **Local Testing**: Validating Hachiko functionality on this repository
 2. **Migration Plans**: Real migration examples for testing the complete flow
 3. **Cloud Agent Setup**: Configuring and testing cloud agents (Devin, Cursor, Codex)
@@ -13,6 +14,7 @@ This guide provides step-by-step instructions for:
 ## 🏗️ Architecture Summary
 
 Hachiko uses a **cloud-native architecture**:
+
 - **No Docker**: Direct API integration with cloud agents
 - **Single Package**: Simplified structure for better developer experience
 - **High Test Coverage**: 63.72% with 262 comprehensive tests
@@ -26,7 +28,7 @@ Hachiko uses a **cloud-native architecture**:
 2. **API Keys** for cloud agents:
    ```bash
    export DEVIN_API_KEY="your-devin-api-key"      # Optional
-   export CURSOR_API_KEY="your-cursor-api-key"    # Optional  
+   export CURSOR_API_KEY="your-cursor-api-key"    # Optional
    export OPENAI_API_KEY="your-openai-api-key"    # Optional
    ```
 3. **GitHub Personal Access Token** with repo permissions
@@ -91,12 +93,14 @@ agents:
 
 **File**: `migrations/add-jsdoc-comments.md` (already exists)
 
-**Purpose**: 
+**Purpose**:
+
 - Test multi-step migration flow
 - Safe documentation-only changes
 - Validate agent coordination
 
 **Expected Outcome**:
+
 - 3 PRs created (one per utility module)
 - JSDoc comments added to utility functions
 - All tests continue to pass
@@ -106,11 +110,13 @@ agents:
 **File**: `migrations/test-simple-validation.md` (already exists)
 
 **Purpose**:
+
 - Test basic migration detection
 - Single-step execution
 - Mock agent functionality
 
 **Expected Outcome**:
+
 - Single PR created
 - Simple file modifications
 - Quick completion
@@ -145,7 +151,7 @@ steps:
   - id: optimize-src-imports
     description: "Optimize imports in src/ directory"
     expectedPR: true
-  - id: optimize-test-imports  
+  - id: optimize-test-imports
     description: "Optimize imports in test/ directory"
     expectedPR: true
   - id: verify-build
@@ -164,7 +170,7 @@ This migration optimizes import statements for better tree shaking and smaller b
 ## Changes
 
 1. Convert `import *` to explicit named imports
-2. Remove unused imports  
+2. Remove unused imports
 3. Organize imports consistently
 4. Verify build size impact
 
@@ -243,7 +249,7 @@ export DEVIN_API_KEY="your-devin-api-key"
 ### Step 2: Cursor Agent Testing (Optional)
 
 ```bash
-# Set up Cursor API key  
+# Set up Cursor API key
 export CURSOR_API_KEY="your-cursor-api-key"
 
 # Test Cursor background agent creation
@@ -262,7 +268,7 @@ export OPENAI_API_KEY="your-openai-api-key"
 # Test Codex function calling
 node -e "
 const { CodexCloudAdapter } = require('./dist/adapters/agents/codex-cloud.js');
-// Add test code here  
+// Add test code here
 "
 ```
 
@@ -271,6 +277,7 @@ const { CodexCloudAdapter } = require('./dist/adapters/agents/codex-cloud.js');
 ### Complete Migration Flow
 
 1. **Create Migration Plan**:
+
    ```bash
    # Create a new migration file
    cp migrations/test-simple-validation.md migrations/test-e2e-flow.md
@@ -278,15 +285,17 @@ const { CodexCloudAdapter } = require('./dist/adapters/agents/codex-cloud.js');
    ```
 
 2. **Trigger Migration**:
+
    ```bash
    # Commit migration file
    git add migrations/test-e2e-flow.md
    git commit -m "Add E2E test migration"
-   
+
    # This should trigger Hachiko to detect the migration
    ```
 
 3. **Monitor Progress**:
+
    ```bash
    # Watch for Migration Issue creation
    # Check PR creation
@@ -304,6 +313,7 @@ const { CodexCloudAdapter } = require('./dist/adapters/agents/codex-cloud.js');
 ## 📋 Testing Checklist
 
 ### Pre-Testing Validation
+
 - [ ] All dependencies installed (`pnpm install`)
 - [ ] Build successful (`pnpm build`)
 - [ ] Tests passing (`pnpm test`)
@@ -311,15 +321,17 @@ const { CodexCloudAdapter } = require('./dist/adapters/agents/codex-cloud.js');
 - [ ] TypeScript compile (`pnpm typecheck`)
 - [ ] Configuration valid (`.hachiko.yml` exists and valid)
 
-### Mock Agent Testing  
+### Mock Agent Testing
+
 - [ ] Migration detection works
 - [ ] Migration Issue created
-- [ ] Plan Review PR created  
+- [ ] Plan Review PR created
 - [ ] Step execution simulated
 - [ ] Progress tracking functional
 - [ ] Completion handling works
 
 ### Cloud Agent Testing (Optional)
+
 - [ ] API credentials configured
 - [ ] Agent validation successful
 - [ ] Real execution works
@@ -327,6 +339,7 @@ const { CodexCloudAdapter } = require('./dist/adapters/agents/codex-cloud.js');
 - [ ] Progress monitoring works
 
 ### Integration Testing
+
 - [ ] Full webhook flow works
 - [ ] State management functional
 - [ ] Policy enforcement active
@@ -338,22 +351,26 @@ const { CodexCloudAdapter } = require('./dist/adapters/agents/codex-cloud.js');
 ### Common Issues
 
 **Migration not detected**:
+
 - Check `.hachiko.yml` exists and is valid
 - Verify migration file has correct frontmatter
 - Check file is in configured directory (`migrations/`)
 
 **Agent execution fails**:
+
 - Verify API keys are set correctly
 - Check network connectivity
 - Review agent configuration
 - Check logs for detailed error messages
 
 **Tests failing**:
+
 - Run `pnpm test` to identify failures
 - Check TypeScript compilation (`pnpm typecheck`)
 - Verify no linting errors (`pnpm lint`)
 
 **Performance issues**:
+
 - Monitor memory usage during execution
 - Check agent timeout settings
 - Review file processing efficiency
@@ -377,18 +394,21 @@ node scripts/validate-migration.js migrations/your-migration.md
 ## ✅ Success Criteria
 
 ### Phase 1 Complete
+
 - [ ] All tests pass with mock agent
 - [ ] Migration detection functional
 - [ ] Issue and PR creation works
 - [ ] Basic flow end-to-end functional
 
-### Phase 2 Complete  
+### Phase 2 Complete
+
 - [ ] Real migration successfully executed
 - [ ] Code changes applied correctly
 - [ ] No unintended side effects
 - [ ] Recovery/rollback functional
 
 ### Phase 3 Complete
+
 - [ ] Cloud agents (optional) working
 - [ ] Performance acceptable
 - [ ] Error handling robust

@@ -24,7 +24,8 @@ export class DevinCloudAdapter extends BaseAgentAdapter {
             }
             // Test API connectivity and authentication
             let testUrl;
-            if ((this.apiVersion === "v3" || this.apiVersion === "v3beta1") && this.devinConfig.organizationId) {
+            if ((this.apiVersion === "v3" || this.apiVersion === "v3beta1") &&
+                this.devinConfig.organizationId) {
                 // v3/v3beta1 requires org ID in URL path: /v3beta1/organizations/{orgId}/sessions
                 testUrl = `${this.baseUrl}/${this.apiVersion}/organizations/${this.devinConfig.organizationId}/sessions`;
             }
@@ -69,7 +70,8 @@ export class DevinCloudAdapter extends BaseAgentAdapter {
             };
             // Build session creation URL
             let createUrl;
-            if ((this.apiVersion === "v3" || this.apiVersion === "v3beta1") && this.devinConfig.organizationId) {
+            if ((this.apiVersion === "v3" || this.apiVersion === "v3beta1") &&
+                this.devinConfig.organizationId) {
                 createUrl = `${this.baseUrl}/${this.apiVersion}/organizations/${this.devinConfig.organizationId}/sessions`;
             }
             else {
@@ -82,9 +84,10 @@ export class DevinCloudAdapter extends BaseAgentAdapter {
             });
             const sessionId = createResponse.session.id;
             logger.info({ sessionId, planId: input.planId, stepId: input.stepId }, "Devin session created");
-            // Build polling URL  
+            // Build polling URL
             let pollUrl;
-            if ((this.apiVersion === "v3" || this.apiVersion === "v3beta1") && this.devinConfig.organizationId) {
+            if ((this.apiVersion === "v3" || this.apiVersion === "v3beta1") &&
+                this.devinConfig.organizationId) {
                 pollUrl = `${this.baseUrl}/${this.apiVersion}/organizations/${this.devinConfig.organizationId}/sessions/${sessionId}`;
             }
             else {

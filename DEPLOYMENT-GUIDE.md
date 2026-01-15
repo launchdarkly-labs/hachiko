@@ -51,7 +51,7 @@ mkdir -p .github/workflows
 
 # Copy workflow files from hachiko repo
 cp /path/to/hachiko/.github/workflows/detect-migrations.yml .github/workflows/
-cp /path/to/hachiko/.github/workflows/control-plane.yml .github/workflows/  
+cp /path/to/hachiko/.github/workflows/control-plane.yml .github/workflows/
 cp /path/to/hachiko/.github/workflows/execute-migration.yml .github/workflows/
 
 # Copy utility files
@@ -72,7 +72,7 @@ Set up API keys for cloud agents (optional, can start with mock agent):
 ```bash
 # Using GitHub CLI
 gh secret set CURSOR_API_KEY --body "your-cursor-api-key"
-gh secret set DEVIN_API_KEY --body "your-devin-api-key" 
+gh secret set DEVIN_API_KEY --body "your-devin-api-key"
 gh secret set OPENAI_API_KEY --body "your-openai-api-key"
 
 # Or use GitHub UI: Settings > Secrets and variables > Actions
@@ -117,7 +117,7 @@ agents:
 policies:
   allowedPaths:
     - "src/**"
-    - "lib/**" 
+    - "lib/**"
     - "docs/**"
     - "*.md"
     - "*.json"
@@ -248,7 +248,7 @@ policies:
 checks:
   - name: "Unit Tests"
     command: "npm test"
-  - name: "Type Check"  
+  - name: "Type Check"
     command: "npm run typecheck"
   - name: "Lint"
     command: "npm run lint"
@@ -261,6 +261,7 @@ checks:
 Create migrations relevant to gonfalon:
 
 #### Migration 1: TypeScript Migration
+
 ```markdown
 ---
 id: add-typescript-support
@@ -280,6 +281,7 @@ Convert JavaScript files to TypeScript with proper type annotations...
 ```
 
 #### Migration 2: Component Updates
+
 ```markdown
 ---
 id: modernize-react-components
@@ -298,6 +300,7 @@ Update class components to functional components with hooks...
 ## ✅ Validation Checklist
 
 ### Initial Setup
+
 - [ ] Workflow files copied and committed
 - [ ] `.hachiko.yml` created and customized
 - [ ] Repository secrets configured (if using cloud agents)
@@ -305,6 +308,7 @@ Update class components to functional components with hooks...
 - [ ] Test migration created
 
 ### Functionality Testing
+
 - [ ] Push triggers detect-migrations workflow
 - [ ] Control Plane Issue created automatically
 - [ ] Migration shows as pending in Control Plane
@@ -314,6 +318,7 @@ Update class components to functional components with hooks...
 - [ ] Merging PR updates Control Plane
 
 ### Production Readiness
+
 - [ ] Real migration planned and tested
 - [ ] Cloud agent credentials configured
 - [ ] Repository-specific policies verified
@@ -324,18 +329,21 @@ Update class components to functional components with hooks...
 ## 🚀 Production Rollout Strategy
 
 ### Phase 1: Mock Agent Validation (Week 1)
+
 - Deploy with mock agent only
 - Test with simple, safe migrations
 - Validate all workflows and processes
 - Train team on control plane usage
 
 ### Phase 2: Cloud Agent Integration (Week 2)
+
 - Add cloud agent credentials
 - Test with one cloud agent (e.g., Cursor)
 - Execute small, reversible migrations
 - Monitor performance and costs
 
 ### Phase 3: Full Production (Week 3+)
+
 - Enable all desired cloud agents
 - Create real migration plans
 - Monitor and iterate based on usage
@@ -346,21 +354,25 @@ Update class components to functional components with hooks...
 ### Common Issues
 
 **Workflows not triggering**:
+
 - Check `.github/workflows/` files are properly copied
 - Verify GitHub Actions is enabled for repository
 - Check workflow file permissions and syntax
 
 **Control Plane Issue not created**:
+
 - Check `GITHUB_TOKEN` permissions
 - Verify workflow has `issues: write` permission
 - Check for API rate limits in workflow logs
 
 **Migration execution fails**:
+
 - Verify agent credentials if using cloud agents
 - Check migration document format and validation
 - Review execution logs in workflow runs
 
 **Permission errors**:
+
 - Verify `.hachiko.yml` policies are correctly configured
 - Check file paths are within allowed paths
 - Ensure migration touches only permitted files
