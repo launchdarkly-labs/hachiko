@@ -24,6 +24,9 @@
     "docs:check": "node scripts/check-docs-links.js",
     "migration": "tsx scripts/migration-cli.ts",
     "validate:phase1": "./scripts/validate-phase1.sh",
+    "test:e2e": "node scripts/test-e2e-local.js",
+    "test:agents": "node scripts/test-agent-connectivity.js",
+    "test:apis": "node scripts/test-api-endpoints.js",
     "scripts:fire-webhook": "ts-node scripts/send-webhook.ts",
     "scripts:assert-state": "ts-node scripts/assert-state.ts",
     "scripts:simulate-merge": "ts-node scripts/sim-merge.ts"

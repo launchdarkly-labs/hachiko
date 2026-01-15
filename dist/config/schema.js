@@ -30,7 +30,7 @@ export const AgentCloudConfigSchema = z.object({
     webhookUrl: z.string().optional(), // For completion notifications
     // Provider-specific settings
     // Devin settings
-    apiVersion: z.enum(["v1", "v2", "v3beta1"]).optional(),
+    apiVersion: z.enum(["v1", "v2", "v3"]).optional(),
     organizationId: z.string().optional(),
     // Cursor settings
     repositoryUrl: z.string().optional(),

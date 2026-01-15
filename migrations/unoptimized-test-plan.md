@@ -1,28 +1,13 @@
 ---
+schema_version: 1
 id: unoptimized-test-plan
 title: "Unoptimized Test Migration Plan"
-owner: "@test-team"
-status: draft
-agent: claude-cli
-strategy:
-  chunkBy: module
-  maxOpenPRs: 5
-checks:
-  - "npm test"
-  - "npm run type-check"
-successCriteria:
-  - "Some basic criteria"
-  - "Test completion"
-steps:
-  - id: step1
-    description: "Do some basic transformation"
-    expectedPR: true
-  - id: step2  
-    description: "Continue with more changes"
-    expectedPR: true
-dependsOn: []
-touches:
-  - "self-test/**/*.tsx"
+agent: mock
+status: pending
+current_step: 1
+total_steps: 2
+created: 2025-12-17T06:15:00Z
+last_updated: 2025-12-17T06:15:00Z
 ---
 
 # Basic Test Migration

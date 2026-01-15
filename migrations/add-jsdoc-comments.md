@@ -1,42 +1,13 @@
 ---
+schema_version: 1
 id: add-jsdoc-comments
 title: "Add JSDoc comments to utility functions"
-owner: "@hachiko-team"
-status: draft
 agent: mock
-strategy:
-  chunkBy: module
-  maxOpenPRs: 1
-checks:
-  - "pnpm test"
-  - "pnpm lint"
-  - "pnpm typecheck"
-rollback:
-  - description: "Revert if tests fail or linting errors introduced"
-    command: "git revert HEAD"
-successCriteria:
-  - "All utility functions have JSDoc comments"
-  - "All tests pass"
-  - "No TypeScript errors"
-  - "Linting passes"
-steps:
-  - id: document-git-utils
-    description: "Add JSDoc comments to git utility functions"
-    expectedPR: true
-  - id: document-command-utils
-    description: "Add JSDoc comments to command utility functions"
-    expectedPR: true
-  - id: document-pr-utils
-    description: "Add JSDoc comments to PR utility functions"
-    expectedPR: true
-  - id: verify
-    description: "Verify all documentation is complete and tests pass"
-    expectedPR: false
-dependsOn: []
-touches:
-  - "src/utils/git.ts"
-  - "src/utils/commands.ts"
-  - "src/utils/pr.ts"
+status: pending
+current_step: 1
+total_steps: 4
+created: 2025-12-17T06:15:00Z
+last_updated: 2025-12-17T06:15:00Z
 ---
 
 # Add JSDoc Comments to Utility Functions

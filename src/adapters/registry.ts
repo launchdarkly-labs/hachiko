@@ -166,7 +166,7 @@ export class AgentRegistry {
             apiKey: process.env.DEVIN_API_KEY || agentConfig.apiKey,
             baseUrl: agentConfig.baseUrl || "https://api.devin.ai",
             apiVersion: agentConfig.apiVersion || "v1",
-            organizationId: agentConfig.organizationId,
+            organizationId: process.env.DEVIN_ORG_ID || agentConfig.organizationId,
             timeout: agentConfig.timeout || 600, // 10 minutes
             webhookUrl: agentConfig.webhookUrl,
           };

@@ -53,7 +53,7 @@ export declare const AgentCloudConfigSchema: z.ZodObject<{
     baseUrl: z.ZodOptional<z.ZodString>;
     timeout: z.ZodOptional<z.ZodNumber>;
     webhookUrl: z.ZodOptional<z.ZodString>;
-    apiVersion: z.ZodOptional<z.ZodEnum<["v1", "v2", "v3beta1"]>>;
+    apiVersion: z.ZodOptional<z.ZodEnum<["v1", "v2", "v3"]>>;
     organizationId: z.ZodOptional<z.ZodString>;
     repositoryUrl: z.ZodOptional<z.ZodString>;
     branch: z.ZodOptional<z.ZodString>;
@@ -67,7 +67,7 @@ export declare const AgentCloudConfigSchema: z.ZodObject<{
     apiKey?: string | undefined;
     baseUrl?: string | undefined;
     webhookUrl?: string | undefined;
-    apiVersion?: "v1" | "v2" | "v3beta1" | undefined;
+    apiVersion?: "v1" | "v2" | "v3" | undefined;
     organizationId?: string | undefined;
     repositoryUrl?: string | undefined;
     branch?: string | undefined;
@@ -81,7 +81,7 @@ export declare const AgentCloudConfigSchema: z.ZodObject<{
     apiKey?: string | undefined;
     baseUrl?: string | undefined;
     webhookUrl?: string | undefined;
-    apiVersion?: "v1" | "v2" | "v3beta1" | undefined;
+    apiVersion?: "v1" | "v2" | "v3" | undefined;
     organizationId?: string | undefined;
     repositoryUrl?: string | undefined;
     branch?: string | undefined;
@@ -96,7 +96,7 @@ export declare const AgentConfigSchema: z.ZodUnion<[z.ZodObject<{
     baseUrl: z.ZodOptional<z.ZodString>;
     timeout: z.ZodOptional<z.ZodNumber>;
     webhookUrl: z.ZodOptional<z.ZodString>;
-    apiVersion: z.ZodOptional<z.ZodEnum<["v1", "v2", "v3beta1"]>>;
+    apiVersion: z.ZodOptional<z.ZodEnum<["v1", "v2", "v3"]>>;
     organizationId: z.ZodOptional<z.ZodString>;
     repositoryUrl: z.ZodOptional<z.ZodString>;
     branch: z.ZodOptional<z.ZodString>;
@@ -110,7 +110,7 @@ export declare const AgentConfigSchema: z.ZodUnion<[z.ZodObject<{
     apiKey?: string | undefined;
     baseUrl?: string | undefined;
     webhookUrl?: string | undefined;
-    apiVersion?: "v1" | "v2" | "v3beta1" | undefined;
+    apiVersion?: "v1" | "v2" | "v3" | undefined;
     organizationId?: string | undefined;
     repositoryUrl?: string | undefined;
     branch?: string | undefined;
@@ -124,7 +124,7 @@ export declare const AgentConfigSchema: z.ZodUnion<[z.ZodObject<{
     apiKey?: string | undefined;
     baseUrl?: string | undefined;
     webhookUrl?: string | undefined;
-    apiVersion?: "v1" | "v2" | "v3beta1" | undefined;
+    apiVersion?: "v1" | "v2" | "v3" | undefined;
     organizationId?: string | undefined;
     repositoryUrl?: string | undefined;
     branch?: string | undefined;
@@ -355,7 +355,7 @@ export declare const HachikoConfigSchema: z.ZodObject<{
         baseUrl: z.ZodOptional<z.ZodString>;
         timeout: z.ZodOptional<z.ZodNumber>;
         webhookUrl: z.ZodOptional<z.ZodString>;
-        apiVersion: z.ZodOptional<z.ZodEnum<["v1", "v2", "v3beta1"]>>;
+        apiVersion: z.ZodOptional<z.ZodEnum<["v1", "v2", "v3"]>>;
         organizationId: z.ZodOptional<z.ZodString>;
         repositoryUrl: z.ZodOptional<z.ZodString>;
         branch: z.ZodOptional<z.ZodString>;
@@ -369,7 +369,7 @@ export declare const HachikoConfigSchema: z.ZodObject<{
         apiKey?: string | undefined;
         baseUrl?: string | undefined;
         webhookUrl?: string | undefined;
-        apiVersion?: "v1" | "v2" | "v3beta1" | undefined;
+        apiVersion?: "v1" | "v2" | "v3" | undefined;
         organizationId?: string | undefined;
         repositoryUrl?: string | undefined;
         branch?: string | undefined;
@@ -383,7 +383,7 @@ export declare const HachikoConfigSchema: z.ZodObject<{
         apiKey?: string | undefined;
         baseUrl?: string | undefined;
         webhookUrl?: string | undefined;
-        apiVersion?: "v1" | "v2" | "v3beta1" | undefined;
+        apiVersion?: "v1" | "v2" | "v3" | undefined;
         organizationId?: string | undefined;
         repositoryUrl?: string | undefined;
         branch?: string | undefined;
@@ -489,7 +489,7 @@ export declare const HachikoConfigSchema: z.ZodObject<{
         apiKey?: string | undefined;
         baseUrl?: string | undefined;
         webhookUrl?: string | undefined;
-        apiVersion?: "v1" | "v2" | "v3beta1" | undefined;
+        apiVersion?: "v1" | "v2" | "v3" | undefined;
         organizationId?: string | undefined;
         repositoryUrl?: string | undefined;
         branch?: string | undefined;
@@ -550,7 +550,7 @@ export declare const HachikoConfigSchema: z.ZodObject<{
         apiKey?: string | undefined;
         baseUrl?: string | undefined;
         webhookUrl?: string | undefined;
-        apiVersion?: "v1" | "v2" | "v3beta1" | undefined;
+        apiVersion?: "v1" | "v2" | "v3" | undefined;
         organizationId?: string | undefined;
         repositoryUrl?: string | undefined;
         branch?: string | undefined;

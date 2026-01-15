@@ -1,38 +1,13 @@
 ---
+schema_version: 1
 id: self-test-react-hooks
 title: "Self-Test: Convert React Class Components to Hooks"
-owner: "@hachiko-team"
-status: draft
-agent: claude-cli
-strategy:
-  chunkBy: file
-  maxOpenPRs: 1
-checks:
-  - "npm run test"
-  - "npm run type-check"
-  - "npm run lint"
-rollback:
-  - description: "Revert if tests fail or type errors introduced"
-    command: "git revert HEAD"
-successCriteria:
-  - "All class components in self-test/ converted to hooks"
-  - "All tests pass"
-  - "No TypeScript errors"
-  - "ESLint rules pass"
-steps:
-  - id: simple-components
-    description: "Convert simple components like UserCard with basic state and event handlers"
-    expectedPR: true
-  - id: lifecycle-components  
-    description: "Convert DataFetcher component with componentDidMount, componentDidUpdate, and cleanup"
-    expectedPR: true
-  - id: complex-components
-    description: "Convert FormWizard with refs, getDerivedStateFromProps, advanced lifecycle methods, and complex state"
-    expectedPR: true
-dependsOn: []
-touches:
-  - "self-test/src/components/**/*.tsx"
-  - "self-test/src/components/**/*.ts"
+agent: mock
+status: pending
+current_step: 1
+total_steps: 3
+created: 2025-12-17T06:15:00Z
+last_updated: 2025-12-17T06:15:00Z
 ---
 
 # Self-Test React Class to Hooks Migration

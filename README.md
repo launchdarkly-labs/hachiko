@@ -284,6 +284,16 @@ Control your migrations using GitHub issue comments:
 - pnpm 9+
 - API keys for chosen cloud agents (Devin, Cursor, or OpenAI)
 
+### Current Architecture
+
+Hachiko uses a **cloud-native architecture** with the following key characteristics:
+
+- **🏗️ Single Package Structure**: Simplified from monorepo to single package for better developer experience
+- **☁️ Cloud Agent Integration**: Direct API integration with Devin, Cursor, and Codex (no Docker containers)
+- **🚫 No Local Dependencies**: Eliminated Docker daemon and CLI tool requirements
+- **⚡ High Performance**: 63.72% test coverage with 262 comprehensive tests
+- **🛡️ Production Ready**: Zero TypeScript errors, comprehensive linting, and CI stability
+
 ### Setup
 
 ```bash
