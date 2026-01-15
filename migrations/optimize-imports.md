@@ -26,7 +26,7 @@ The current codebase has mixed import styles that can affect bundle size and tre
 ## Migration Strategy
 
 1. **Optimize src/ imports**: Convert wildcard imports to named imports in source code
-2. **Optimize test/ imports**: Clean up test file imports for consistency  
+2. **Optimize test/ imports**: Clean up test file imports for consistency
 3. **Verify build**: Ensure build size and performance are maintained or improved
 
 ## Technical Details
@@ -75,8 +75,8 @@ import { c } from './c';
 
 ### Files to Modify
 
-- **src/**/*.ts**: ~46 TypeScript files
-- **test/**/*.ts**: ~19 test files
+- **src/\**/\*.ts**: ~46 TypeScript files
+- **test/\**/\*.ts**: ~19 test files
 - Focus on files with wildcard imports or unused imports
 
 ### Build Impact
@@ -123,6 +123,6 @@ When processing this migration:
 2. **Identify optimization opportunities** (wildcards, unused imports)
 3. **Apply consistent formatting** according to rules above
 4. **Verify imports still resolve** correctly
-5. **Test that functionality is preserved** 
+5. **Test that functionality is preserved**
 
 The agent should be conservative and only change imports that clearly need optimization, preserving any imports that may be used in ways that aren't immediately obvious.
