@@ -18,8 +18,25 @@ export class DevinCloudAdapter extends BaseAgentAdapter {
     }
     async validate() {
         try {
+            // For API v3, organizationId may be required depending on service user type
+            if (this.apiVersion === "v3" && !this.devinConfig.organizationId) {
+                logger.warn("Devin API v3: No organizationId provided. This may be required for Organization Service Users.");
+            }
             // Test API connectivity and authentication
-            const response = await this.makeAuthenticatedRequest("GET", `${this.baseUrl}/${this.apiVersion}/health`, {
+            let testUrl;
+            if ((this.apiVersion === "v3" || this.apiVersion === "v3beta1") &&
+                this.devinConfig.organizationId) {
+                // v3/v3beta1 requires org ID in URL path: /v3beta1/organizations/{orgId}/sessions
+                testUrl = `${this.baseUrl}/${this.apiVersion}/organizations/${this.devinConfig.organizationId}/sessions`;
+            }
+            else if (this.apiVersion === "v3" || this.apiVersion === "v3beta1") {
+                throw new Error("Devin v3/v3beta1 API requires organizationId");
+            }
+            else {
+                // v1/v2 use simple /health endpoint
+                testUrl = `${this.baseUrl}/${this.apiVersion}/health`;
+            }
+            const response = await this.makeAuthenticatedRequest("GET", testUrl, {
                 headers: this.getAuthHeaders(),
                 timeout: 10000,
             });
@@ -51,15 +68,33 @@ export class DevinCloudAdapter extends BaseAgentAdapter {
                     ...(input.chunk && { chunk: input.chunk }),
                 },
             };
-            const createResponse = await this.makeAuthenticatedRequest("POST", `${this.baseUrl}/${this.apiVersion}/sessions`, {
+            // Build session creation URL
+            let createUrl;
+            if ((this.apiVersion === "v3" || this.apiVersion === "v3beta1") &&
+                this.devinConfig.organizationId) {
+                createUrl = `${this.baseUrl}/${this.apiVersion}/organizations/${this.devinConfig.organizationId}/sessions`;
+            }
+            else {
+                createUrl = `${this.baseUrl}/${this.apiVersion}/sessions`;
+            }
+            const createResponse = await this.makeAuthenticatedRequest("POST", createUrl, {
                 body: sessionRequest,
                 headers: this.getAuthHeaders(),
                 timeout: 30000,
             });
             const sessionId = createResponse.session.id;
             logger.info({ sessionId, planId: input.planId, stepId: input.stepId }, "Devin session created");
+            // Build polling URL
+            let pollUrl;
+            if ((this.apiVersion === "v3" || this.apiVersion === "v3beta1") &&
+                this.devinConfig.organizationId) {
+                pollUrl = `${this.baseUrl}/${this.apiVersion}/organizations/${this.devinConfig.organizationId}/sessions/${sessionId}`;
+            }
+            else {
+                pollUrl = `${this.baseUrl}/${this.apiVersion}/sessions/${sessionId}`;
+            }
             // Poll for completion
-            const completedSession = await this.pollForCompletion(`${this.baseUrl}/${this.apiVersion}/sessions/${sessionId}`, {
+            const completedSession = await this.pollForCompletion(pollUrl, {
                 headers: this.getAuthHeaders(),
                 maxAttempts: 120, // 10 minutes with 5s intervals
                 initialDelay: 5000,
@@ -124,10 +159,15 @@ export class DevinCloudAdapter extends BaseAgentAdapter {
      * Get authentication headers for Devin API
      */
     getAuthHeaders() {
-        return {
+        const headers = {
             Authorization: `Bearer ${this.devinConfig.apiKey}`,
             "User-Agent": "Hachiko/1.0",
         };
+        // For API v3, include organization ID in headers if available
+        if (this.apiVersion === "v3" && this.devinConfig.organizationId) {
+            headers["X-Organization-ID"] = this.devinConfig.organizationId;
+        }
+        return headers;
     }
     /**
      * Build comprehensive prompt for Devin

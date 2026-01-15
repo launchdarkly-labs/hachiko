@@ -450,6 +450,37 @@ ${JSON.stringify(mockState, null, 2)}
       expect(result.skippedSteps).toBe(1);
       expect(result.currentStep).toBe("step-2"); // Now step-2 is the only RUNNING step
     });
+
+    it("should handle PAUSED step state correctly", async () => {
+      // First set step-1 to RUNNING so we can transition to PAUSED
+      const progressWithRunningStep = {
+        ...mockProgress,
+        steps: {
+          ...mockProgress.steps,
+          "step-1": {
+            stepId: "step-1",
+            state: StepState.RUNNING,
+            retryCount: 0,
+          },
+        },
+      };
+      
+      const issueBody = `\`\`\`json\n${JSON.stringify(progressWithRunningStep)}\n\`\`\``;
+      vi.mocked(mockContext.octokit.issues.listForRepo).mockResolvedValue({
+        data: [{ body: issueBody }],
+      } as any);
+      vi.mocked(mockContext.octokit.issues.update).mockResolvedValue({} as any);
+
+      const result = await stateManager.updateStepState(
+        mockContext,
+        "test-migration",
+        "step-1",
+        StepState.PAUSED
+      );
+
+      expect(result.steps["step-1"].state).toBe(StepState.PAUSED);
+      expect(result.completedSteps).toBe(0); // PAUSED doesn't count as completed
+    });
   });
 
   describe("listActiveMigrations", () => {

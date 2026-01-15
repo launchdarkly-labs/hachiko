@@ -96,6 +96,16 @@ describe("loadHachikoConfig", () => {
 
     await expect(loadHachikoConfig(mockContext)).rejects.toThrow(ConfigurationError);
   });
+
+  it("should handle non-Error API failures", async () => {
+    mockOctokit.repos.getContent.mockRejectedValue("Non-Error rejection");
+
+    await expect(loadHachikoConfig(mockContext)).rejects.toThrow(
+      expect.objectContaining({
+        message: expect.stringContaining("Non-Error rejection")
+      })
+    );
+  });
 });
 
 describe("validateConfig", () => {
@@ -126,6 +136,27 @@ describe("validateConfig", () => {
     };
 
     expect(() => validateConfig(invalidConfig)).toThrow(ConfigurationError);
+  });
+
+  it("should handle non-Error validation failures", async () => {
+    // Import the module dynamically to avoid import issues
+    const { validateHachikoConfig } = await import("../../../src/config/schema.js");
+    
+    // Mock the schema validation to throw a string instead of Error
+    const spy = vi.spyOn(await import("../../../src/config/schema.js"), 'validateHachikoConfig')
+      .mockImplementation(() => {
+        throw "String error message";
+      });
+
+    try {
+      expect(() => validateConfig({})).toThrow(
+        expect.objectContaining({
+          message: expect.stringContaining("String error message")
+        })
+      );
+    } finally {
+      spy.mockRestore();
+    }
   });
 
   it("should apply defaults to partial configuration", () => {

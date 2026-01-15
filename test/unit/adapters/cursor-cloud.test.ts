@@ -67,6 +67,28 @@ describe("CursorCloudAdapter", () => {
       expect(config.branch).toBe("feature-branch");
       expect(config.hasWebhook).toBe(true);
     });
+
+    it("should handle custom timeout configuration", () => {
+      const customAdapter = new CursorCloudAdapter(policyConfig, {
+        ...cursorConfig,
+        timeout: 900, // 15 minutes
+      });
+      const config = customAdapter.getConfig();
+      expect(config.name).toBe("cursor-cloud");
+      // The timeout is used internally during execution
+    });
+
+    it("should handle undefined timeout configuration", () => {
+      const customAdapter = new CursorCloudAdapter(policyConfig, {
+        apiKey: cursorConfig.apiKey,
+        baseUrl: cursorConfig.baseUrl,
+        repositoryUrl: cursorConfig.repositoryUrl,
+        // timeout not specified - should use default
+      });
+      const config = customAdapter.getConfig();
+      expect(config.name).toBe("cursor-cloud");
+      // Should use default timeout when not specified
+    });
   });
 
   describe("validate", () => {
@@ -269,6 +291,54 @@ describe("CursorCloudAdapter", () => {
       await expect(adapter.addInstruction("nonexistent", "test instruction")).rejects.toThrow(
         "Failed to add instruction"
       );
+    });
+
+    it("should use custom timeout during polling", async () => {
+      const customAdapter = new CursorCloudAdapter(policyConfig, {
+        ...cursorConfig,
+        timeout: 300, // 5 minutes custom timeout
+      });
+      (customAdapter as any).httpClient = mockHttpClient;
+
+      const agentId = "agent-timeout-test";
+      const createResponse = {
+        agent: {
+          id: agentId,
+          status: "queued",
+          created_at: "2024-01-01T00:00:00Z",
+          updated_at: "2024-01-01T00:00:00Z",
+        },
+      };
+
+      const completedResponse = {
+        id: agentId,
+        status: "completed",
+        created_at: "2024-01-01T00:00:00Z",
+        updated_at: "2024-01-01T00:01:00Z",
+        output: {
+          files_modified: ["src/test.ts"],
+          files_created: [],
+          files_deleted: [],
+          summary: "Custom timeout migration completed",
+        },
+      };
+
+      mockHttpClient.post.mockResolvedValue({
+        ok: true,
+        json: () => Promise.resolve(createResponse),
+        headers: { get: () => "application/json" },
+      });
+
+      mockHttpClient.get.mockResolvedValue({
+        ok: true,
+        json: () => Promise.resolve(completedResponse),
+        headers: { get: () => "application/json" },
+      });
+
+      const result = await customAdapter.execute(mockInput);
+
+      expect(result.success).toBe(true);
+      expect(result.output).toBe("Summary: Custom timeout migration completed");
     });
   });
 

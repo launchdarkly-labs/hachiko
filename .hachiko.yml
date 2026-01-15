@@ -50,10 +50,11 @@ agents:
   devin:
     kind: cloud
     provider: devin
-    apiVersion: v2
+    apiVersion: v3beta1
     timeout: 900
+    # For Devin API v3 with service users:
     # apiKey: configured via DEVIN_API_KEY environment variable
-    # organizationId: configured via DEVIN_ORG_ID environment variable
+    # organizationId: configured via DEVIN_ORG_ID environment variable (optional, depends on service user type)
 
   cursor:
     kind: cloud
@@ -62,7 +63,7 @@ agents:
     repositoryUrl: "https://github.com/launchdarkly-labs/hachiko"
     branch: main
     # apiKey: configured via CURSOR_API_KEY environment variable
-    # webhookUrl: configured via CURSOR_WEBHOOK_URL environment variable
+    # webhookUrl: configured via CURSOR_WEBHOOK_URL environment variable (optional - for status notifications)
 
   codex:
     kind: cloud

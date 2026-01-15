@@ -70,15 +70,32 @@ export class DevinCloudAdapter extends BaseAgentAdapter {
 
   async validate(): Promise<boolean> {
     try {
+      // For API v3, organizationId may be required depending on service user type
+      if (this.apiVersion === "v3" && !this.devinConfig.organizationId) {
+        logger.warn(
+          "Devin API v3: No organizationId provided. This may be required for Organization Service Users."
+        );
+      }
+
       // Test API connectivity and authentication
-      const response = await this.makeAuthenticatedRequest<{ status: string }>(
-        "GET",
-        `${this.baseUrl}/${this.apiVersion}/health`,
-        {
-          headers: this.getAuthHeaders(),
-          timeout: 10000,
-        }
-      );
+      let testUrl: string;
+      if (
+        (this.apiVersion === "v3" || this.apiVersion === "v3beta1") &&
+        this.devinConfig.organizationId
+      ) {
+        // v3/v3beta1 requires org ID in URL path: /v3beta1/organizations/{orgId}/sessions
+        testUrl = `${this.baseUrl}/${this.apiVersion}/organizations/${this.devinConfig.organizationId}/sessions`;
+      } else if (this.apiVersion === "v3" || this.apiVersion === "v3beta1") {
+        throw new Error("Devin v3/v3beta1 API requires organizationId");
+      } else {
+        // v1/v2 use simple /health endpoint
+        testUrl = `${this.baseUrl}/${this.apiVersion}/health`;
+      }
+
+      const response = await this.makeAuthenticatedRequest<{ status?: string }>("GET", testUrl, {
+        headers: this.getAuthHeaders(),
+        timeout: 10000,
+      });
 
       logger.info({ response }, "Devin API validation successful");
       return true;
@@ -114,9 +131,20 @@ export class DevinCloudAdapter extends BaseAgentAdapter {
         },
       };
 
+      // Build session creation URL
+      let createUrl: string;
+      if (
+        (this.apiVersion === "v3" || this.apiVersion === "v3beta1") &&
+        this.devinConfig.organizationId
+      ) {
+        createUrl = `${this.baseUrl}/${this.apiVersion}/organizations/${this.devinConfig.organizationId}/sessions`;
+      } else {
+        createUrl = `${this.baseUrl}/${this.apiVersion}/sessions`;
+      }
+
       const createResponse = await this.makeAuthenticatedRequest<CreateSessionResponse>(
         "POST",
-        `${this.baseUrl}/${this.apiVersion}/sessions`,
+        createUrl,
         {
           body: sessionRequest,
           headers: this.getAuthHeaders(),
@@ -130,18 +158,26 @@ export class DevinCloudAdapter extends BaseAgentAdapter {
         "Devin session created"
       );
 
+      // Build polling URL
+      let pollUrl: string;
+      if (
+        (this.apiVersion === "v3" || this.apiVersion === "v3beta1") &&
+        this.devinConfig.organizationId
+      ) {
+        pollUrl = `${this.baseUrl}/${this.apiVersion}/organizations/${this.devinConfig.organizationId}/sessions/${sessionId}`;
+      } else {
+        pollUrl = `${this.baseUrl}/${this.apiVersion}/sessions/${sessionId}`;
+      }
+
       // Poll for completion
-      const completedSession = await this.pollForCompletion<DevinSession>(
-        `${this.baseUrl}/${this.apiVersion}/sessions/${sessionId}`,
-        {
-          headers: this.getAuthHeaders(),
-          maxAttempts: 120, // 10 minutes with 5s intervals
-          initialDelay: 5000,
-          maxDelay: 30000,
-          isComplete: (session) => ["completed", "failed", "cancelled"].includes(session.status),
-          timeout: this.devinConfig.timeout ? this.devinConfig.timeout * 1000 : 600000, // 10 minutes default
-        }
-      );
+      const completedSession = await this.pollForCompletion<DevinSession>(pollUrl, {
+        headers: this.getAuthHeaders(),
+        maxAttempts: 120, // 10 minutes with 5s intervals
+        initialDelay: 5000,
+        maxDelay: 30000,
+        isComplete: (session) => ["completed", "failed", "cancelled"].includes(session.status),
+        timeout: this.devinConfig.timeout ? this.devinConfig.timeout * 1000 : 600000, // 10 minutes default
+      });
 
       const success = completedSession.status === "completed";
       const executionTime = Date.now() - startTime;
@@ -211,10 +247,17 @@ export class DevinCloudAdapter extends BaseAgentAdapter {
    * Get authentication headers for Devin API
    */
   private getAuthHeaders(): Record<string, string> {
-    return {
+    const headers: Record<string, string> = {
       Authorization: `Bearer ${this.devinConfig.apiKey}`,
       "User-Agent": "Hachiko/1.0",
     };
+
+    // For API v3, include organization ID in headers if available
+    if (this.apiVersion === "v3" && this.devinConfig.organizationId) {
+      headers["X-Organization-ID"] = this.devinConfig.organizationId;
+    }
+
+    return headers;
   }
 
   /**

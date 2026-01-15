@@ -30,11 +30,11 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Build packages
-        run: pnpm build
-
       - name: Oxlint & Oxfmt (lint + format)
         run: pnpm lint && pnpm format
+
+      - name: Build packages
+        run: pnpm build
 
       - name: TypeScript type check
         run: pnpm typecheck

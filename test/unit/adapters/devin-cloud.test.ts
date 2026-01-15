@@ -64,6 +64,28 @@ describe("DevinCloudAdapter", () => {
       const config = customAdapter.getConfig();
       expect(config.baseUrl).toBe("https://custom.devin.ai");
     });
+
+    it("should support v3 API with organization ID", () => {
+      const v3Adapter = new DevinCloudAdapter(policyConfig, {
+        ...devinConfig,
+        apiVersion: "v3",
+        organizationId: "org-123",
+      });
+      const config = v3Adapter.getConfig();
+      expect(config.name).toBe("devin-cloud");
+      expect(config.baseUrl).toBe("https://api.devin.ai");
+    });
+
+    it("should support v3beta1 API with organization ID", () => {
+      const v3Beta1Adapter = new DevinCloudAdapter(policyConfig, {
+        ...devinConfig,
+        apiVersion: "v3beta1",
+        organizationId: "org-456",
+      });
+      const config = v3Beta1Adapter.getConfig();
+      expect(config.name).toBe("devin-cloud");
+      expect(config.baseUrl).toBe("https://api.devin.ai");
+    });
   });
 
   describe("validate", () => {
@@ -268,6 +290,120 @@ describe("DevinCloudAdapter", () => {
             chunk: "chunk-1",
           }),
         }),
+        expect.any(Object)
+      );
+    });
+
+    it("should use organization URL format for v3 API with organization ID", async () => {
+      const v3Adapter = new DevinCloudAdapter(policyConfig, {
+        ...devinConfig,
+        apiVersion: "v3",
+        organizationId: "org-123",
+      });
+      (v3Adapter as any).httpClient = mockHttpClient;
+
+      const sessionId = "session-789";
+      const createResponse = {
+        session: {
+          id: sessionId,
+          status: "pending",
+          prompt: "test prompt",
+          created_at: "2024-01-01T00:00:00Z",
+          updated_at: "2024-01-01T00:00:00Z",
+        },
+      };
+
+      const completedResponse = {
+        id: sessionId,
+        status: "completed",
+        prompt: "test prompt",
+        created_at: "2024-01-01T00:00:00Z",
+        updated_at: "2024-01-01T00:01:00Z",
+        output: { summary: "Migration completed" },
+      };
+
+      mockHttpClient.post.mockResolvedValue({
+        ok: true,
+        json: () => Promise.resolve(createResponse),
+        headers: { get: () => "application/json" },
+      });
+
+      mockHttpClient.get.mockResolvedValue({
+        ok: true,
+        json: () => Promise.resolve(completedResponse),
+        headers: { get: () => "application/json" },
+      });
+
+      await v3Adapter.execute(mockInput);
+
+      // Verify creation URL includes organization
+      expect(mockHttpClient.post).toHaveBeenCalledWith(
+        "https://api.devin.ai/v3/organizations/org-123/sessions",
+        expect.any(Object),
+        expect.objectContaining({
+          headers: expect.objectContaining({
+            "Authorization": "Bearer test-api-key",
+            "X-Organization-ID": "org-123",
+          }),
+        })
+      );
+
+      // Verify polling URL includes organization
+      expect(mockHttpClient.get).toHaveBeenCalledWith(
+        `https://api.devin.ai/v3/organizations/org-123/sessions/${sessionId}`,
+        expect.objectContaining({
+          headers: expect.objectContaining({
+            "Authorization": "Bearer test-api-key",
+            "X-Organization-ID": "org-123",
+          }),
+        })
+      );
+    });
+
+    it("should use organization URL format for v3beta1 API with organization ID", async () => {
+      const v3Beta1Adapter = new DevinCloudAdapter(policyConfig, {
+        ...devinConfig,
+        apiVersion: "v3beta1",
+        organizationId: "org-456",
+      });
+      (v3Beta1Adapter as any).httpClient = mockHttpClient;
+
+      const sessionId = "session-beta";
+      const createResponse = {
+        session: {
+          id: sessionId,
+          status: "completed",
+          prompt: "test prompt",
+          created_at: "2024-01-01T00:00:00Z",
+          updated_at: "2024-01-01T00:00:00Z",
+          output: { summary: "Beta migration completed" },
+        },
+      };
+
+      mockHttpClient.post.mockResolvedValue({
+        ok: true,
+        json: () => Promise.resolve(createResponse),
+        headers: { get: () => "application/json" },
+      });
+
+      mockHttpClient.get.mockResolvedValue({
+        ok: true,
+        json: () => Promise.resolve(createResponse.session),
+        headers: { get: () => "application/json" },
+      });
+
+      await v3Beta1Adapter.execute(mockInput);
+
+      // Verify creation URL includes organization
+      expect(mockHttpClient.post).toHaveBeenCalledWith(
+        "https://api.devin.ai/v3beta1/organizations/org-456/sessions",
+        expect.any(Object),
+        expect.any(Object)
+      );
+
+      // Verify polling URL includes organization  
+      expect(mockHttpClient.get).toHaveBeenCalledWith(
+        `https://api.devin.ai/v3beta1/organizations/org-456/sessions/${sessionId}`,
         expect.any(Object)
       );
     });
