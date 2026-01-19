@@ -214,10 +214,10 @@ program
     }
   });
 
-// Generate control plane issue body
+// Generate migration dashboard issue body
 program
-  .command("generate-control-plane")
-  .description("Generate control plane issue body from migrations")
+  .command("generate-migration-dashboard")
+  .description("Generate migration dashboard issue body from migrations")
   .action(async () => {
     try {
       const files = await readdir("migrations");
@@ -259,7 +259,7 @@ program
       if (!inProgressMigrations) inProgressMigrations = "✨ *No active migrations*\n";
       if (!pausedMigrations) pausedMigrations = "✨ *No paused migrations*\n";
       
-      const issueBody = `# 🎛️ Hachiko Migration Control Plane
+      const issueBody = `# 📊 Hachiko Migration Dashboard
 
 This issue tracks all active migrations in the repository. Use the checkboxes below to control migration execution.
 
@@ -284,7 +284,7 @@ ${pausedMigrations}
 
       console.log(issueBody);
     } catch (error) {
-      console.error("Failed to generate control plane issue:", error);
+      console.error("Failed to generate migration dashboard issue:", error);
       process.exit(1);
     }
   });

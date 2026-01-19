@@ -112,19 +112,19 @@ else
     log_fail "Migration schema validation failed"
 fi
 
-# Test 5: Control plane generation
-log_test "Control plane issue generation"
-if pnpm migration generate-control-plane > /dev/null 2>&1; then
-    log_pass "Control plane issue generation works"
+# Test 5: Migration dashboard generation
+log_test "Migration dashboard issue generation"
+if pnpm migration generate-migration-dashboard > /dev/null 2>&1; then
+    log_pass "Migration dashboard issue generation works"
 else
-    log_fail "Control plane issue generation failed"
+    log_fail "Migration dashboard issue generation failed"
 fi
 
 # Test 6: GitHub Actions workflow files exist
 log_test "GitHub Actions workflow files existence"
 REQUIRED_WORKFLOWS=(
     ".github/workflows/detect-migrations.yml"
-    ".github/workflows/control-plane.yml"
+    ".github/workflows/migration-dashboard.yml"
     ".github/workflows/execute-migration.yml"
 )
 
@@ -147,7 +147,7 @@ log_test "Required files and directories exist"
 REQUIRED_FILES=(
     "migrations/"
     ".github/workflows/detect-migrations.yml"
-    ".github/workflows/control-plane.yml"
+    ".github/workflows/migration-dashboard.yml"
     ".github/workflows/execute-migration.yml"
     "src/config/migration-schema.ts"
     "src/utils/migration-document.ts"

@@ -51,7 +51,7 @@ mkdir -p .github/workflows
 
 # Copy workflow files from hachiko repo
 cp /path/to/hachiko/.github/workflows/detect-migrations.yml .github/workflows/
-cp /path/to/hachiko/.github/workflows/control-plane.yml .github/workflows/
+cp /path/to/hachiko/.github/workflows/migration-dashboard.yml .github/workflows/
 cp /path/to/hachiko/.github/workflows/execute-migration.yml .github/workflows/
 
 # Copy utility files
@@ -175,7 +175,7 @@ This migration tests that Hachiko is properly configured and working in this rep
 ## Purpose
 
 - Validate workflow triggers
-- Test control plane issue creation
+- Test migration dashboard issue creation
 - Verify migration execution
 - Confirm PR creation and management
 
@@ -198,7 +198,7 @@ git push
 
 # This should trigger:
 # 1. detect-migrations.yml workflow
-# 2. Creation of Control Plane Issue
+# 2. Creation of Migration Dashboard Issue
 # 3. Ready for execution when checkbox is checked
 ```
 
@@ -310,12 +310,12 @@ Update class components to functional components with hooks...
 ### Functionality Testing
 
 - [ ] Push triggers detect-migrations workflow
-- [ ] Control Plane Issue created automatically
-- [ ] Migration shows as pending in Control Plane
+- [ ] Migration Dashboard Issue created automatically
+- [ ] Migration shows as pending in Migration Dashboard
 - [ ] Checking checkbox triggers execution
 - [ ] Mock agent execution completes successfully
 - [ ] PR created with expected changes
-- [ ] Merging PR updates Control Plane
+- [ ] Merging PR updates Migration Dashboard
 
 ### Production Readiness
 
@@ -333,7 +333,7 @@ Update class components to functional components with hooks...
 - Deploy with mock agent only
 - Test with simple, safe migrations
 - Validate all workflows and processes
-- Train team on control plane usage
+- Train team on migration dashboard usage
 
 ### Phase 2: Cloud Agent Integration (Week 2)
 
@@ -359,7 +359,7 @@ Update class components to functional components with hooks...
 - Verify GitHub Actions is enabled for repository
 - Check workflow file permissions and syntax
 
-**Control Plane Issue not created**:
+**Migration Dashboard Issue not created**:
 
 - Check `GITHUB_TOKEN` permissions
 - Verify workflow has `issues: write` permission

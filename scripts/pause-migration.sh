@@ -34,4 +34,4 @@ else
 fi
 
 echo "✅ Migration paused successfully"
-echo "💡 To resume, check the migration checkbox in the control-plane issue"
+echo "💡 To resume, check the migration checkbox in the migration-dashboard issue"

@@ -24,7 +24,7 @@ Hachiko offers two deployment options:
 | **Infrastructure**    | Managed service           | Serverless (your repo)       |
 | **Best For**          | Organizations, production | Individual repos, dogfooding |
 | **Agent Support**     | All agents                | All agents                   |
-| **Control Interface** | Issue comments            | Control plane dashboard      |
+| **Control Interface** | Issue comments            | Migration Dashboard      |
 | **State Management**  | Database                  | Migration documents          |
 | **Maintenance**       | Zero                      | Minimal                      |
 
@@ -148,7 +148,7 @@ This migration will upgrade all Node.js dependencies to their latest stable vers
 1. Push your migration plan to the main branch
 2. GitHub Actions will detect the new migration and create an enhancement PR
 3. Review and merge the enhancement PR
-4. Check the migration checkbox in the **Control Plane Issue** to start execution
+4. Check the migration checkbox in the **Migration Dashboard Issue** to start execution
 5. Monitor progress as PRs are automatically created for each step!
 
 ## 📚 Documentation
@@ -180,15 +180,15 @@ This migration will upgrade all Node.js dependencies to their latest stable vers
   - `DEVIN_API_KEY` for Devin agent
   - `OPENAI_API_KEY` for Codex agent
 
-**Control plane issue not created**:
+**Migration dashboard issue not created**:
 
 - Check workflow logs for API rate limits
 - Ensure `GITHUB_TOKEN` has `issues: write` permission
-- Manually trigger `control-plane.yml` workflow
+- Manually trigger `migration-dashboard.yml` workflow
 
 **Migration stuck in pending**:
 
-- Verify checkbox was checked in control plane issue
+- Verify checkbox was checked in migration dashboard issue
 - Check `execute-migration.yml` workflow logs
 - Confirm agent execution completed successfully
 
@@ -209,12 +209,12 @@ pnpm migration get your-migration-id
 
 Hachiko's GitHub Actions implementation provides a lightweight, serverless approach to migration management.
 
-### Control Plane Dashboard
+### Migration Dashboard
 
-Once set up, Hachiko automatically creates a **Control Plane Issue** that acts like Renovate's dependency dashboard:
+Once set up, Hachiko automatically creates a **Migration Dashboard Issue** that acts like Renovate's dependency dashboard:
 
 ```markdown
-# 🎛️ Hachiko Migration Control Plane
+# 📊 Hachiko Migration Dashboard
 
 ## 🟡 Pending Migrations
 - [ ] `upgrade-dependencies` - Upgrade Node.js dependencies to latest versions
@@ -251,8 +251,8 @@ pnpm migration update <migration-id> --status paused
 # Validate migration documents
 pnpm migration validate migrations/*.md
 
-# Generate control plane issue body
-pnpm migration generate-control-plane
+# Generate migration dashboard issue body
+pnpm migration generate-migration-dashboard
 ```
 
 ### Validation
@@ -353,8 +353,8 @@ pnpm validate:phase1
 pnpm migration list
 pnpm migration validate migrations/test-simple-validation.md
 
-# Generate control plane issue locally
-pnpm migration generate-control-plane
+# Generate migration dashboard issue locally
+pnpm migration generate-migration-dashboard
 
 # Test workflow files (requires GitHub CLI)
 gh workflow list

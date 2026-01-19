@@ -1,6 +1,6 @@
-name: Control Plane Manager
+name: Migration Dashboard Manager
 
-# Trigger on control-plane issue edits and PR events
+# Trigger on migration-dashboard issue edits and PR events
 on:
   issues:
     types: [edited]
@@ -21,12 +21,12 @@ on:
 
 permissions:
   contents: write # To create PRs and update files
-  issues: write # To update control-plane issue
+  issues: write # To update migration-dashboard issue
   pull-requests: write # To create and manage PRs
 
 jobs:
-  handle-control-plane:
-    name: Handle Control Plane Event
+  handle-migration-dashboard:
+    name: Handle Migration Dashboard Event
     runs-on: ubuntu-latest
 
     steps:
@@ -49,21 +49,21 @@ jobs:
           pnpm install
           pnpm build
 
-      - name: Identify control-plane issue
+      - name: Identify migration-dashboard issue
         id: find-issue
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          # Find or create the control-plane issue
-          ISSUE_NUMBER=$(gh issue list --label "hachiko:control-plane" --json number --jq '.[0].number // empty')
+          # Find or create the migration-dashboard issue
+          ISSUE_NUMBER=$(gh issue list --label "hachiko:migration-dashboard" --json number --jq '.[0].number // empty')
 
           if [ -z "$ISSUE_NUMBER" ]; then
-            echo "Creating control-plane issue..."
+            echo "Creating migration-dashboard issue..."
             ISSUE_URL=$(gh issue create \
-              --title "🎛️ Hachiko Migration Control Plane" \
-              --label "hachiko:control-plane" \
+              --title "📊 Hachiko Migration Dashboard" \
+              --label "hachiko:migration-dashboard" \
               --body "$(cat <<'EOF'
-          # 🎛️ Hachiko Migration Control Plane
+          # 📊 Hachiko Migration Dashboard
 
           This issue tracks all active migrations in the repository. Use the checkboxes below to control migration execution.
 
@@ -93,15 +93,15 @@ jobs:
             ISSUE_NUMBER=$(echo "$ISSUE_URL" | grep -o '[0-9]*$')
           fi
 
-          echo "control_plane_issue=$ISSUE_NUMBER" >> $GITHUB_OUTPUT
-          echo "Found/created control-plane issue #$ISSUE_NUMBER"
+          echo "migration_dashboard_issue=$ISSUE_NUMBER" >> $GITHUB_OUTPUT
+          echo "Found/created migration-dashboard issue #$ISSUE_NUMBER"
 
       - name: Handle issue edit
-        if: github.event_name == 'issues' && github.event.issue.number == fromJson(steps.find-issue.outputs.control_plane_issue)
+        if: github.event_name == 'issues' && github.event.issue.number == fromJson(steps.find-issue.outputs.migration_dashboard_issue)
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          echo "Control-plane issue edited"
+          echo "Migration-dashboard issue edited"
 
           # Parse the issue body to detect checkbox changes
           ISSUE_BODY=$(gh issue view ${{ github.event.issue.number }} --json body --jq '.body')
@@ -153,12 +153,12 @@ jobs:
             fi
           fi
 
-      - name: Update control-plane issue
+      - name: Update migration-dashboard issue
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          ISSUE_NUMBER: ${{ steps.find-issue.outputs.control_plane_issue }}
+          ISSUE_NUMBER: ${{ steps.find-issue.outputs.migration_dashboard_issue }}
         run: |
-          echo "Updating control-plane issue #$ISSUE_NUMBER"
+          echo "Updating migration-dashboard issue #$ISSUE_NUMBER"
 
           # Scan migrations/ directory and build updated issue body
           PENDING_MIGRATIONS=""
@@ -216,7 +216,7 @@ jobs:
           fi
 
           # Build complete issue body
-          ISSUE_BODY="# 🎛️ Hachiko Migration Control Plane
+          ISSUE_BODY="# 📊 Hachiko Migration Dashboard
 
           This issue tracks all active migrations in the repository. Use the checkboxes below to control migration execution.
 
@@ -242,4 +242,4 @@ jobs:
           # Update the issue
           echo "$ISSUE_BODY" | gh issue edit "$ISSUE_NUMBER" --body-file -
 
-          echo "Control-plane issue updated successfully"
+          echo "Migration-dashboard issue updated successfully"

@@ -19,7 +19,7 @@ This is a minimal test migration to validate the GitHub Actions workflows during
 Test basic workflow functionality:
 
 - Migration document detection
-- Control plane issue updates
+- Migration dashboard issue updates
 - Single-step execution
 - PR creation and management
 
