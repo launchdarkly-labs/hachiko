@@ -59,7 +59,7 @@ jobs:
 
           if [ -z "$ISSUE_NUMBER" ]; then
             echo "Creating control-plane issue..."
-            ISSUE_NUMBER=$(gh issue create \
+            ISSUE_URL=$(gh issue create \
               --title "🎛️ Hachiko Migration Control Plane" \
               --label "hachiko:control-plane" \
               --body "$(cat <<'EOF'
@@ -89,7 +89,8 @@ jobs:
 
           🤖 *Managed by Hachiko - Do not edit the sections above manually*
           EOF
-          )" --json number --jq '.number')
+          )")
+            ISSUE_NUMBER=$(echo "$ISSUE_URL" | grep -o '[0-9]*$')
           fi
 
           echo "control_plane_issue=$ISSUE_NUMBER" >> $GITHUB_OUTPUT
