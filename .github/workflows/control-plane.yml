@@ -6,6 +6,8 @@ on:
     types: [edited]
   pull_request:
     types: [closed]
+  push:
+    branches: [test-control-plane-workflow]
 
   # Allow manual trigger for testing
   workflow_dispatch:
