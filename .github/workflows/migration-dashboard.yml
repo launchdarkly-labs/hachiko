@@ -163,84 +163,8 @@ jobs:
         run: |
           echo "Updating migration-dashboard issue #$ISSUE_NUMBER"
 
-          # Scan migrations/ directory and build updated issue body
-          PENDING_MIGRATIONS=""
-          IN_PROGRESS_MIGRATIONS=""
-          PAUSED_MIGRATIONS=""
-
-          # Process all migration files
-          for MIGRATION_FILE in migrations/*.md; do
-            if [ ! -f "$MIGRATION_FILE" ]; then
-              continue
-            fi
-            
-            # Extract frontmatter
-            FRONTMATTER=$(awk '/^---$/{if(f==1) exit; f=1; next} f' "$MIGRATION_FILE")
-            
-            if [ -z "$FRONTMATTER" ]; then
-              continue
-            fi
-            
-            # Parse YAML frontmatter (simplified)
-            ID=$(echo "$FRONTMATTER" | grep "^id:" | sed 's/id: *//' | tr -d "'" | tr -d '"')
-            TITLE=$(echo "$FRONTMATTER" | grep "^title:" | sed 's/title: *//' | tr -d "'" | tr -d '"')
-            STATUS=$(echo "$FRONTMATTER" | grep "^status:" | sed 's/status: *//' | tr -d "'" | tr -d '"')
-            CURRENT_STEP=$(echo "$FRONTMATTER" | grep "^current_step:" | sed 's/current_step: *//')
-            TOTAL_STEPS=$(echo "$FRONTMATTER" | grep "^total_steps:" | sed 's/total_steps: *//')
-            PR_NUMBER=$(echo "$FRONTMATTER" | grep "^pr_number:" | sed 's/pr_number: *//')
-            
-            # Build line based on status
-            case "$STATUS" in
-              "pending")
-                PENDING_MIGRATIONS="$PENDING_MIGRATIONS\n- [ ] \`$ID\` - $TITLE"
-                ;;
-              "in_progress")
-                if [ -n "$PR_NUMBER" ]; then
-                  IN_PROGRESS_MIGRATIONS="$IN_PROGRESS_MIGRATIONS\n- \`$ID\` - $TITLE ([PR #$PR_NUMBER](https://github.com/launchdarkly-labs/hachiko/pull/$PR_NUMBER)) - $CURRENT_STEP/$TOTAL_STEPS steps completed"
-                else
-                  IN_PROGRESS_MIGRATIONS="$IN_PROGRESS_MIGRATIONS\n- \`$ID\` - $TITLE - $CURRENT_STEP/$TOTAL_STEPS steps completed"
-                fi
-                ;;
-              "paused")
-                PAUSED_MIGRATIONS="$PAUSED_MIGRATIONS\n- [ ] \`$ID\` - $TITLE (last attempt: step $CURRENT_STEP/$TOTAL_STEPS)"
-                ;;
-            esac
-          done
-
-          # Handle empty sections
-          if [ -z "$PENDING_MIGRATIONS" ]; then
-            PENDING_MIGRATIONS="\n✨ *No pending migrations*"
-          fi
-          if [ -z "$IN_PROGRESS_MIGRATIONS" ]; then
-            IN_PROGRESS_MIGRATIONS="\n✨ *No active migrations*"
-          fi
-          if [ -z "$PAUSED_MIGRATIONS" ]; then
-            PAUSED_MIGRATIONS="\n✨ *No paused migrations*"
-          fi
-
-          # Build complete issue body
-          ISSUE_BODY="# 📊 Hachiko Migration Dashboard
-
-          This issue tracks all active migrations in the repository. Use the checkboxes below to control migration execution.
-
-          ## 🟡 Pending Migrations
-          $PENDING_MIGRATIONS
-
-          ## 🔄 In-Progress Migrations  
-          $IN_PROGRESS_MIGRATIONS
-
-          ## ⏸️ Paused Migrations
-          $PAUSED_MIGRATIONS
-
-          ---
-
-          **How to use:**
-          - ✅ Check a box next to a pending migration to start it
-          - ✅ Check a box next to a paused migration to resume it
-          - ❌ Closing a Hachiko PR will pause the migration
-          - 🔄 This dashboard updates automatically as migrations progress
-
-          🤖 *Managed by Hachiko - Do not edit the sections above manually*"
+          # Use the migration CLI script to generate the dashboard content
+          ISSUE_BODY=$(pnpm migration generate-migration-dashboard)
 
           # Update the issue
           echo "$ISSUE_BODY" | gh issue edit "$ISSUE_NUMBER" --body-file -
