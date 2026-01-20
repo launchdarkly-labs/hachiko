@@ -233,11 +233,12 @@ program
           const parsed = await parseMigrationDocument(filePath);
           const { frontmatter } = parsed;
           
-          const line = `- ${frontmatter.status === "pending" || frontmatter.status === "paused" ? "[ ]" : ""} \`${frontmatter.id}\` - ${frontmatter.title}`;
+          const checkboxLine = `- [ ] \`${frontmatter.id}\` - ${frontmatter.title}`;
+          const regularLine = `- \`${frontmatter.id}\` - ${frontmatter.title}`;
           
           switch (frontmatter.status) {
             case "pending":
-              pendingMigrations += `${line}\n`;
+              pendingMigrations += `${checkboxLine}\n`;
               break;
             case "in_progress":
               const prLink = frontmatter.pr_number 
@@ -246,7 +247,7 @@ program
               inProgressMigrations += `- \`${frontmatter.id}\` - ${frontmatter.title} ${prLink} - ${frontmatter.current_step}/${frontmatter.total_steps} steps completed\n`;
               break;
             case "paused":
-              pausedMigrations += `${line} (last attempt: step ${frontmatter.current_step}/${frontmatter.total_steps})\n`;
+              pausedMigrations += `${checkboxLine} (last attempt: step ${frontmatter.current_step}/${frontmatter.total_steps})\n`;
               break;
           }
         } catch {
