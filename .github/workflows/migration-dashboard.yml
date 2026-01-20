@@ -193,7 +193,7 @@ jobs:
                 ;;
               "in_progress")
                 if [ -n "$PR_NUMBER" ]; then
-                  IN_PROGRESS_MIGRATIONS="$IN_PROGRESS_MIGRATIONS\n- \`$ID\` - $TITLE ([PR #$PR_NUMBER](https://github.com/${{ github.repository }}/pull/$PR_NUMBER)) - $CURRENT_STEP/$TOTAL_STEPS steps completed"
+                  IN_PROGRESS_MIGRATIONS="$IN_PROGRESS_MIGRATIONS\n- \`$ID\` - $TITLE ([PR #$PR_NUMBER](https://github.com/launchdarkly-labs/hachiko/pull/$PR_NUMBER)) - $CURRENT_STEP/$TOTAL_STEPS steps completed"
                 else
                   IN_PROGRESS_MIGRATIONS="$IN_PROGRESS_MIGRATIONS\n- \`$ID\` - $TITLE - $CURRENT_STEP/$TOTAL_STEPS steps completed"
                 fi
