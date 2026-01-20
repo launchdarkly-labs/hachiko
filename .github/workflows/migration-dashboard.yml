@@ -99,6 +99,7 @@ jobs:
 
       - name: Handle issue edit
         if: github.event_name == 'issues' && github.event.issue.number == fromJson(steps.find-issue.outputs.migration_dashboard_issue)
+        id: handle-edit
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           ISSUE_NUMBER: ${{ github.event.issue.number }}
@@ -115,6 +116,7 @@ jobs:
           CHECKED_PAUSED=$(echo "$ISSUE_BODY" | awk '/## ⏸️ Paused Migrations/,/---/ { if (/^- \[x\]/) print }' | sed 's/^- \[x\] `//' | sed 's/`.*$//')
 
           # Process checked migrations
+          MIGRATIONS_TRIGGERED=false
           for MIGRATION_ID in $CHECKED_PENDING $CHECKED_PAUSED; do
             if [ -n "$MIGRATION_ID" ] && [ "$MIGRATION_ID" != "✨" ]; then
               echo "Starting migration: $MIGRATION_ID"
@@ -123,8 +125,13 @@ jobs:
               gh workflow run execute-migration.yml \
                 -f migration_id="$MIGRATION_ID" \
                 -f step_id="1"
+              
+              MIGRATIONS_TRIGGERED=true
             fi
           done
+          
+          # Set output for conditional issue update
+          echo "migrations_triggered=$MIGRATIONS_TRIGGERED" >> $GITHUB_OUTPUT
 
       - name: Handle PR closure
         if: github.event_name == 'pull_request' && github.event.pull_request.state == 'closed'
@@ -158,6 +165,7 @@ jobs:
           fi
 
       - name: Update migration-dashboard issue
+        if: steps.handle-edit.outputs.migrations_triggered != 'true'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           ISSUE_NUMBER: ${{ steps.find-issue.outputs.migration_dashboard_issue }}
