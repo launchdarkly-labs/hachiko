@@ -1,6 +1,6 @@
 name: Execute Migration Step
 
-# Triggered by control-plane workflow or manually
+# Triggered by migration-dashboard workflow or manually
 on:
   workflow_dispatch:
     inputs:
@@ -327,10 +327,10 @@ jobs:
 
           exit 1
 
-      - name: Trigger control-plane update
+      - name: Trigger migration-dashboard update
         if: always()
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          echo "🔄 Triggering control-plane update..."
-          gh workflow run control-plane.yml
+          echo "🔄 Triggering migration-dashboard update..."
+          gh workflow run migration-dashboard.yml

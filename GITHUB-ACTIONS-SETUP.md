@@ -11,7 +11,7 @@ Copy these files from the Hachiko repository to your project:
 ```bash
 # Required GitHub Actions workflows
 .github/workflows/detect-migrations.yml
-.github/workflows/control-plane.yml
+.github/workflows/migration-dashboard.yml
 .github/workflows/execute-migration.yml
 
 # TypeScript utilities
@@ -114,15 +114,15 @@ npm run validate:phase1
 - [ ] GitHub Actions workflows appear in `.github/workflows/`
 - [ ] Repository secrets are configured
 - [ ] Migration CLI works: `npm run migration list`
-- [ ] Control plane issue is created automatically
+- [ ] Migration dashboard issue is created automatically
 - [ ] Checking migration checkbox triggers execution
 
-## 🎛️ Using the Control Plane
+## 📊 Using the Migration Dashboard
 
-Once set up, Hachiko creates a **Control Plane Issue** that looks like this:
+Once set up, Hachiko creates a **Migration Dashboard Issue** that looks like this:
 
 ```markdown
-# 🎛️ Hachiko Migration Control Plane
+# 📊 Hachiko Migration Dashboard
 
 ## 🟡 Pending Migrations
 - [ ] `example-migration` - Example Migration for Testing
@@ -144,7 +144,7 @@ Once set up, Hachiko creates a **Control Plane Issue** that looks like this:
 1. Create `migrations/your-migration.md` with frontmatter
 2. Push to main branch
 3. Review the enhancement PR that gets created
-4. Merge to add migration to control plane
+4. Merge to add migration to migration dashboard
 
 ### Managing Migration State
 
@@ -168,15 +168,15 @@ npm run validate:phase1
 # Validate specific migration
 npm run migration validate migrations/your-migration.md
 
-# Check control plane output
-npm run migration generate-control-plane
+# Check migration dashboard output
+npm run migration generate-migration-dashboard
 ```
 
 ## 🔄 Migration Lifecycle
 
 1. **Create**: Add migration document to `migrations/`
 2. **Enhance**: GitHub Actions adds proper frontmatter via PR
-3. **Activate**: Check checkbox in control plane issue
+3. **Activate**: Check checkbox in migration dashboard issue
 4. **Execute**: Agent runs and creates PR with changes
 5. **Advance**: Merge PR to move to next step
 6. **Complete**: Final step completion marks migration done
@@ -192,7 +192,7 @@ npm run migration generate-control-plane
 
 - **Test with real agents**: Replace `agent: mock` with `cursor`, `codex`, or `devin`
 - **Create complex migrations**: Use multi-step migrations for larger changes
-- **Monitor and iterate**: Use control plane to manage ongoing migrations
+- **Monitor and iterate**: Use migration dashboard to manage ongoing migrations
 - **Scale up**: Add more migrations as needed
 
 ## 🆘 Need Help?
