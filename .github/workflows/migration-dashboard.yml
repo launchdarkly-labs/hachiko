@@ -23,6 +23,7 @@ permissions:
   contents: write # To create PRs and update files
   issues: write # To update migration-dashboard issue
   pull-requests: write # To create and manage PRs
+  actions: write # To trigger workflow dispatches
 
 jobs:
   handle-migration-dashboard:
