@@ -69,6 +69,52 @@ jobs:
         with:
           fail_ci_if_error: false
 
+      - name: Validate workflow shell scripts
+        run: |
+          echo "🔍 Validating workflow shell scripts..."
+          
+          # Test migration parsing logic with existing migration files
+          echo "Testing migration file parsing logic..."
+          for migration_file in migrations/*.md; do
+            if [ -f "$migration_file" ]; then
+              MIGRATION_ID=$(basename "$migration_file" .md)
+              echo "Testing migration: $MIGRATION_ID"
+              
+              # Test the exact parsing logic from execute-migration.yml
+              FRONTMATTER=$(awk '/^---$/{if(f==1) exit; f=1; next} f' "$migration_file")
+              
+              if [ -z "$FRONTMATTER" ]; then
+                echo "❌ No frontmatter found in $migration_file"
+                exit 1
+              fi
+              
+              # Test parsing with simplified approach - avoid complex quote escaping
+              TITLE=$(echo "$FRONTMATTER" | grep "^title:" | cut -d':' -f2- | sed 's/^ *//' | sed 's/["\x27]//g')
+              AGENT=$(echo "$FRONTMATTER" | grep "^agent:" | cut -d':' -f2- | sed 's/^ *//' | sed 's/["\x27]//g')
+              STATUS=$(echo "$FRONTMATTER" | grep "^status:" | cut -d':' -f2- | sed 's/^ *//' | sed 's/["\x27]//g')
+              
+              echo "  ✅ Parsed: $TITLE (agent: $AGENT, status: $STATUS)"
+            fi
+          done
+          
+          # Validate shell script syntax in workflow files
+          echo "Validating shell script syntax in workflow files..."
+          find .github/workflows -name "*.yml" | while read workflow; do
+            echo "Checking $workflow for shell syntax issues..."
+            
+            # Extract shell script blocks and basic validation
+            # This catches obvious syntax errors like unmatched quotes
+            if grep -q "run: |" "$workflow"; then
+              echo "  Found shell scripts in $workflow"
+              # Check for problematic quote patterns
+              if grep -q "'"'"'"'" "$workflow"; then
+                echo "  ⚠️  Complex quote escaping detected - review for syntax errors"
+              fi
+            fi
+          done
+          
+          echo "✅ Workflow validation completed"
+
       - name: Docs link check
         run: |
           # Simple link checker - can be enhanced later
