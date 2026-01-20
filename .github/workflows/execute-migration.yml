@@ -22,6 +22,7 @@ permissions:
   contents: write # To create PRs and update files
   issues: write # To update control-plane issue
   pull-requests: write # To create and manage PRs
+  actions: write # To trigger workflow dispatches
 
 jobs:
   execute-migration-step:
@@ -70,9 +71,9 @@ jobs:
           fi
 
           # Parse key fields (simplified YAML parsing)
-          TITLE=$(echo "$FRONTMATTER" | grep "^title:" | sed 's/title: *//' | tr -d '"'"'"' | tr -d '"')
-          AGENT=$(echo "$FRONTMATTER" | grep "^agent:" | sed 's/agent: *//' | tr -d '"'"'"' | tr -d '"')
-          STATUS=$(echo "$FRONTMATTER" | grep "^status:" | sed 's/status: *//' | tr -d '"'"'"' | tr -d '"')
+          TITLE=$(echo "$FRONTMATTER" | grep "^title:" | sed 's/title: *//' | tr -d "'" | tr -d '"')
+          AGENT=$(echo "$FRONTMATTER" | grep "^agent:" | sed 's/agent: *//' | tr -d "'" | tr -d '"')
+          STATUS=$(echo "$FRONTMATTER" | grep "^status:" | sed 's/status: *//' | tr -d "'" | tr -d '"')
           CURRENT_STEP=$(echo "$FRONTMATTER" | grep "^current_step:" | sed 's/current_step: *//')
           TOTAL_STEPS=$(echo "$FRONTMATTER" | grep "^total_steps:" | sed 's/total_steps: *//')
 
