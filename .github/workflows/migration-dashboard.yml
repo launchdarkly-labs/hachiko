@@ -100,11 +100,12 @@ jobs:
         if: github.event_name == 'issues' && github.event.issue.number == fromJson(steps.find-issue.outputs.migration_dashboard_issue)
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
         run: |
           echo "Migration-dashboard issue edited"
 
           # Parse the issue body to detect checkbox changes
-          ISSUE_BODY=$(gh issue view ${{ github.event.issue.number }} --json body --jq '.body')
+          ISSUE_BODY=$(gh issue view "$ISSUE_NUMBER" --json body --jq '.body')
 
           # Extract checked migrations from Pending section
           CHECKED_PENDING=$(echo "$ISSUE_BODY" | awk '/## 🟡 Pending Migrations/,/## 🔄 In-Progress Migrations/ { if (/^- \[x\]/) print }' | sed 's/^- \[x\] `//' | sed 's/`.*$//')
@@ -129,8 +130,10 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PR_BRANCH: ${{ github.event.pull_request.head.ref }}
+          PR_TITLE: ${{ github.event.pull_request.title }}
+          PR_MERGED: ${{ github.event.pull_request.merged }}
         run: |
-          echo "PR closed: ${{ github.event.pull_request.title }}"
+          echo "PR closed: $PR_TITLE"
           echo "Branch: $PR_BRANCH"
 
           # Check if this is a Hachiko migration branch
@@ -141,7 +144,7 @@ jobs:
             if [ -n "$MIGRATION_ID" ]; then
               echo "Hachiko migration branch detected: $MIGRATION_ID"
               
-              if [ "${{ github.event.pull_request.merged }}" = "true" ]; then
+              if [ "$PR_MERGED" = "true" ]; then
                 echo "PR was merged - advancing migration"
                 # This would trigger the next step or completion
                 ./scripts/advance-migration.sh "$MIGRATION_ID"
