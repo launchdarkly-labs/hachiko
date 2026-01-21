@@ -235,13 +235,13 @@ When a migration starts, the `execute-migration.yml` workflow performs these ste
    ```
 
 2. **Migration Document Loading**
-   - Parse frontmatter to extract metadata
+   - Parse frontmatter to extract static metadata (id, title, agent, etc.)
    - Validate schema and required fields
    - Set up execution context
 
 3. **Execution Validation**
-   - Verify migration state is valid
-   - Check if step matches current progress
+   - Infer current migration state from PR activity (not frontmatter)
+   - Check if migration is ready for next step
    - Confirm agent availability
 
 4. **Working Branch Creation**
@@ -417,11 +417,13 @@ stateDiagram-v2
 
 ### State Descriptions
 
+**Note**: Migration states are automatically inferred from PR activity and repository state, not stored in frontmatter.
+
 | State | Description | Actions Available |
 |-------|-------------|------------------|
-| `pending` | Migration created, not started | Start via dashboard |
-| `in_progress` | Currently executing | Pause via PR close |
-| `paused` | Temporarily stopped | Resume via dashboard |
+| `pending` | Migration created, no active PRs | Start via dashboard |
+| `in_progress` | Has open Hachiko PRs | Pause via PR close |
+| `paused` | Had PRs that were closed | Resume via dashboard |
 | `completed` | Successfully finished | None (archived) |
 | `failed` | Execution error occurred | Reset or debug |
 
@@ -538,6 +540,7 @@ Monitor migrations through:
    ```
 2. Check issue permissions in repository settings
 3. Verify issue number is correct
+4. **Recent Fix**: Log pollution and PR detection issues resolved in PR #55
 
 ### Debug Commands
 
@@ -561,12 +564,15 @@ pnpm validate:phase1
 #### Reset Failed Migration
 
 ```bash
-# Reset migration to pending state
-pnpm migration update my-migration-id --status pending --current_step 1
+# Note: Migration state is now inferred from PR activity, not frontmatter
+# To reset a migration, close any open PRs and clean up branches:
 
 # Clean up any stale branches
 git branch -D hachiko/my-migration-id-step-*
 git push origin --delete hachiko/my-migration-id-step-*
+
+# Close any open migration PRs via GitHub UI or CLI:
+gh pr close <pr-number>
 ```
 
 #### Force Migration Step
