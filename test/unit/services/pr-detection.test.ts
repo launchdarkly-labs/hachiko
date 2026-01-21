@@ -54,15 +54,15 @@ describe("PR Detection Service", () => {
       expect(extractMigrationId(pr)).toBe("add-jsdoc-comments");
     });
 
-    it("should extract migration ID from label (method 2)", () => {
+    it("should extract migration ID from title when branch doesn't match (method 3)", () => {
       const pr: PullRequest = {
         number: 123,
-        title: "Some title",
+        title: "[add-jsdoc-comments] Some title",
         state: "open",
         head: { ref: "feature/some-branch" },
         labels: [
           { name: "bug" },
-          { name: "hachiko:migration-add-jsdoc-comments" },
+          { name: "hachiko:migration" },
         ],
         html_url: "https://github.com/repo/pull/123",
         merged: false,
@@ -85,13 +85,13 @@ describe("PR Detection Service", () => {
       expect(extractMigrationId(pr)).toBe("add-jsdoc-comments");
     });
 
-    it("should prioritize branch name over other methods", () => {
+    it("should prioritize branch name over title", () => {
       const pr: PullRequest = {
         number: 123,
         title: "[wrong-migration-id] Update utility functions",
         state: "open",
         head: { ref: "hachiko/correct-migration-id" },
-        labels: [{ name: "hachiko:migration-another-wrong-id" }],
+        labels: [{ name: "hachiko:migration" }],
         html_url: "https://github.com/repo/pull/123",
         merged: false,
       };
@@ -135,7 +135,7 @@ describe("PR Detection Service", () => {
         title: "[add-jsdoc-comments] Update utility functions",
         state: "open",
         head: { ref: "hachiko/add-jsdoc-comments" },
-        labels: [{ name: "hachiko:migration-add-jsdoc-comments" }],
+        labels: [{ name: "hachiko:migration" }],
         html_url: "https://github.com/repo/pull/123",
         merged: false,
       };
@@ -148,7 +148,7 @@ describe("PR Detection Service", () => {
         state: "open",
         migrationId: "add-jsdoc-comments",
         branch: "hachiko/add-jsdoc-comments",
-        labels: ["hachiko:migration-add-jsdoc-comments"],
+        labels: ["hachiko:migration"],
         url: "https://github.com/repo/pull/123",
         merged: false,
       });
@@ -176,7 +176,7 @@ describe("PR Detection Service", () => {
         title: "[add-jsdoc-comments] Update utility functions",
         state: "open",
         head: { ref: "hachiko/add-jsdoc-comments" },
-        labels: [{ name: "hachiko:migration-add-jsdoc-comments" }],
+        labels: [{ name: "hachiko:migration" }],
         html_url: "https://github.com/repo/pull/123",
         merged: false,
       };
@@ -223,7 +223,7 @@ describe("PR Detection Service", () => {
       expect(result.isValid).toBe(false);
       expect(result.identificationMethods).toEqual(["branch"]);
       expect(result.recommendations).toContain(
-        "Add label 'hachiko:migration-{migration-id}' to the PR"
+        "Add label 'hachiko:migration' to the PR"
       );
       expect(result.recommendations).toContain(
         "Include '[{migration-id}]' somewhere in the PR title"
@@ -247,7 +247,7 @@ describe("PR Detection Service", () => {
       expect(result.identificationMethods).toEqual([]);
       expect(result.recommendations).toEqual([
         "Branch should be named 'hachiko/{migration-id}' or 'hachiko/{migration-id}-description'",
-        "Add label 'hachiko:migration-{migration-id}' to the PR",
+        "Add label 'hachiko:migration' to the PR",
         "Include '[{migration-id}]' somewhere in the PR title",
       ]);
     });
@@ -302,7 +302,7 @@ describe("PR Detection Service", () => {
         title: "[test-migration] Update code",
         state: "closed",
         head: { ref: "hachiko/test-migration" },
-        labels: [{ name: "hachiko:migration-test-migration" }],
+        labels: [{ name: "hachiko:migration" }],
         html_url: "https://github.com/repo/pull/123",
         merged: true,
       };

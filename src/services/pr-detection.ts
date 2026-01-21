@@ -103,11 +103,8 @@ export function extractMigrationId(pr: PullRequest): string | null {
     return branchId;
   }
 
-  // Method 2: Check labels
-  const labelMatch = pr.labels.find(l => l.name.startsWith('hachiko:migration-'));
-  if (labelMatch) {
-    return labelMatch.name.replace('hachiko:migration-', '');
-  }
+  // Method 2: Check labels - we don't extract migration ID from labels anymore
+  // Labels are just used for identification, not for storing the migration ID
 
   // Method 3: Check title for bracketed migration ID
   const titleMatch = pr.title.match(/\[([^\]]+)\]/);
@@ -180,11 +177,11 @@ export async function getHachikoPRs(
     });
 
     for (const pr of labelPRs.data) {
-      const hasLabel = pr.labels.some(l => 
-        typeof l === 'object' && l.name === `hachiko:migration-${migrationId}`
+      const hasHachikoLabel = pr.labels.some(l => 
+        typeof l === 'object' && l.name === 'hachiko:migration'
       );
       
-      if (hasLabel) {
+      if (hasHachikoLabel) {
         const hachikoPR = detectHachikoPR(pr as any);
         if (hachikoPR && hachikoPR.migrationId === migrationId) {
           allPRs.set(pr.number, hachikoPR);
@@ -275,15 +272,11 @@ export function validateHachikoPR(pr: PullRequest): PRValidationResult {
   }
 
   // Check labels
-  const hasLabel = pr.labels.some(l => l.name.startsWith('hachiko:migration-'));
+  const hasLabel = pr.labels.some(l => l.name === 'hachiko:migration');
   if (hasLabel) {
     identificationMethods.push("label");
-    const labelMatch = pr.labels.find(l => l.name.startsWith('hachiko:migration-'));
-    if (labelMatch && !migrationId) {
-      migrationId = labelMatch.name.replace('hachiko:migration-', '');
-    }
   } else {
-    recommendations.push(`Add label 'hachiko:migration-{migration-id}' to the PR`);
+    recommendations.push(`Add label 'hachiko:migration' to the PR`);
   }
 
   // Check title

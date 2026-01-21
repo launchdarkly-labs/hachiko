@@ -33,7 +33,7 @@ When creating your PR, ensure it follows these conventions for reliable tracking
 
 1. **Branch naming**: Already done if you followed step 1
 2. **PR title**: Must contain `[{migration.id}]` somewhere in the title
-3. **PR labels**: Add the label `hachiko:migration-{migration.id}`
+3. **PR labels**: Add the label `hachiko:migration`
 
 #### Example PR Title:
 ```
@@ -41,7 +41,7 @@ When creating your PR, ensure it follows these conventions for reliable tracking
 ```
 
 #### Example PR Labels:
-- `hachiko:migration-{migration.id}`
+- `hachiko:migration`
 - `migration`
 - `automated`
 
@@ -117,7 +117,7 @@ If your migration needs multiple PRs:
 
 1. **Use descriptive branch names**: `hachiko/{migration.id}-component1`, `hachiko/{migration.id}-component2`
 2. **Include migration ID in all PR titles**: `[{migration.id}] Component 1 changes`
-3. **Add labels to all PRs**: `hachiko:migration-{migration.id}`
+3. **Add labels to all PRs**: `hachiko:migration`
 4. **Update tasks incrementally**: Check off tasks as they're completed across PRs
 
 ### 7. Best Practices
@@ -143,7 +143,7 @@ If the dashboard doesn't update or your PR isn't being tracked:
 1. **Check PR identification**:
    - Branch starts with `hachiko/{migration.id}`
    - Title contains `[{migration.id}]`  
-   - Has label `hachiko:migration-{migration.id}`
+   - Has label `hachiko:migration`
 
 2. **Verify migration document**:
    - File exists at expected path

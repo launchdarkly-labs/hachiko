@@ -165,7 +165,7 @@ You are working on migration "{migration.id}" in repository {repository.owner}/{
 
 2. **PR requirements**:
    - Title must contain \`[{migration.id}]\`
-   - Add label: \`hachiko:migration-{migration.id}\`
+   - Add label: \`hachiko:migration\`
    - Include migration link in description
 
 3. **Update migration document**: 
