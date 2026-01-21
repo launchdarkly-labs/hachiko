@@ -174,7 +174,7 @@ jobs:
           AGENT: ${{ steps.migration.outputs.agent }}
           STEP_ID: ${{ github.event.inputs.step_id }}
           DEVIN_API_KEY: ${{ secrets.DEVIN_API_KEY }}
-          DEVIN_ORG_ID: ${{ secrets.DEVIN_ORG_ID }}
+          DEVIN_ORG_ID: ${{ vars.DEVIN_ORG_ID }}
           CURSOR_API_KEY: ${{ secrets.CURSOR_API_KEY }}
           CURSOR_WEBHOOK_URL: ${{ secrets.CURSOR_WEBHOOK_URL }}
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
