@@ -265,13 +265,13 @@ describe("Migration Schema", () => {
       expect(v2.created).toBe("2024-01-01T00:00:00Z");
 
       // Ensure state fields are not present
-      expect('status' in v2).toBe(false);
-      expect('current_step' in v2).toBe(false);
-      expect('total_steps' in v2).toBe(false);
-      expect('last_updated' in v2).toBe(false);
-      expect('pr_number' in v2).toBe(false);
-      expect('branch' in v2).toBe(false);
-      expect('error' in v2).toBe(false);
+      expect("status" in v2).toBe(false);
+      expect("current_step" in v2).toBe(false);
+      expect("total_steps" in v2).toBe(false);
+      expect("last_updated" in v2).toBe(false);
+      expect("pr_number" in v2).toBe(false);
+      expect("branch" in v2).toBe(false);
+      expect("error" in v2).toBe(false);
     });
   });
 

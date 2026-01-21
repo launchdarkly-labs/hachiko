@@ -75,10 +75,12 @@ export function validateMigrationFrontmatter(data: any): data is MigrationFrontm
   }
 
   // Common fields
-  if (typeof data.id !== "string" ||
-      typeof data.title !== "string" ||
-      typeof data.agent !== "string" ||
-      typeof data.created !== "string") {
+  if (
+    typeof data.id !== "string" ||
+    typeof data.title !== "string" ||
+    typeof data.agent !== "string" ||
+    typeof data.created !== "string"
+  ) {
     return false;
   }
 
@@ -206,13 +208,17 @@ export function migrateFrontmatterToV2(v1: MigrationFrontmatterV1): MigrationFro
 /**
  * Check if frontmatter is schema version 2
  */
-export function isFrontmatterV2(frontmatter: MigrationFrontmatter): frontmatter is MigrationFrontmatterV2 {
+export function isFrontmatterV2(
+  frontmatter: MigrationFrontmatter
+): frontmatter is MigrationFrontmatterV2 {
   return frontmatter.schema_version === 2;
 }
 
 /**
  * Check if frontmatter is schema version 1
  */
-export function isFrontmatterV1(frontmatter: MigrationFrontmatter): frontmatter is MigrationFrontmatterV1 {
+export function isFrontmatterV1(
+  frontmatter: MigrationFrontmatter
+): frontmatter is MigrationFrontmatterV1 {
   return frontmatter.schema_version === 1;
 }

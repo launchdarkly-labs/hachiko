@@ -464,7 +464,7 @@ ${JSON.stringify(mockState, null, 2)}
           },
         },
       };
-      
+
       const issueBody = `\`\`\`json\n${JSON.stringify(progressWithRunningStep)}\n\`\`\``;
       vi.mocked(mockContext.octokit.issues.listForRepo).mockResolvedValue({
         data: [{ body: issueBody }],

@@ -18,7 +18,7 @@ export function detectHachikoPR(pr) {
         state: pr.state,
         migrationId,
         branch: pr.head.ref,
-        labels: pr.labels.map(l => l.name),
+        labels: pr.labels.map((l) => l.name),
         url: pr.html_url,
         merged: pr.merged,
     };
@@ -35,9 +35,25 @@ function extractMigrationIdFromBranch(branchRef) {
         // we want to extract "add-jsdoc-comments"
         // But for "hachiko/react-v16-to-v18-hooks-migration" we want the full thing
         // Strategy: check if parts at the end look like description words
-        const parts = fullId.split('-');
+        const parts = fullId.split("-");
         if (parts.length > 1) {
-            const descriptionWords = ['impl', 'implementation', 'fix', 'update', 'refactor', 'feature', 'utility', 'functions', 'components', 'hooks', 'tests', 'simple', 'complex', 'basic', 'advanced'];
+            const descriptionWords = [
+                "impl",
+                "implementation",
+                "fix",
+                "update",
+                "refactor",
+                "feature",
+                "utility",
+                "functions",
+                "components",
+                "hooks",
+                "tests",
+                "simple",
+                "complex",
+                "basic",
+                "advanced",
+            ];
             // Find how many parts at the end are description words
             let descriptivePartsCount = 0;
             for (let i = parts.length - 1; i >= 0; i--) {
@@ -49,7 +65,7 @@ function extractMigrationIdFromBranch(branchRef) {
                 }
             }
             if (descriptivePartsCount > 0) {
-                return parts.slice(0, -descriptivePartsCount).join('-');
+                return parts.slice(0, -descriptivePartsCount).join("-");
             }
         }
         return fullId;
@@ -119,7 +135,7 @@ export async function getHachikoPRs(context, migrationId, state, logger) {
             per_page: 100,
         });
         for (const pr of labelPRs.data) {
-            const hasHachikoLabel = pr.labels.some(l => typeof l === 'object' && l.name === 'hachiko:migration');
+            const hasHachikoLabel = pr.labels.some((l) => typeof l === "object" && l.name === "hachiko:migration");
             if (hasHachikoLabel) {
                 const hachikoPR = detectHachikoPR(pr);
                 if (hachikoPR && hachikoPR.migrationId === migrationId) {
@@ -171,7 +187,7 @@ export function validateHachikoPR(pr) {
     const identificationMethods = [];
     const recommendations = [];
     let migrationId = null;
-    // Check branch naming  
+    // Check branch naming
     const branchMigrationId = extractMigrationIdFromBranch(pr.head.ref);
     if (branchMigrationId) {
         migrationId = branchMigrationId;
@@ -181,7 +197,7 @@ export function validateHachikoPR(pr) {
         recommendations.push(`Branch should be named 'hachiko/{migration-id}' or 'hachiko/{migration-id}-description'`);
     }
     // Check labels
-    const hasLabel = pr.labels.some(l => l.name === 'hachiko:migration');
+    const hasLabel = pr.labels.some((l) => l.name === "hachiko:migration");
     if (hasLabel) {
         identificationMethods.push("label");
     }

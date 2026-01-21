@@ -31,14 +31,11 @@ export async function handlePullRequest(
     return;
   }
 
-  logger.info(
-    { migrationId: hachikoPR.migrationId, action },
-    "Processing Hachiko migration PR"
-  );
+  logger.info({ migrationId: hachikoPR.migrationId, action }, "Processing Hachiko migration PR");
 
   try {
     const config = await loadHachikoConfig(context);
-    
+
     // Handle different PR actions
     switch (action) {
       case "opened":
@@ -58,9 +55,11 @@ export async function handlePullRequest(
 
     // Update dashboard for all PR events (state may have changed)
     await updateMigrationDashboard(context, hachikoPR.migrationId, logger);
-    
   } catch (error) {
-    logger.error({ error, migrationId: hachikoPR.migrationId }, "Failed to handle pull request event");
+    logger.error(
+      { error, migrationId: hachikoPR.migrationId },
+      "Failed to handle pull request event"
+    );
     throw error;
   }
 }
@@ -71,7 +70,10 @@ async function handlePROpened(
   _config: any, // TODO: Type this properly
   logger: Logger
 ): Promise<void> {
-  logger.info({ migrationId: hachikoPR.migrationId, prNumber: hachikoPR.number }, "Handling opened migration PR");
+  logger.info(
+    { migrationId: hachikoPR.migrationId, prNumber: hachikoPR.number },
+    "Handling opened migration PR"
+  );
 
   try {
     // Validate PR follows conventions and provide feedback if needed
@@ -81,10 +83,10 @@ async function handlePROpened(
 
 I noticed this PR could better follow Hachiko conventions:
 
-${validation.recommendations.map(r => `- ${r}`).join('\n')}
+${validation.recommendations.map((r) => `- ${r}`).join("\n")}
 
 This will help ensure reliable tracking and dashboard updates.`;
-      
+
       await context.octokit.issues.createComment({
         owner: context.payload.repository.owner.login,
         repo: context.payload.repository.name,
@@ -109,7 +111,10 @@ async function handlePRUpdated(
   _config: any, // TODO: Type this properly
   logger: Logger
 ): Promise<void> {
-  logger.info({ migrationId: hachikoPR.migrationId, prNumber: hachikoPR.number }, "Handling updated migration PR");
+  logger.info(
+    { migrationId: hachikoPR.migrationId, prNumber: hachikoPR.number },
+    "Handling updated migration PR"
+  );
 
   // For now, just log. In the future, we might want to re-analyze the PR
   // or update progress based on new commits
@@ -121,14 +126,17 @@ async function handlePRMerged(
   _config: any, // TODO: Type this properly
   logger: Logger
 ): Promise<void> {
-  logger.info({ migrationId: hachikoPR.migrationId, prNumber: hachikoPR.number }, "Handling merged migration PR");
+  logger.info(
+    { migrationId: hachikoPR.migrationId, prNumber: hachikoPR.number },
+    "Handling merged migration PR"
+  );
 
   try {
     // Legacy support: if this uses the old system, try to extract metadata
     const migrationMeta = extractMigrationMetadata(context.payload.pull_request);
     if (migrationMeta) {
       const { planId, stepId, chunk } = migrationMeta;
-      
+
       // Update migration progress - mark step as done
       await updateMigrationProgress(
         context,
@@ -165,14 +173,17 @@ async function handlePRClosed(
   _config: any, // TODO: Type this properly
   logger: Logger
 ): Promise<void> {
-  logger.info({ migrationId: hachikoPR.migrationId, prNumber: hachikoPR.number }, "Handling closed (unmerged) migration PR");
+  logger.info(
+    { migrationId: hachikoPR.migrationId, prNumber: hachikoPR.number },
+    "Handling closed (unmerged) migration PR"
+  );
 
   try {
     // Legacy support: if this uses the old system, try to extract metadata
     const migrationMeta = extractMigrationMetadata(context.payload.pull_request);
     if (migrationMeta) {
       const { planId, stepId, chunk } = migrationMeta;
-      
+
       // Update migration progress - mark step as skipped/ignored
       await updateMigrationProgress(
         context,
@@ -213,8 +224,13 @@ async function updateMigrationDashboard(
 ): Promise<void> {
   try {
     // Get current migration state using the new inference system
-    const stateInfo = await getMigrationStateWithDocument(context as any, migrationId, "main", logger);
-    
+    const stateInfo = await getMigrationStateWithDocument(
+      context as any,
+      migrationId,
+      "main",
+      logger
+    );
+
     logger.info(
       {
         migrationId,
@@ -230,12 +246,8 @@ async function updateMigrationDashboard(
     // Update the dashboard file in the repository
     // This will regenerate the entire dashboard with current states
     await updateDashboardInRepo(context as any, "MIGRATION_DASHBOARD.md", logger);
-    
-    logger.info(
-      { migrationId },
-      "Successfully updated migration dashboard"
-    );
-    
+
+    logger.info({ migrationId }, "Successfully updated migration dashboard");
   } catch (error) {
     logger.error({ error, migrationId }, "Failed to update migration dashboard");
     // Don't throw - this is not critical for PR processing

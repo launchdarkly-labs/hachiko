@@ -60,10 +60,7 @@ describe("PR Detection Service", () => {
         title: "[add-jsdoc-comments] Some title",
         state: "open",
         head: { ref: "feature/some-branch" },
-        labels: [
-          { name: "bug" },
-          { name: "hachiko:migration" },
-        ],
+        labels: [{ name: "bug" }, { name: "hachiko:migration" }],
         html_url: "https://github.com/repo/pull/123",
         merged: false,
       };
@@ -222,9 +219,7 @@ describe("PR Detection Service", () => {
 
       expect(result.isValid).toBe(false);
       expect(result.identificationMethods).toEqual(["branch"]);
-      expect(result.recommendations).toContain(
-        "Add label 'hachiko:migration' to the PR"
-      );
+      expect(result.recommendations).toContain("Add label 'hachiko:migration' to the PR");
       expect(result.recommendations).toContain(
         "Include '[{migration-id}]' somewhere in the PR title"
       );

@@ -9,7 +9,6 @@ import { createLogger } from "../utils/logger.js";
 import { getOpenHachikoPRs, getClosedHachikoPRs, type HachikoPR } from "./pr-detection.js";
 import type { MigrationState } from "../config/migration-schema.js";
 
-
 export interface MigrationStateInfo {
   state: MigrationState;
   openPRs: HachikoPR[];
@@ -22,10 +21,10 @@ export interface MigrationStateInfo {
 
 /**
  * Get the inferred state of a migration based on PR activity and task completion
- * 
+ *
  * State inference rules:
  * - "pending": No hachiko PRs ever opened
- * - "active": Has open hachiko PRs  
+ * - "active": Has open hachiko PRs
  * - "paused": No open PRs, but has closed hachiko PRs
  * - "completed": All tasks checked off in main branch migration doc
  */
@@ -36,12 +35,12 @@ export async function getMigrationState(
   logger?: Logger
 ): Promise<MigrationStateInfo> {
   const log = logger || createLogger("state-inference");
-  
+
   try {
     // Get PR information in parallel
     const [openPRs, closedPRs] = await Promise.all([
       getOpenHachikoPRs(context, migrationId, log),
-      getClosedHachikoPRs(context, migrationId, log)
+      getClosedHachikoPRs(context, migrationId, log),
     ]);
 
     // Get task completion info if migration doc content is provided
@@ -79,13 +78,13 @@ export async function getMigrationState(
     };
 
     log.info(
-      { 
-        migrationId, 
-        state, 
-        openPRs: openPRs.length, 
+      {
+        migrationId,
+        state,
+        openPRs: openPRs.length,
         closedPRs: closedPRs.length,
         completedTasks,
-        totalTasks 
+        totalTasks,
       },
       "Inferred migration state"
     );
@@ -110,16 +109,16 @@ export function getTaskCompletionInfo(migrationDocContent: string): {
   // Match all markdown checkbox patterns: - [ ] or - [x] or - [X]
   const taskPattern = /^- \[([ xX])\] (.+)$/gm;
   const tasks: Array<{ completed: boolean; text: string }> = [];
-  
+
   let match;
   while ((match = taskPattern.exec(migrationDocContent)) !== null) {
-    const isCompleted = match[1] !== ' '; // [x] or [X] means completed
-    const text = match[2] || '';
+    const isCompleted = match[1] !== " "; // [x] or [X] means completed
+    const text = match[2] || "";
     tasks.push({ completed: isCompleted, text });
   }
 
   const totalTasks = tasks.length;
-  const completedTasks = tasks.filter(task => task.completed).length;
+  const completedTasks = tasks.filter((task) => task.completed).length;
   const allTasksComplete = totalTasks > 0 && totalTasks === completedTasks;
 
   return {
@@ -140,10 +139,10 @@ export async function getMigrationDocumentContent(
   logger?: Logger
 ): Promise<string | null> {
   const log = logger || createLogger("state-inference");
-  
+
   try {
     const filePath = `migrations/${migrationId}.md`;
-    
+
     const response = await context.octokit.repos.getContent({
       owner: context.payload.repository.owner.login,
       repo: context.payload.repository.name,
@@ -151,19 +150,19 @@ export async function getMigrationDocumentContent(
       ref,
     });
 
-    if ('content' in response.data && typeof response.data.content === 'string') {
-      const content = Buffer.from(response.data.content, 'base64').toString('utf-8');
+    if ("content" in response.data && typeof response.data.content === "string") {
+      const content = Buffer.from(response.data.content, "base64").toString("utf-8");
       return content;
     }
 
     log.warn({ migrationId, filePath, ref }, "Migration document not found or not a file");
     return null;
   } catch (error) {
-    if (error && typeof error === 'object' && 'status' in error && error.status === 404) {
+    if (error && typeof error === "object" && "status" in error && error.status === 404) {
       log.info({ migrationId, ref }, "Migration document not found");
       return null;
     }
-    
+
     log.error({ error, migrationId, ref }, "Failed to get migration document content");
     throw error;
   }
@@ -179,7 +178,7 @@ export async function getMigrationStateWithDocument(
   logger?: Logger
 ): Promise<MigrationStateInfo> {
   const log = logger || createLogger("state-inference");
-  
+
   try {
     const migrationDocContent = await getMigrationDocumentContent(context, migrationId, ref, log);
     return await getMigrationState(context, migrationId, migrationDocContent || undefined, log);
@@ -199,7 +198,7 @@ export async function getMultipleMigrationStates(
   logger?: Logger
 ): Promise<Map<string, MigrationStateInfo>> {
   const log = logger || createLogger("state-inference");
-  
+
   try {
     const statePromises = migrationIds.map(async (migrationId) => {
       try {
@@ -208,24 +207,24 @@ export async function getMultipleMigrationStates(
       } catch (error) {
         log.error({ error, migrationId }, "Failed to get state for migration");
         // Return default state info for failed migrations
-        return [migrationId, {
-          state: "pending" as MigrationState,
-          openPRs: [],
-          closedPRs: [],
-          allTasksComplete: false,
-          totalTasks: 0,
-          completedTasks: 0,
-          lastUpdated: new Date().toISOString(),
-        }] as const;
+        return [
+          migrationId,
+          {
+            state: "pending" as MigrationState,
+            openPRs: [],
+            closedPRs: [],
+            allTasksComplete: false,
+            totalTasks: 0,
+            completedTasks: 0,
+            lastUpdated: new Date().toISOString(),
+          },
+        ] as const;
       }
     });
 
     const results = await Promise.all(statePromises);
-    
-    log.info(
-      { migrationsProcessed: results.length },
-      "Processed multiple migration states"
-    );
+
+    log.info({ migrationsProcessed: results.length }, "Processed multiple migration states");
 
     return new Map(results as Array<[string, MigrationStateInfo]>);
   } catch (error) {
@@ -245,10 +244,10 @@ export async function getMigrationDocumentLastUpdated(
   logger?: Logger
 ): Promise<Date | null> {
   const log = logger || createLogger("state-inference");
-  
+
   try {
     const filePath = `migrations/${migrationId}.md`;
-    
+
     const commits = await context.octokit.repos.listCommits({
       owner: context.payload.repository.owner.login,
       repo: context.payload.repository.name,
@@ -273,34 +272,28 @@ export async function getMigrationDocumentLastUpdated(
  */
 export function getMigrationStateSummary(stateInfo: MigrationStateInfo): string {
   const { state, openPRs, closedPRs, totalTasks, completedTasks } = stateInfo;
-  
+
   switch (state) {
     case "pending":
-      return totalTasks > 0 
+      return totalTasks > 0
         ? `Pending (${totalTasks} tasks planned, none started)`
         : "Pending (no PRs opened yet)";
-        
+
     case "active":
-      const prSummary = openPRs.length === 1 
-        ? `1 open PR`
-        : `${openPRs.length} open PRs`;
-      const taskSummary = totalTasks > 0 
-        ? ` • ${completedTasks}/${totalTasks} tasks complete`
-        : "";
+      const prSummary = openPRs.length === 1 ? `1 open PR` : `${openPRs.length} open PRs`;
+      const taskSummary = totalTasks > 0 ? ` • ${completedTasks}/${totalTasks} tasks complete` : "";
       return `Active (${prSummary}${taskSummary})`;
-      
+
     case "paused":
-      const closedPrSummary = closedPRs.length === 1
-        ? `1 closed PR`
-        : `${closedPRs.length} closed PRs`;
-      const pausedTaskSummary = totalTasks > 0
-        ? ` • ${completedTasks}/${totalTasks} tasks complete`
-        : "";
+      const closedPrSummary =
+        closedPRs.length === 1 ? `1 closed PR` : `${closedPRs.length} closed PRs`;
+      const pausedTaskSummary =
+        totalTasks > 0 ? ` • ${completedTasks}/${totalTasks} tasks complete` : "";
       return `Paused (${closedPrSummary}, no open PRs${pausedTaskSummary})`;
-      
+
     case "completed":
       return `Completed (all ${totalTasks} tasks finished)`;
-      
+
     default:
       return "Unknown state";
   }

@@ -19,7 +19,7 @@ export async function getMigrationState(context, migrationId, migrationDocConten
         // Get PR information in parallel
         const [openPRs, closedPRs] = await Promise.all([
             getOpenHachikoPRs(context, migrationId, log),
-            getClosedHachikoPRs(context, migrationId, log)
+            getClosedHachikoPRs(context, migrationId, log),
         ]);
         // Get task completion info if migration doc content is provided
         let allTasksComplete = false;
@@ -60,7 +60,7 @@ export async function getMigrationState(context, migrationId, migrationDocConten
             openPRs: openPRs.length,
             closedPRs: closedPRs.length,
             completedTasks,
-            totalTasks
+            totalTasks,
         }, "Inferred migration state");
         return stateInfo;
     }
@@ -79,12 +79,12 @@ export function getTaskCompletionInfo(migrationDocContent) {
     const tasks = [];
     let match;
     while ((match = taskPattern.exec(migrationDocContent)) !== null) {
-        const isCompleted = match[1] !== ' '; // [x] or [X] means completed
-        const text = match[2] || '';
+        const isCompleted = match[1] !== " "; // [x] or [X] means completed
+        const text = match[2] || "";
         tasks.push({ completed: isCompleted, text });
     }
     const totalTasks = tasks.length;
-    const completedTasks = tasks.filter(task => task.completed).length;
+    const completedTasks = tasks.filter((task) => task.completed).length;
     const allTasksComplete = totalTasks > 0 && totalTasks === completedTasks;
     return {
         allTasksComplete,
@@ -106,15 +106,15 @@ export async function getMigrationDocumentContent(context, migrationId, ref = "m
             path: filePath,
             ref,
         });
-        if ('content' in response.data && typeof response.data.content === 'string') {
-            const content = Buffer.from(response.data.content, 'base64').toString('utf-8');
+        if ("content" in response.data && typeof response.data.content === "string") {
+            const content = Buffer.from(response.data.content, "base64").toString("utf-8");
             return content;
         }
         log.warn({ migrationId, filePath, ref }, "Migration document not found or not a file");
         return null;
     }
     catch (error) {
-        if (error && typeof error === 'object' && 'status' in error && error.status === 404) {
+        if (error && typeof error === "object" && "status" in error && error.status === 404) {
             log.info({ migrationId, ref }, "Migration document not found");
             return null;
         }
@@ -150,7 +150,9 @@ export async function getMultipleMigrationStates(context, migrationIds, ref = "m
             catch (error) {
                 log.error({ error, migrationId }, "Failed to get state for migration");
                 // Return default state info for failed migrations
-                return [migrationId, {
+                return [
+                    migrationId,
+                    {
                         state: "pending",
                         openPRs: [],
                         closedPRs: [],
@@ -158,7 +160,8 @@ export async function getMultipleMigrationStates(context, migrationIds, ref = "m
                         totalTasks: 0,
                         completedTasks: 0,
                         lastUpdated: new Date().toISOString(),
-                    }];
+                    },
+                ];
             }
         });
         const results = await Promise.all(statePromises);
@@ -206,20 +209,12 @@ export function getMigrationStateSummary(stateInfo) {
                 ? `Pending (${totalTasks} tasks planned, none started)`
                 : "Pending (no PRs opened yet)";
         case "active":
-            const prSummary = openPRs.length === 1
-                ? `1 open PR`
-                : `${openPRs.length} open PRs`;
-            const taskSummary = totalTasks > 0
-                ? ` • ${completedTasks}/${totalTasks} tasks complete`
-                : "";
+            const prSummary = openPRs.length === 1 ? `1 open PR` : `${openPRs.length} open PRs`;
+            const taskSummary = totalTasks > 0 ? ` • ${completedTasks}/${totalTasks} tasks complete` : "";
             return `Active (${prSummary}${taskSummary})`;
         case "paused":
-            const closedPrSummary = closedPRs.length === 1
-                ? `1 closed PR`
-                : `${closedPRs.length} closed PRs`;
-            const pausedTaskSummary = totalTasks > 0
-                ? ` • ${completedTasks}/${totalTasks} tasks complete`
-                : "";
+            const closedPrSummary = closedPRs.length === 1 ? `1 closed PR` : `${closedPRs.length} closed PRs`;
+            const pausedTaskSummary = totalTasks > 0 ? ` • ${completedTasks}/${totalTasks} tasks complete` : "";
             return `Paused (${closedPrSummary}, no open PRs${pausedTaskSummary})`;
         case "completed":
             return `Completed (all ${totalTasks} tasks finished)`;

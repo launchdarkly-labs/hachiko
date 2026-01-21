@@ -38,16 +38,16 @@ export async function generateAgentInstructionsFromRepo(context, migrationId, lo
             path: filePath,
             ref: "main",
         });
-        if (!('content' in response.data) || typeof response.data.content !== 'string') {
+        if (!("content" in response.data) || typeof response.data.content !== "string") {
             throw new Error(`Migration document not found: ${filePath}`);
         }
-        const content = Buffer.from(response.data.content, 'base64').toString('utf-8');
+        const content = Buffer.from(response.data.content, "base64").toString("utf-8");
         // Parse frontmatter
         const frontmatterMatch = content.match(/^---\n([\s\S]*?)\n---/);
         if (!frontmatterMatch || !frontmatterMatch[1]) {
             throw new Error("Migration document missing frontmatter");
         }
-        const frontmatter = require('yaml').parse(frontmatterMatch[1]);
+        const frontmatter = require("yaml").parse(frontmatterMatch[1]);
         const migrationContext = {
             id: frontmatter.id,
             title: frontmatter.title,
@@ -72,8 +72,8 @@ export async function generateAgentInstructionsFromRepo(context, migrationId, lo
  */
 async function loadInstructionTemplate() {
     try {
-        const templatePath = join(__dirname, '../templates/agent-instructions.md');
-        return await readFile(templatePath, 'utf-8');
+        const templatePath = join(__dirname, "../templates/agent-instructions.md");
+        return await readFile(templatePath, "utf-8");
     }
     catch {
         // Fallback to inline template if file not found

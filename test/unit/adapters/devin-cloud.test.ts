@@ -342,7 +342,7 @@ describe("DevinCloudAdapter", () => {
         expect.any(Object),
         expect.objectContaining({
           headers: expect.objectContaining({
-            "Authorization": "Bearer test-api-key",
+            Authorization: "Bearer test-api-key",
             "X-Organization-ID": "org-123",
           }),
         })
@@ -353,7 +353,7 @@ describe("DevinCloudAdapter", () => {
         `https://api.devin.ai/v3/organizations/org-123/sessions/${sessionId}`,
         expect.objectContaining({
           headers: expect.objectContaining({
-            "Authorization": "Bearer test-api-key",
+            Authorization: "Bearer test-api-key",
             "X-Organization-ID": "org-123",
           }),
         })
@@ -401,7 +401,7 @@ describe("DevinCloudAdapter", () => {
         expect.any(Object)
       );
 
-      // Verify polling URL includes organization  
+      // Verify polling URL includes organization
       expect(mockHttpClient.get).toHaveBeenCalledWith(
         `https://api.devin.ai/v3beta1/organizations/org-456/sessions/${sessionId}`,
         expect.any(Object)

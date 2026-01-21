@@ -17,10 +17,12 @@ When working on migration "{migration.id}":
 ### 1. Branch Creation
 
 Create a branch using one of these naming patterns:
+
 - **Primary pattern**: `hachiko/{migration.id}`
 - **Descriptive pattern**: `hachiko/{migration.id}-description`
 
 Example:
+
 ```bash
 git checkout -b hachiko/{migration.id}
 ```
@@ -36,15 +38,18 @@ When creating your PR, ensure it follows these conventions for reliable tracking
 3. **PR labels**: Add the label `hachiko:migration`
 
 #### Example PR Title:
+
 ```
 [{migration.id}] Implement React class to hooks migration - simple components
 ```
 
 #### Example PR Labels:
+
 - `hachiko:migration`
 - `enhancement` (or other repository-specific labels as appropriate)
 
 #### PR Description Template:
+
 ```markdown
 ## Migration: {migration.title}
 
@@ -59,7 +64,7 @@ This PR is part of the migration `{migration.id}`.
 
 ### Quality Checklist:
 - [ ] Tests pass
-- [ ] Linting passes  
+- [ ] Linting passes
 - [ ] Type checking passes
 - [ ] No unintended side effects
 - [ ] Changes reviewed and ready to merge
@@ -73,19 +78,22 @@ This PR is part of the migration `{migration.id}`.
 **IMPORTANT**: Update the migration document in the same PR to track your progress.
 
 #### What to Update:
+
 - ✅ **Check off completed tasks**: Change `- [ ]` to `- [x]` for completed items
 - ✅ **Add new tasks if discovered**: Use the same checkbox format
 
 #### What NOT to Update:
+
 - ❌ **DO NOT modify frontmatter** (the YAML section at the top)
 - ❌ **DO NOT change** `id`, `title`, `agent`, or `created` fields
 - ❌ **DO NOT add** status, current_step, or other state fields
 
 #### Example Task Updates:
+
 ```markdown
 ## Tasks
 - [x] Add JSDoc to utility functions in `src/utils/` ← Mark as complete
-- [x] Add JSDoc to helper functions in `src/helpers/` ← Mark as complete  
+- [x] Add JSDoc to helper functions in `src/helpers/` ← Mark as complete
 - [ ] Update TypeScript config for JSDoc validation ← Still pending
 - [ ] Update documentation with JSDoc examples ← Still pending
 ```
@@ -95,19 +103,20 @@ This PR is part of the migration `{migration.id}`.
 Before marking tasks complete, ensure:
 
 1. **Tests pass**: Run the test suite and verify no regressions
-2. **Linting passes**: Code follows project style guidelines  
+2. **Linting passes**: Code follows project style guidelines
 3. **Types check**: No TypeScript errors introduced
 4. **Build succeeds**: Project builds without errors
 
 ### 5. How State Tracking Works
 
 The system automatically:
+
 - **Detects your PR** using branch name, labels, and title
 - **Updates the migration dashboard** when PR events occur (open/close/merge)
 - **Infers migration state** from PR activity and task completion:
   - `pending`: No PRs opened yet
   - `active`: Has open PRs
-  - `paused`: All PRs closed, but tasks not complete  
+  - `paused`: All PRs closed, but tasks not complete
   - `completed`: All tasks checked off and merged to main
 
 ### 6. Multiple PRs for One Migration
@@ -122,6 +131,7 @@ If your migration needs multiple PRs:
 ### 7. Best Practices
 
 #### Do:
+
 - ✅ Create focused, reviewable PRs
 - ✅ Update migration document tasks as you complete them
 - ✅ Follow naming conventions for reliable tracking
@@ -129,6 +139,7 @@ If your migration needs multiple PRs:
 - ✅ Test thoroughly before marking tasks complete
 
 #### Don't:
+
 - ❌ Modify migration document frontmatter
 - ❌ Create PRs without proper identification (branch/label/title)
 - ❌ Mark tasks complete before they're actually done
@@ -141,7 +152,7 @@ If the dashboard doesn't update or your PR isn't being tracked:
 
 1. **Check PR identification**:
    - Branch starts with `hachiko/{migration.id}`
-   - Title contains `[{migration.id}]`  
+   - Title contains `[{migration.id}]`
    - Has label `hachiko:migration`
 
 2. **Verify migration document**:
@@ -156,6 +167,7 @@ If the dashboard doesn't update or your PR isn't being tracked:
 ### 9. Support
 
 If you encounter issues:
+
 - Check the migration dashboard at `MIGRATION_DASHBOARD.md`
 - Review PR validation comments for convention feedback
 - Contact the platform team for Hachiko-specific issues

@@ -58,7 +58,7 @@ logger) {
 
 I noticed this PR could better follow Hachiko conventions:
 
-${validation.recommendations.map(r => `- ${r}`).join('\n')}
+${validation.recommendations.map((r) => `- ${r}`).join("\n")}
 
 This will help ensure reliable tracking and dashboard updates.`;
             await context.octokit.issues.createComment({

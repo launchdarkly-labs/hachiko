@@ -3,7 +3,7 @@
  * Replaces frontmatter-based state tracking with PR activity analysis
  */
 import { createLogger } from "../utils/logger.js";
-import { getMultipleMigrationStates, getMigrationStateSummary } from "./state-inference.js";
+import { getMultipleMigrationStates, getMigrationStateSummary, } from "./state-inference.js";
 import { parseMigrationDocumentContent } from "../utils/migration-document.js";
 /**
  * Generate complete migration dashboard with inferred states
@@ -38,7 +38,7 @@ export async function generateMigrationDashboard(context, logger) {
             }
         }));
         const validMigrations = migrationMeta.filter((m) => m !== null);
-        const migrationIds = validMigrations.map(m => m.id);
+        const migrationIds = validMigrations.map((m) => m.id);
         // Get states for all migrations in parallel
         const migrationStates = await getMultipleMigrationStates(context, migrationIds, "main", log);
         // Build dashboard entries
@@ -60,10 +60,10 @@ export async function generateMigrationDashboard(context, logger) {
         const dashboard = {
             lastUpdated: new Date().toISOString(),
             totalMigrations: entries.length,
-            pending: entries.filter(e => e.state === "pending"),
-            active: entries.filter(e => e.state === "active"),
-            paused: entries.filter(e => e.state === "paused"),
-            completed: entries.filter(e => e.state === "completed"),
+            pending: entries.filter((e) => e.state === "pending"),
+            active: entries.filter((e) => e.state === "active"),
+            paused: entries.filter((e) => e.state === "paused"),
+            completed: entries.filter((e) => e.state === "completed"),
         };
         log.info({
             totalMigrations: dashboard.totalMigrations,
@@ -140,7 +140,7 @@ function formatMigrationEntry(entry) {
     // Build status line with PR links
     let statusLine = `**${title}** (\`${id}\`)`;
     if (stateInfo.openPRs.length > 0) {
-        const prLinks = stateInfo.openPRs.map(pr => `[PR #${pr.number}](${pr.url})`).join(', ');
+        const prLinks = stateInfo.openPRs.map((pr) => `[PR #${pr.number}](${pr.url})`).join(", ");
         statusLine += ` - ${prLinks}`;
     }
     // Add task progress if available
@@ -160,7 +160,7 @@ function generateProgressBar(completed, total) {
     const percentage = completed / total;
     const filled = Math.floor(percentage * 10);
     const empty = 10 - filled;
-    return `[${'█'.repeat(filled)}${'░'.repeat(empty)}]`;
+    return `[${"█".repeat(filled)}${"░".repeat(empty)}]`;
 }
 /**
  * Create an empty dashboard
@@ -194,13 +194,13 @@ async function discoverMigrationDocuments(context, logger) {
         }
         // Filter for markdown files
         const migrationFiles = files.data
-            .filter(file => file.type === "file" && file.name.endsWith('.md'))
-            .map(file => file.path);
+            .filter((file) => file.type === "file" && file.name.endsWith(".md"))
+            .map((file) => file.path);
         log.info({ filesFound: migrationFiles.length }, "Discovered migration documents");
         return migrationFiles;
     }
     catch (error) {
-        if (error && typeof error === 'object' && 'status' in error && error.status === 404) {
+        if (error && typeof error === "object" && "status" in error && error.status === 404) {
             log.info("migrations directory not found");
             return [];
         }
@@ -220,13 +220,13 @@ async function getMigrationDocumentFromRepo(context, filePath, ref = "main", log
             path: filePath,
             ref,
         });
-        if ('content' in response.data && typeof response.data.content === 'string') {
-            return Buffer.from(response.data.content, 'base64').toString('utf-8');
+        if ("content" in response.data && typeof response.data.content === "string") {
+            return Buffer.from(response.data.content, "base64").toString("utf-8");
         }
         return null;
     }
     catch (error) {
-        if (error && typeof error === 'object' && 'status' in error && error.status === 404) {
+        if (error && typeof error === "object" && "status" in error && error.status === 404) {
             return null;
         }
         log.error({ error, filePath, ref }, "Failed to get migration document from repo");
@@ -252,13 +252,13 @@ export async function updateDashboardInRepo(context, dashboardPath = "MIGRATION_
                 path: dashboardPath,
                 ref: "main",
             });
-            if ('sha' in current.data) {
+            if ("sha" in current.data) {
                 currentSha = current.data.sha;
             }
         }
         catch (error) {
             // File doesn't exist yet, that's fine
-            if (error && typeof error === 'object' && 'status' in error && error.status !== 404) {
+            if (error && typeof error === "object" && "status" in error && error.status !== 404) {
                 throw error;
             }
         }
@@ -269,7 +269,7 @@ export async function updateDashboardInRepo(context, dashboardPath = "MIGRATION_
             repo: context.payload.repository.name,
             path: dashboardPath,
             message,
-            content: Buffer.from(markdown).toString('base64'),
+            content: Buffer.from(markdown).toString("base64"),
             branch: "main",
         };
         if (currentSha) {
@@ -281,7 +281,7 @@ export async function updateDashboardInRepo(context, dashboardPath = "MIGRATION_
             totalMigrations: dashboard.totalMigrations,
             active: dashboard.active.length,
             paused: dashboard.paused.length,
-            completed: dashboard.completed.length
+            completed: dashboard.completed.length,
         }, "Updated migration dashboard in repository");
     }
     catch (error) {

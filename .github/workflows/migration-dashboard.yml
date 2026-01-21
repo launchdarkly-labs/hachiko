@@ -129,7 +129,7 @@ jobs:
               MIGRATIONS_TRIGGERED=true
             fi
           done
-          
+
           # Set output for conditional issue update
           echo "migrations_triggered=$MIGRATIONS_TRIGGERED" >> $GITHUB_OUTPUT
 

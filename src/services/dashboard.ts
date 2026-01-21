@@ -6,7 +6,11 @@
 import type { ContextWithRepository } from "../types/context.js";
 import type { Logger } from "../utils/logger.js";
 import { createLogger } from "../utils/logger.js";
-import { getMultipleMigrationStates, getMigrationStateSummary, type MigrationStateInfo } from "./state-inference.js";
+import {
+  getMultipleMigrationStates,
+  getMigrationStateSummary,
+  type MigrationStateInfo,
+} from "./state-inference.js";
 import { parseMigrationDocumentContent } from "../utils/migration-document.js";
 
 export interface MigrationDashboardEntry {
@@ -35,11 +39,11 @@ export async function generateMigrationDashboard(
   logger?: Logger
 ): Promise<MigrationDashboard> {
   const log = logger || createLogger("dashboard");
-  
+
   try {
     // Discover all migration documents
     const migrationFiles = await discoverMigrationDocuments(context, log);
-    
+
     if (migrationFiles.length === 0) {
       log.info("No migration documents found");
       return createEmptyDashboard();
@@ -54,7 +58,7 @@ export async function generateMigrationDashboard(
             log.warn({ filePath }, "Could not read migration document");
             return null;
           }
-          
+
           const parsed = parseMigrationDocumentContent(content);
           return {
             id: parsed.frontmatter.id,
@@ -69,7 +73,7 @@ export async function generateMigrationDashboard(
     );
 
     const validMigrations = migrationMeta.filter((m): m is NonNullable<typeof m> => m !== null);
-    const migrationIds = validMigrations.map(m => m.id);
+    const migrationIds = validMigrations.map((m) => m.id);
 
     // Get states for all migrations in parallel
     const migrationStates = await getMultipleMigrationStates(context, migrationIds, "main", log);
@@ -94,10 +98,10 @@ export async function generateMigrationDashboard(
     const dashboard: MigrationDashboard = {
       lastUpdated: new Date().toISOString(),
       totalMigrations: entries.length,
-      pending: entries.filter(e => e.state === "pending"),
-      active: entries.filter(e => e.state === "active"),
-      paused: entries.filter(e => e.state === "paused"),
-      completed: entries.filter(e => e.state === "completed"),
+      pending: entries.filter((e) => e.state === "pending"),
+      active: entries.filter((e) => e.state === "active"),
+      paused: entries.filter((e) => e.state === "paused"),
+      completed: entries.filter((e) => e.state === "completed"),
     };
 
     log.info(
@@ -185,12 +189,12 @@ export function generateDashboardMarkdown(dashboard: MigrationDashboard): string
  */
 function formatMigrationEntry(entry: MigrationDashboardEntry): string {
   const { id, title, stateInfo } = entry;
-  
+
   // Build status line with PR links
   let statusLine = `**${title}** (\`${id}\`)`;
-  
+
   if (stateInfo.openPRs.length > 0) {
-    const prLinks = stateInfo.openPRs.map(pr => `[PR #${pr.number}](${pr.url})`).join(', ');
+    const prLinks = stateInfo.openPRs.map((pr) => `[PR #${pr.number}](${pr.url})`).join(", ");
     statusLine += ` - ${prLinks}`;
   }
 
@@ -209,12 +213,12 @@ function formatMigrationEntry(entry: MigrationDashboardEntry): string {
  */
 function generateProgressBar(completed: number, total: number): string {
   if (total === 0) return "";
-  
+
   const percentage = completed / total;
   const filled = Math.floor(percentage * 10);
   const empty = 10 - filled;
-  
-  return `[${'█'.repeat(filled)}${'░'.repeat(empty)}]`;
+
+  return `[${"█".repeat(filled)}${"░".repeat(empty)}]`;
 }
 
 /**
@@ -239,7 +243,7 @@ async function discoverMigrationDocuments(
   logger?: Logger
 ): Promise<string[]> {
   const log = logger || createLogger("dashboard");
-  
+
   try {
     // List files in the migrations directory
     const files = await context.octokit.repos.getContent({
@@ -256,17 +260,17 @@ async function discoverMigrationDocuments(
 
     // Filter for markdown files
     const migrationFiles = files.data
-      .filter(file => file.type === "file" && file.name.endsWith('.md'))
-      .map(file => file.path);
+      .filter((file) => file.type === "file" && file.name.endsWith(".md"))
+      .map((file) => file.path);
 
     log.info({ filesFound: migrationFiles.length }, "Discovered migration documents");
     return migrationFiles;
   } catch (error) {
-    if (error && typeof error === 'object' && 'status' in error && error.status === 404) {
+    if (error && typeof error === "object" && "status" in error && error.status === 404) {
       log.info("migrations directory not found");
       return [];
     }
-    
+
     log.error({ error }, "Failed to discover migration documents");
     throw error;
   }
@@ -282,7 +286,7 @@ async function getMigrationDocumentFromRepo(
   logger?: Logger
 ): Promise<string | null> {
   const log = logger || createLogger("dashboard");
-  
+
   try {
     const response = await context.octokit.repos.getContent({
       owner: context.payload.repository.owner.login,
@@ -291,16 +295,16 @@ async function getMigrationDocumentFromRepo(
       ref,
     });
 
-    if ('content' in response.data && typeof response.data.content === 'string') {
-      return Buffer.from(response.data.content, 'base64').toString('utf-8');
+    if ("content" in response.data && typeof response.data.content === "string") {
+      return Buffer.from(response.data.content, "base64").toString("utf-8");
     }
 
     return null;
   } catch (error) {
-    if (error && typeof error === 'object' && 'status' in error && error.status === 404) {
+    if (error && typeof error === "object" && "status" in error && error.status === 404) {
       return null;
     }
-    
+
     log.error({ error, filePath, ref }, "Failed to get migration document from repo");
     throw error;
   }
@@ -316,12 +320,12 @@ export async function updateDashboardInRepo(
   logger?: Logger
 ): Promise<void> {
   const log = logger || createLogger("dashboard");
-  
+
   try {
     // Generate new dashboard
     const dashboard = await generateMigrationDashboard(context, log);
     const markdown = generateDashboardMarkdown(dashboard);
-    
+
     // Get current file SHA (if it exists)
     let currentSha: string | undefined;
     try {
@@ -331,46 +335,45 @@ export async function updateDashboardInRepo(
         path: dashboardPath,
         ref: "main",
       });
-      
-      if ('sha' in current.data) {
+
+      if ("sha" in current.data) {
         currentSha = current.data.sha;
       }
     } catch (error) {
       // File doesn't exist yet, that's fine
-      if (error && typeof error === 'object' && 'status' in error && error.status !== 404) {
+      if (error && typeof error === "object" && "status" in error && error.status !== 404) {
         throw error;
       }
     }
 
     // Create or update the file
     const message = `Update migration dashboard - ${dashboard.totalMigrations} migrations (${dashboard.active.length} active, ${dashboard.paused.length} paused, ${dashboard.completed.length} completed)`;
-    
+
     const updateParams: any = {
       owner: context.payload.repository.owner.login,
       repo: context.payload.repository.name,
       path: dashboardPath,
       message,
-      content: Buffer.from(markdown).toString('base64'),
+      content: Buffer.from(markdown).toString("base64"),
       branch: "main",
     };
-    
+
     if (currentSha) {
       updateParams.sha = currentSha;
     }
-    
+
     await context.octokit.repos.createOrUpdateFileContents(updateParams);
 
     log.info(
-      { 
-        dashboardPath, 
+      {
+        dashboardPath,
         totalMigrations: dashboard.totalMigrations,
         active: dashboard.active.length,
         paused: dashboard.paused.length,
-        completed: dashboard.completed.length
+        completed: dashboard.completed.length,
       },
       "Updated migration dashboard in repository"
     );
-    
   } catch (error) {
     log.error({ error, dashboardPath }, "Failed to update dashboard in repository");
     throw error;

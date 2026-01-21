@@ -21,6 +21,7 @@ All phases of the migration state inference system have been successfully implem
 - **Migration Utilities**: Functions to convert v1 frontmatter to v2
 
 **Schema V2 Fields** (state tracking removed):
+
 ```yaml
 ---
 schema_version: 2
@@ -38,11 +39,13 @@ created: 2024-01-20T00:00:00Z
 **File**: `src/services/pr-detection.ts`
 
 **Triple Identification System**:
+
 1. **Branch naming**: `hachiko/{migration-id}` or `hachiko/{migration-id}-description`
 2. **PR labels**: `hachiko:migration` (simple, namespaced label)
 3. **PR title**: Contains `[{migration-id}]` somewhere
 
 **Key Features**:
+
 - Intelligent branch parsing that handles description suffixes
 - Validates PRs against conventions and provides feedback
 - Comprehensive PR discovery across multiple GitHub API endpoints
@@ -52,12 +55,14 @@ created: 2024-01-20T00:00:00Z
 **File**: `src/services/state-inference.ts`
 
 **State Model**:
+
 - `pending`: No Hachiko PRs ever opened
 - `active`: Has open Hachiko PRs
 - `paused`: No open PRs, but has closed Hachiko PRs
 - `completed`: All tasks checked off in main branch migration doc
 
 **Features**:
+
 - Task completion analysis from markdown checkboxes
 - Parallel state computation for multiple migrations
 - Comprehensive migration state summaries
@@ -67,6 +72,7 @@ created: 2024-01-20T00:00:00Z
 **File**: `src/webhooks/pull_request.ts`
 
 **Enhanced PR Event Handling**:
+
 - Supports `opened`, `synchronize`, and `closed` PR events
 - Automatic PR validation with convention feedback
 - Real-time dashboard updates on all PR events
@@ -77,12 +83,14 @@ created: 2024-01-20T00:00:00Z
 **File**: `src/services/dashboard.ts`
 
 **Features**:
+
 - Auto-discovery of migration documents
 - Real-time state inference for all migrations
 - Markdown dashboard generation with progress bars
 - Automatic repository updates via GitHub API
 
 **Dashboard Sections**:
+
 - Summary table with migration counts by state
 - Active migrations (highest priority)
 - Paused migrations (need attention)
@@ -91,11 +99,13 @@ created: 2024-01-20T00:00:00Z
 
 ### 6. Agent Instruction Templates ✅
 
-**Files**: 
+**Files**:
+
 - `src/templates/agent-instructions.md`
 - `src/services/agent-instructions.ts`
 
 **Template Features**:
+
 - Variable substitution for migration context
 - Agent-specific guidance (Claude, Cursor, Devin, etc.)
 - Clear conventions for PR creation and tracking
@@ -104,11 +114,13 @@ created: 2024-01-20T00:00:00Z
 ## Comprehensive Test Coverage ✅
 
 **Test Files**:
+
 - `test/unit/services/pr-detection.test.ts` (17 tests)
-- `test/unit/services/state-inference.test.ts` (19 tests)  
+- `test/unit/services/state-inference.test.ts` (19 tests)
 - `test/unit/config/migration-schema.test.ts` (24 tests)
 
 **Total**: 60 tests covering:
+
 - PR identification with all three methods
 - Edge cases and malformed inputs
 - State inference logic and priority rules
@@ -119,26 +131,32 @@ created: 2024-01-20T00:00:00Z
 ## Key Benefits Achieved
 
 ### 1. Eliminates Race Conditions ✅
+
 - Multiple PRs can work simultaneously without conflicts
 - No more frontmatter contention between agents
 
 ### 2. Real-time Dashboard Updates ✅
+
 - Dashboard updates immediately on PR events
 - No waiting for merges to see progress
 
 ### 3. Self-Healing System ✅
+
 - State can always be reconstructed from GitHub API
 - No dependency on potentially stale frontmatter
 
 ### 4. Simplified Agent Contract ✅
+
 - Agents only update content (checkboxes), not metadata
 - Clear conventions with validation feedback
 
 ### 5. Parallel Work Support ✅
+
 - Multiple agents can work on different tasks simultaneously
 - Branch naming supports parallel PR workflows
 
 ### 6. Reliable PR Tracking ✅
+
 - Triple identification ensures PRs are never lost
 - Intelligent branch parsing handles various naming patterns
 
@@ -168,6 +186,7 @@ created: 2024-01-20T00:00:00Z
    ```
 
 The system automatically:
+
 - Detects the PR using triple identification
 - Updates the dashboard showing "active" state
 - Provides feedback if conventions aren't followed
@@ -176,6 +195,7 @@ The system automatically:
 ## Files Modified/Created
 
 ### Core Implementation
+
 - `src/config/migration-schema.ts` - Updated with v2 schema
 - `src/services/pr-detection.ts` - New PR detection service
 - `src/services/state-inference.ts` - New state inference logic
@@ -184,14 +204,17 @@ The system automatically:
 - `src/webhooks/pull_request.ts` - Enhanced webhook handlers
 
 ### Templates
+
 - `src/templates/agent-instructions.md` - Agent instruction template
 
 ### Tests (60 comprehensive tests)
+
 - `test/unit/services/pr-detection.test.ts`
 - `test/unit/services/state-inference.test.ts`
 - `test/unit/config/migration-schema.test.ts`
 
 ### Documentation
+
 - `MIGRATION_STATE_INFERENCE_IMPLEMENTATION.md` - This summary
 
 ## Next Steps

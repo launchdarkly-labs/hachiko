@@ -120,11 +120,7 @@ All tasks are complete.`;
       mockGetOpenHachikoPRs.mockResolvedValue([]);
       mockGetClosedHachikoPRs.mockResolvedValue([]);
 
-      const result = await getMigrationState(
-        mockContext,
-        "test-migration",
-        migrationDoc
-      );
+      const result = await getMigrationState(mockContext, "test-migration", migrationDoc);
 
       expect(result.state).toBe("completed");
       expect(result.allTasksComplete).toBe(true);
@@ -153,11 +149,7 @@ All tasks are complete.`;
       mockGetOpenHachikoPRs.mockResolvedValue(openPRs);
       mockGetClosedHachikoPRs.mockResolvedValue([]);
 
-      const result = await getMigrationState(
-        mockContext,
-        "test-migration",
-        migrationDoc
-      );
+      const result = await getMigrationState(mockContext, "test-migration", migrationDoc);
 
       expect(result.state).toBe("completed");
       expect(result.allTasksComplete).toBe(true);
@@ -232,9 +224,7 @@ Some regular content here.`;
       expect(result.tasks[0].text).toBe(
         "Update `src/components/Button.tsx` with new props interface"
       );
-      expect(result.tasks[1].text).toBe(
-        "Refactor `UserProfile` component to use hooks (see #123)"
-      );
+      expect(result.tasks[1].text).toBe("Refactor `UserProfile` component to use hooks (see #123)");
     });
 
     it("should handle nested lists correctly (only top-level checkboxes)", () => {
@@ -402,9 +392,7 @@ Some regular content here.`;
       mockGetOpenHachikoPRs.mockRejectedValue(new Error("API Error"));
       mockGetClosedHachikoPRs.mockRejectedValue(new Error("API Error"));
 
-      await expect(
-        getMigrationState(mockContext, "test-migration")
-      ).rejects.toThrow("API Error");
+      await expect(getMigrationState(mockContext, "test-migration")).rejects.toThrow("API Error");
     });
 
     it("should handle malformed migration document content", () => {

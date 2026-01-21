@@ -7,7 +7,6 @@ import type { ContextWithRepository } from "../types/context.js";
 import type { Logger } from "../utils/logger.js";
 import { createLogger } from "../utils/logger.js";
 
-
 export interface HachikoPR {
   number: number;
   title: string;
@@ -45,7 +44,7 @@ export function detectHachikoPR(pr: PullRequest): HachikoPR | null {
     state: pr.state,
     migrationId,
     branch: pr.head.ref,
-    labels: pr.labels.map(l => l.name),
+    labels: pr.labels.map((l) => l.name),
     url: pr.html_url,
     merged: pr.merged,
   };
@@ -59,16 +58,32 @@ function extractMigrationIdFromBranch(branchRef: string): string | null {
   const branchMatch = branchRef.match(/^hachiko\/(.+)$/);
   if (branchMatch && branchMatch[1]) {
     const fullId = branchMatch[1];
-    
+
     // For branches like "hachiko/add-jsdoc-comments-utility-functions"
     // we want to extract "add-jsdoc-comments"
     // But for "hachiko/react-v16-to-v18-hooks-migration" we want the full thing
-    
+
     // Strategy: check if parts at the end look like description words
-    const parts = fullId.split('-');
+    const parts = fullId.split("-");
     if (parts.length > 1) {
-      const descriptionWords = ['impl', 'implementation', 'fix', 'update', 'refactor', 'feature', 'utility', 'functions', 'components', 'hooks', 'tests', 'simple', 'complex', 'basic', 'advanced'];
-      
+      const descriptionWords = [
+        "impl",
+        "implementation",
+        "fix",
+        "update",
+        "refactor",
+        "feature",
+        "utility",
+        "functions",
+        "components",
+        "hooks",
+        "tests",
+        "simple",
+        "complex",
+        "basic",
+        "advanced",
+      ];
+
       // Find how many parts at the end are description words
       let descriptivePartsCount = 0;
       for (let i = parts.length - 1; i >= 0; i--) {
@@ -78,15 +93,15 @@ function extractMigrationIdFromBranch(branchRef: string): string | null {
           break; // Stop at first non-descriptive word
         }
       }
-      
+
       if (descriptivePartsCount > 0) {
-        return parts.slice(0, -descriptivePartsCount).join('-');
+        return parts.slice(0, -descriptivePartsCount).join("-");
       }
     }
-    
+
     return fullId;
   }
-  
+
   return null;
 }
 
@@ -147,7 +162,7 @@ export async function getHachikoPRs(
   logger?: Logger
 ): Promise<HachikoPR[]> {
   const log = logger || createLogger("pr-detection");
-  
+
   try {
     // Search using multiple methods to ensure we catch all PRs
     const allPRs = new Map<number, HachikoPR>();
@@ -177,10 +192,10 @@ export async function getHachikoPRs(
     });
 
     for (const pr of labelPRs.data) {
-      const hasHachikoLabel = pr.labels.some(l => 
-        typeof l === 'object' && l.name === 'hachiko:migration'
+      const hasHachikoLabel = pr.labels.some(
+        (l) => typeof l === "object" && l.name === "hachiko:migration"
       );
-      
+
       if (hasHachikoLabel) {
         const hachikoPR = detectHachikoPR(pr as any);
         if (hachikoPR && hachikoPR.migrationId === migrationId) {
@@ -193,13 +208,10 @@ export async function getHachikoPRs(
     // Note: GitHub API doesn't support searching PR titles directly, so we
     // filter the results we already have. In a real implementation, we might
     // use GitHub's search API for more comprehensive results.
-    
+
     const results = Array.from(allPRs.values());
-    
-    log.info(
-      { migrationId, state, foundPRs: results.length },
-      "Found Hachiko PRs for migration"
-    );
+
+    log.info({ migrationId, state, foundPRs: results.length }, "Found Hachiko PRs for migration");
 
     return results;
   } catch (error) {
@@ -262,17 +274,19 @@ export function validateHachikoPR(pr: PullRequest): PRValidationResult {
   const recommendations: string[] = [];
   let migrationId: string | null = null;
 
-  // Check branch naming  
+  // Check branch naming
   const branchMigrationId = extractMigrationIdFromBranch(pr.head.ref);
   if (branchMigrationId) {
     migrationId = branchMigrationId;
     identificationMethods.push("branch");
   } else {
-    recommendations.push(`Branch should be named 'hachiko/{migration-id}' or 'hachiko/{migration-id}-description'`);
+    recommendations.push(
+      `Branch should be named 'hachiko/{migration-id}' or 'hachiko/{migration-id}-description'`
+    );
   }
 
   // Check labels
-  const hasLabel = pr.labels.some(l => l.name === 'hachiko:migration');
+  const hasLabel = pr.labels.some((l) => l.name === "hachiko:migration");
   if (hasLabel) {
     identificationMethods.push("label");
   } else {

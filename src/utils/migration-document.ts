@@ -79,7 +79,7 @@ export async function updateMigrationDocument(
     if (parsed.frontmatter.schema_version !== 1) {
       throw new Error("Can only update legacy schema version 1 frontmatter");
     }
-    
+
     const updatedFrontmatter = {
       ...parsed.frontmatter,
       ...updates,

@@ -35,19 +35,19 @@ export async function generateAgentInstructions(
   logger?: Logger
 ): Promise<string> {
   const log = logger || createLogger("agent-instructions");
-  
+
   try {
     // Load the instruction template
     const template = await loadInstructionTemplate();
-    
+
     // Apply template substitutions
     const instructions = applyTemplateSubstitutions(template, migrationContext, repositoryContext);
-    
+
     log.info(
       { migrationId: migrationContext.id, agent: migrationContext.agent },
       "Generated agent instructions"
     );
-    
+
     return instructions;
   } catch (error) {
     log.error({ error, migrationId: migrationContext.id }, "Failed to generate agent instructions");
@@ -64,7 +64,7 @@ export async function generateAgentInstructionsFromRepo(
   logger?: Logger
 ): Promise<string> {
   const log = logger || createLogger("agent-instructions");
-  
+
   try {
     // Get migration document content
     const filePath = `migrations/${migrationId}.md`;
@@ -75,20 +75,20 @@ export async function generateAgentInstructionsFromRepo(
       ref: "main",
     });
 
-    if (!('content' in response.data) || typeof response.data.content !== 'string') {
+    if (!("content" in response.data) || typeof response.data.content !== "string") {
       throw new Error(`Migration document not found: ${filePath}`);
     }
 
-    const content = Buffer.from(response.data.content, 'base64').toString('utf-8');
-    
+    const content = Buffer.from(response.data.content, "base64").toString("utf-8");
+
     // Parse frontmatter
     const frontmatterMatch = content.match(/^---\n([\s\S]*?)\n---/);
     if (!frontmatterMatch || !frontmatterMatch[1]) {
       throw new Error("Migration document missing frontmatter");
     }
 
-    const frontmatter = require('yaml').parse(frontmatterMatch[1]) as MigrationFrontmatter;
-    
+    const frontmatter = require("yaml").parse(frontmatterMatch[1]) as MigrationFrontmatter;
+
     const migrationContext: MigrationContext = {
       id: frontmatter.id,
       title: frontmatter.title,
@@ -115,8 +115,8 @@ export async function generateAgentInstructionsFromRepo(
  */
 async function loadInstructionTemplate(): Promise<string> {
   try {
-    const templatePath = join(__dirname, '../templates/agent-instructions.md');
-    return await readFile(templatePath, 'utf-8');
+    const templatePath = join(__dirname, "../templates/agent-instructions.md");
+    return await readFile(templatePath, "utf-8");
   } catch {
     // Fallback to inline template if file not found
     logger.warn("Template file not found, using inline template");
@@ -133,19 +133,19 @@ function applyTemplateSubstitutions(
   repositoryContext: RepositoryContext
 ): string {
   let instructions = template;
-  
+
   // Migration context substitutions
   instructions = instructions.replace(/\{migration\.id\}/g, migrationContext.id);
   instructions = instructions.replace(/\{migration\.title\}/g, migrationContext.title);
   instructions = instructions.replace(/\{migration\.agent\}/g, migrationContext.agent);
   instructions = instructions.replace(/\{migration\.filePath\}/g, migrationContext.filePath);
   instructions = instructions.replace(/\{migration\.created\}/g, migrationContext.created);
-  
+
   // Repository context substitutions
   instructions = instructions.replace(/\{repository\.owner\}/g, repositoryContext.owner);
   instructions = instructions.replace(/\{repository\.name\}/g, repositoryContext.name);
   instructions = instructions.replace(/\{repository\.url\}/g, repositoryContext.url);
-  
+
   return instructions;
 }
 
@@ -204,48 +204,55 @@ export async function generateAgentSpecificInstructions(
   logger?: Logger
 ): Promise<string> {
   const log = logger || createLogger("agent-instructions");
-  
+
   try {
     // Get base instructions
-    const baseInstructions = await generateAgentInstructions(migrationContext, repositoryContext, log);
-    
+    const baseInstructions = await generateAgentInstructions(
+      migrationContext,
+      repositoryContext,
+      log
+    );
+
     // Add agent-specific guidance
     let agentSpecific = "";
-    
+
     switch (agentType.toLowerCase()) {
       case "claude-cli":
       case "claude":
         agentSpecific = getClaudeSpecificInstructions();
         break;
-        
+
       case "cursor":
       case "cursor-cli":
         agentSpecific = getCursorSpecificInstructions();
         break;
-        
+
       case "devin":
         agentSpecific = getDevinSpecificInstructions();
         break;
-        
+
       case "codex":
         agentSpecific = getCodexSpecificInstructions();
         break;
-        
+
       case "mock":
         agentSpecific = getMockAgentInstructions();
         break;
-        
+
       default:
         log.warn({ agentType }, "Unknown agent type, using generic instructions");
     }
-    
+
     if (agentSpecific) {
       return `${baseInstructions}\n\n## Agent-Specific Guidance\n\n${agentSpecific}`;
     }
-    
+
     return baseInstructions;
   } catch (error) {
-    log.error({ error, agentType, migrationId: migrationContext.id }, "Failed to generate agent-specific instructions");
+    log.error(
+      { error, agentType, migrationId: migrationContext.id },
+      "Failed to generate agent-specific instructions"
+    );
     throw error;
   }
 }
