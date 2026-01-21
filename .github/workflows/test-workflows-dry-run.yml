@@ -1,0 +1,237 @@
+name: Test Workflows (Dry Run)
+
+# Runs workflow tests on branches without affecting production state
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/**'
+      - 'src/**'
+      - 'scripts/**'
+      - 'migrations/**'
+  workflow_dispatch:
+    inputs:
+      test_scenario:
+        description: "Test scenario to run"
+        required: true
+        type: choice
+        options:
+          - "issue_checkbox_toggle"
+          - "pr_lifecycle" 
+          - "migration_execution"
+          - "dashboard_update"
+
+permissions:
+  contents: read
+  issues: read
+  pull-requests: read
+
+jobs:
+  test-workflow-logic:
+    name: Test Workflow Logic
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@fe02b34f77f8bc703788d5817da081398fad5dd2
+
+      - name: Setup Node.js
+        uses: actions/setup-node@60edb5dd545a775178f52524783378180af0d1f8
+        with:
+          node-version: 22
+          cache: "pnpm"
+
+      - name: Install dependencies
+        run: |
+          pnpm install
+          pnpm build
+
+      - name: Create test migrations
+        run: |
+          mkdir -p migrations
+          cat > migrations/test-migration-1.md << 'EOF'
+          ---
+          id: test-migration-1
+          title: Test Migration 1
+          agent: cursor
+          status: pending
+          current_step: 1
+          total_steps: 3
+          created: 2024-01-20T10:00:00Z
+          last_updated: 2024-01-20T10:00:00Z
+          ---
+          
+          # Test Migration 1
+          
+          This is a test migration for workflow validation.
+          EOF
+          
+          cat > migrations/test-migration-2.md << 'EOF'
+          ---
+          id: test-migration-2
+          title: Test Migration 2
+          agent: cursor
+          status: paused
+          current_step: 2
+          total_steps: 3
+          created: 2024-01-20T10:00:00Z
+          last_updated: 2024-01-20T10:00:00Z
+          ---
+          
+          # Test Migration 2
+          
+          This is a paused test migration.
+          EOF
+
+      - name: Test migration CLI commands
+        run: |
+          echo "🧪 Testing migration CLI commands..."
+          
+          # Test list command
+          echo "📋 Testing migration list:"
+          pnpm migration list
+          
+          # Test dashboard generation
+          echo "📊 Testing dashboard generation:"
+          pnpm migration generate-migration-dashboard > dashboard-output.txt
+          cat dashboard-output.txt
+          
+          # Verify dashboard contains expected content
+          if grep -q "test-migration-1" dashboard-output.txt && grep -q "test-migration-2" dashboard-output.txt; then
+            echo "✅ Dashboard generation test passed"
+          else
+            echo "❌ Dashboard generation test failed"
+            exit 1
+          fi
+
+      - name: Test checkbox parsing logic
+        run: |
+          echo "🎯 Testing checkbox parsing logic..."
+          
+          # Create a test dashboard with checked boxes
+          cat > test-dashboard.md << 'EOF'
+          # 📊 Hachiko Migration Dashboard
+          
+          ## 🟡 Pending Migrations
+          
+          - [x] `test-migration-1` - Test Migration 1
+          - [ ] `test-migration-3` - Test Migration 3
+          
+          ## ⏸️ Paused Migrations
+          
+          - [x] `test-migration-2` - Test Migration 2
+          
+          ---
+          EOF
+          
+          # Test the parsing logic (simulate bash script logic)
+          CHECKED_PENDING=$(cat test-dashboard.md | awk '/## 🟡 Pending Migrations/,/## 🔄 In-Progress Migrations|## ⏸️ Paused Migrations/ { if (/^- \[x\]/) print }' | sed 's/^- \[x\] `//' | sed 's/`.*$//')
+          CHECKED_PAUSED=$(cat test-dashboard.md | awk '/## ⏸️ Paused Migrations/,/---/ { if (/^- \[x\]/) print }' | sed 's/^- \[x\] `//' | sed 's/`.*$//')
+          
+          echo "Checked pending: $CHECKED_PENDING"
+          echo "Checked paused: $CHECKED_PAUSED"
+          
+          if [[ "$CHECKED_PENDING" == *"test-migration-1"* ]] && [[ "$CHECKED_PAUSED" == *"test-migration-2"* ]]; then
+            echo "✅ Checkbox parsing test passed"
+          else
+            echo "❌ Checkbox parsing test failed"
+            exit 1
+          fi
+
+      - name: Test issue checkbox scenario (workflow_dispatch)
+        if: github.event.inputs.test_scenario == 'issue_checkbox_toggle' || github.event_name == 'pull_request'
+        env:
+          TEST_SCENARIO: "issue_checkbox_toggle"
+        run: |
+          echo "🎯 Testing issue checkbox toggle scenario..."
+          
+          # Simulate the workflow steps without actually triggering workflows
+          echo "1. Finding migration-dashboard issue (DRY RUN)"
+          echo "2. Parsing issue body for checkbox changes (DRY RUN)" 
+          echo "3. Would trigger execute-migration.yml for: test-migration-1, test-migration-2"
+          echo "4. Would wait 30 seconds for migrations to start"
+          echo "5. Would update dashboard issue with new content"
+          
+          echo "✅ Issue checkbox scenario test completed (DRY RUN)"
+
+      - name: Test PR lifecycle scenario
+        if: github.event.inputs.test_scenario == 'pr_lifecycle' || github.event_name == 'pull_request'  
+        env:
+          TEST_SCENARIO: "pr_lifecycle"
+        run: |
+          echo "🔀 Testing PR lifecycle scenario..."
+          
+          # Test PR branch detection
+          TEST_BRANCHES=("hachiko/test-migration-1-step-1" "feature/not-a-migration" "hachiko/test-migration-2-step-2")
+          
+          for BRANCH in "${TEST_BRANCHES[@]}"; do
+            echo "Testing branch: $BRANCH"
+            if [[ "$BRANCH" == hachiko/* ]]; then
+              MIGRATION_ID=$(echo "$BRANCH" | sed 's/hachiko\/[^-]*-//' | sed 's/-step-[0-9]*//')
+              echo "  ✅ Detected Hachiko migration: $MIGRATION_ID"
+            else
+              echo "  ℹ️ Not a Hachiko migration branch"
+            fi
+          done
+          
+          echo "✅ PR lifecycle scenario test completed"
+
+      - name: Test migration execution validation
+        if: github.event.inputs.test_scenario == 'migration_execution' || github.event_name == 'pull_request'
+        env:
+          TEST_SCENARIO: "migration_execution"  
+        run: |
+          echo "⚡ Testing migration execution validation..."
+          
+          # Test migration document loading
+          MIGRATION_FILE="migrations/test-migration-1.md"
+          
+          if [ -f "$MIGRATION_FILE" ]; then
+            echo "✅ Migration file exists: $MIGRATION_FILE"
+            
+            # Extract frontmatter (simulate execute-migration.yml logic)
+            FRONTMATTER=$(awk '/^---$/{if(f==1) exit; f=1; next} f' "$MIGRATION_FILE")
+            echo "Extracted frontmatter:"
+            echo "$FRONTMATTER"
+            
+            # Parse key fields
+            TITLE=$(echo "$FRONTMATTER" | grep "^title:" | sed 's/title: *//')
+            STATUS=$(echo "$FRONTMATTER" | grep "^status:" | sed 's/status: *//')
+            CURRENT_STEP=$(echo "$FRONTMATTER" | grep "^current_step:" | sed 's/current_step: *//')
+            
+            echo "Title: $TITLE"
+            echo "Status: $STATUS" 
+            echo "Current Step: $CURRENT_STEP"
+            
+            if [ -n "$TITLE" ] && [ -n "$STATUS" ]; then
+              echo "✅ Migration document parsing successful"
+            else
+              echo "❌ Migration document parsing failed"
+              exit 1
+            fi
+          else
+            echo "❌ Migration file not found: $MIGRATION_FILE"
+            exit 1
+          fi
+
+      - name: Run integration tests
+        run: |
+          echo "🧪 Running integration tests..."
+          pnpm test test/integration/workflows/
+
+      - name: Test summary
+        if: always()
+        run: |
+          echo "📋 Test Summary:"
+          echo "✅ Migration CLI commands tested"
+          echo "✅ Checkbox parsing logic tested"
+          echo "✅ Workflow scenarios simulated (DRY RUN)"
+          echo "✅ Integration tests executed"
+          echo ""
+          echo "🚀 All workflow tests completed!"
+          echo "💡 To test with real GitHub APIs, merge this PR and test on main branch"

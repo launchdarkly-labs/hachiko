@@ -29,7 +29,10 @@
     "test:apis": "node scripts/test-api-endpoints.js",
     "scripts:fire-webhook": "ts-node scripts/send-webhook.ts",
     "scripts:assert-state": "ts-node scripts/assert-state.ts",
-    "scripts:simulate-merge": "ts-node scripts/sim-merge.ts"
+    "scripts:simulate-merge": "ts-node scripts/sim-merge.ts",
+    "test:webhooks": "node scripts/test-webhooks-local.js",
+    "test:workflows": "pnpm test test/integration/workflows/",
+    "test:pr-dashboard": "node scripts/test-pr-driven-dashboard.js"
   },
   "dependencies": {
     "@launchdarkly/node-server-sdk": "^9.6.3",

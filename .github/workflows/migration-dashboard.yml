@@ -135,19 +135,34 @@ jobs:
 
       - name: Handle PR opened/updated
         if: github.event_name == 'pull_request' && (github.event.action == 'opened' || github.event.action == 'synchronize')
+        id: handle-pr
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PR_BRANCH: ${{ github.event.pull_request.head.ref }}
           PR_TITLE: ${{ github.event.pull_request.title }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
         run: |
           echo "PR ${{ github.event.action }}: $PR_TITLE"
           echo "Branch: $PR_BRANCH"
 
           # Check if this is a Hachiko migration PR (by branch or label)
-          if [[ "$PR_BRANCH" == hachiko/* ]] || gh pr view ${{ github.event.pull_request.number }} --json labels --jq '.labels[].name' | grep -q "hachiko:migration"; then
-            echo "Hachiko migration PR detected - will update dashboard"
+          IS_HACHIKO_PR=false
+          if [[ "$PR_BRANCH" == hachiko/* ]]; then
+            IS_HACHIKO_PR=true
+            echo "✅ Hachiko migration PR detected by branch name: $PR_BRANCH"
+          elif gh pr view "$PR_NUMBER" --json labels --jq '.labels[].name' | grep -q "hachiko:migration"; then
+            IS_HACHIKO_PR=true
+            echo "✅ Hachiko migration PR detected by label"
           else
-            echo "Not a Hachiko migration PR - no dashboard update needed"
+            echo "ℹ️ Not a Hachiko migration PR - no dashboard update needed"
+          fi
+
+          echo "is_hachiko_pr=$IS_HACHIKO_PR" >> $GITHUB_OUTPUT
+
+          # If this is a Hachiko migration PR being opened, it means a migration just started
+          if [ "$IS_HACHIKO_PR" = "true" ] && [ "${{ github.event.action }}" = "opened" ]; then
+            echo "🚀 Migration PR opened - this indicates migration execution started"
+            echo "📊 Dashboard will be updated to reflect the new in-progress migration"
           fi
 
       - name: Handle PR closure
@@ -183,20 +198,14 @@ jobs:
 
       - name: Update migration-dashboard issue
         if: |
-          github.event_name == 'pull_request' || 
+          (github.event_name == 'pull_request' && steps.handle-pr.outputs.is_hachiko_pr == 'true') || 
           github.event_name == 'workflow_dispatch' ||
-          (github.event_name == 'issues' && github.event.issue.number == fromJson(steps.find-issue.outputs.migration_dashboard_issue))
+          (github.event_name == 'issues' && github.event.issue.number == fromJson(steps.find-issue.outputs.migration_dashboard_issue) && steps.handle-edit.outputs.migrations_triggered != 'true')
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           ISSUE_NUMBER: ${{ steps.find-issue.outputs.migration_dashboard_issue }}
         run: |
           echo "Updating migration-dashboard issue #$ISSUE_NUMBER"
-
-          # If migrations were just triggered, wait a moment for them to start
-          if [ "${{ steps.handle-edit.outputs.migrations_triggered }}" = "true" ]; then
-            echo "Migrations were triggered, waiting 30 seconds for them to start..."
-            sleep 30
-          fi
 
           # Use the migration CLI script to generate the dashboard content
           ISSUE_BODY=$(pnpm migration generate-migration-dashboard)
