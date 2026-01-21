@@ -26,6 +26,10 @@ export default defineConfig({
         "self-test/**",
         // CLI scripts - require integration testing
         "src/scripts/**",
+        // Test scripts - not production code
+        "scripts/reproduce-dashboard-issue.js",
+        "scripts/test-pr-driven-dashboard.js", 
+        "scripts/test-webhooks-local.js",
         // Entry points - require full integration setup
         "src/index.ts",
         "src/probot.ts",
