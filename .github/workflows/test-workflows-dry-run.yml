@@ -219,10 +219,10 @@ jobs:
             exit 1
           fi
 
-      - name: Run integration tests
+      - name: Run workflow tests
         run: |
-          echo "🧪 Running integration tests..."
-          pnpm test test/integration/workflows/
+          echo "🧪 Running workflow tests..."
+          pnpm test test/unit/workflows/
 
       - name: Test summary
         if: always()
@@ -231,7 +231,7 @@ jobs:
           echo "✅ Migration CLI commands tested"
           echo "✅ Checkbox parsing logic tested"
           echo "✅ Workflow scenarios simulated (DRY RUN)"
-          echo "✅ Integration tests executed"
+          echo "✅ Workflow tests executed"
           echo ""
           echo "🚀 All workflow tests completed!"
           echo "💡 To test with real GitHub APIs, merge this PR and test on main branch"
