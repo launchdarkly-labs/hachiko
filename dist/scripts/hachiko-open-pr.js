@@ -66,14 +66,65 @@ async function pushBranch(branchName) {
     }
 }
 async function createOrUpdatePR(event) {
-    // For now, just log what we would do
-    // TODO: Use GitHub CLI or Octokit to create actual PR
     const chunkText = event.chunk ? ` (${event.chunk})` : "";
     const title = `Hachiko: ${event.planId} - ${event.stepId}${chunkText}`;
     const body = generatePRBody(event);
-    // Try to create PR using GitHub CLI if available
+    // Check if a PR already exists for this branch
+    const existingPR = await checkExistingPR(event.branchName);
+    if (existingPR) {
+        console.log(`📝 Updating existing PR #${existingPR.number} for branch ${event.branchName}`);
+        await updateExistingPR(event.branchName, title, body, event);
+    }
+    else {
+        console.log(`🆕 Creating new PR for branch ${event.branchName}`);
+        await createNewPR(title, body, event);
+    }
+}
+async function checkExistingPR(branchName) {
     try {
-        const _result = await execa("gh", [
+        const result = await execa("gh", ["pr", "view", branchName, "--json", "number"], {
+            stdio: "pipe",
+        });
+        const prData = JSON.parse(result.stdout);
+        return { number: prData.number };
+    }
+    catch (_error) {
+        // PR doesn't exist or other error - we'll create a new one
+        return null;
+    }
+}
+async function updateExistingPR(branchName, title, body, event) {
+    try {
+        // Update the PR title and body
+        await execa("gh", ["pr", "edit", branchName, "--title", title, "--body", body], {
+            stdio: "inherit",
+        });
+        // Ensure labels are up to date
+        await execa("gh", [
+            "pr",
+            "edit",
+            branchName,
+            "--add-label",
+            "hachiko",
+            "--add-label",
+            "migration",
+            "--add-label",
+            `hachiko:plan:${event.planId}`,
+            "--add-label",
+            `hachiko:step:${event.planId}:${event.stepId}${event.chunk ? `:${event.chunk}` : ""}`,
+        ], {
+            stdio: "inherit",
+        });
+        console.log("✅ Successfully updated existing PR");
+    }
+    catch (error) {
+        console.error("❌ Failed to update existing PR:", error);
+        throw error;
+    }
+}
+async function createNewPR(title, body, event) {
+    try {
+        await execa("gh", [
             "pr",
             "create",
             "--title",
@@ -95,8 +146,12 @@ async function createOrUpdatePR(event) {
         ], {
             stdio: "inherit",
         });
+        console.log("✅ Successfully created new PR");
     }
-    catch (_error) { }
+    catch (error) {
+        console.error("❌ Failed to create new PR:", error);
+        throw error;
+    }
 }
 function generatePRBody(event) {
     const chunkText = event.chunk ? `\n- **Chunk**: ${event.chunk}` : "";

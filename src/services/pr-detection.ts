@@ -82,6 +82,16 @@ function extractMigrationIdFromBranch(branchRef: string): string | null {
         "complex",
         "basic",
         "advanced",
+        "step",
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8",
+        "9",
       ];
 
       // Find how many parts at the end are description words
