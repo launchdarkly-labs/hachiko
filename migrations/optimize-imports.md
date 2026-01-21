@@ -75,8 +75,8 @@ import { c } from './c';
 
 ### Files to Modify
 
-- **src/\**/\*.ts**: ~46 TypeScript files
-- **test/\**/\*.ts**: ~19 test files
+- **src/\*\*/\*.ts**: ~46 TypeScript files
+- **test/\*\*/\*.ts**: ~19 test files
 - Focus on files with wildcard imports or unused imports
 
 ### Build Impact
