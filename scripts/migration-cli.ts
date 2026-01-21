@@ -18,6 +18,7 @@ import { createMigrationFrontmatter } from "../src/config/migration-schema.js";
 import { Octokit } from "@octokit/rest";
 import { getMigrationState } from "../src/services/state-inference.js";
 import { getOpenHachikoPRs } from "../src/services/pr-detection.js";
+import { createLogger } from "../src/utils/logger.js";
 
 const program = new Command();
 
@@ -243,6 +244,10 @@ program
         // Add minimal payload for ContextWithRepository compatibility
         payload: { repository: { name: repoName, owner: { login: owner } } }
       };
+
+      // Create silent logger to prevent logs from polluting issue body
+      const silentLogger = createLogger("migration-cli");
+      silentLogger.level = "silent";
       
       // Discover migration files
       const files = await readdir("migrations");
@@ -259,7 +264,7 @@ program
           const { frontmatter } = parsed;
           
           // Use state inference instead of frontmatter status
-          const stateInfo = await getMigrationState(context, frontmatter.id, parsed.content);
+          const stateInfo = await getMigrationState(context, frontmatter.id, parsed.content, silentLogger);
           const state = stateInfo.state;
           
           const checkboxLine = `- [ ] \`${frontmatter.id}\` - ${frontmatter.title}`;
@@ -270,7 +275,7 @@ program
               break;
             case "active":
               // Get PR links for active migrations
-              const openPRs = await getOpenHachikoPRs(context, frontmatter.id);
+              const openPRs = await getOpenHachikoPRs(context, frontmatter.id, silentLogger);
               const prLinks = openPRs.map(pr => `[PR #${pr.number}](${pr.url})`).join(", ");
               const prText = prLinks ? ` (${prLinks})` : "";
               const progressText = stateInfo.totalTasks > 0 ? ` - ${stateInfo.completedTasks}/${stateInfo.totalTasks} steps completed` : "";
