@@ -183,15 +183,20 @@ jobs:
 
       - name: Update migration-dashboard issue
         if: |
-          steps.handle-edit.outputs.migrations_triggered != 'true' &&
-          (github.event_name == 'pull_request' || 
-           github.event_name == 'workflow_dispatch' ||
-           (github.event_name == 'issues' && github.event.issue.number == fromJson(steps.find-issue.outputs.migration_dashboard_issue)))
+          github.event_name == 'pull_request' || 
+          github.event_name == 'workflow_dispatch' ||
+          (github.event_name == 'issues' && github.event.issue.number == fromJson(steps.find-issue.outputs.migration_dashboard_issue))
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           ISSUE_NUMBER: ${{ steps.find-issue.outputs.migration_dashboard_issue }}
         run: |
           echo "Updating migration-dashboard issue #$ISSUE_NUMBER"
+
+          # If migrations were just triggered, wait a moment for them to start
+          if [ "${{ steps.handle-edit.outputs.migrations_triggered }}" = "true" ]; then
+            echo "Migrations were triggered, waiting 30 seconds for them to start..."
+            sleep 30
+          fi
 
           # Use the migration CLI script to generate the dashboard content
           ISSUE_BODY=$(pnpm migration generate-migration-dashboard)
