@@ -151,8 +151,11 @@ This migration will upgrade all Node.js dependencies to their latest stable vers
 4. Check the migration checkbox in the **Migration Dashboard Issue** to start execution
 5. Monitor progress as PRs are automatically created for each step!
 
+> 📖 **For detailed step-by-step instructions, troubleshooting, and best practices, see the [Migration Flow Guide](docs/migration-flow.md)**
+
 ## 📚 Documentation
 
+- **[Migration Flow Guide](docs/migration-flow.md)** - Complete guide from issue creation to completion
 - [Architecture Overview](docs/architecture.md)
 - [Configuration Reference](docs/config.md)
 - [Migration Plan Format](docs/plan-spec.md)
