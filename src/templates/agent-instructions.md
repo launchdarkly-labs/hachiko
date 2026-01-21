@@ -42,8 +42,7 @@ When creating your PR, ensure it follows these conventions for reliable tracking
 
 #### Example PR Labels:
 - `hachiko:migration`
-- `migration`
-- `automated`
+- `enhancement` (or other repository-specific labels as appropriate)
 
 #### PR Description Template:
 ```markdown

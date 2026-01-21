@@ -39,7 +39,7 @@ created: 2024-01-20T00:00:00Z
 
 **Triple Identification System**:
 1. **Branch naming**: `hachiko/{migration-id}` or `hachiko/{migration-id}-description`
-2. **PR labels**: `hachiko:migration-{migration-id}`
+2. **PR labels**: `hachiko:migration` (simple, namespaced label)
 3. **PR title**: Contains `[{migration-id}]` somewhere
 
 **Key Features**:
@@ -158,7 +158,7 @@ created: 2024-01-20T00:00:00Z
 1. **Create Branch**: `hachiko/add-jsdoc-comments`
 2. **Create PR** with:
    - Title: `[add-jsdoc-comments] Add JSDoc to utility functions`
-   - Label: `hachiko:migration-add-jsdoc-comments`
+   - Label: `hachiko:migration`
 3. **Update Tasks** in migration document:
    ```markdown
    ## Tasks

@@ -91,7 +91,7 @@ export const HachikoConfigSchema = z.object({
         agent: z.string().default("devin"),
         prParallelism: z.number().min(1).max(5).default(1),
         rebase: RebaseConfigSchema.default({}),
-        labels: z.array(z.string()).default(["hachiko", "migration"]),
+        labels: z.array(z.string()).default(["hachiko:migration"]),
         requirePlanReview: z.boolean().default(true),
     })
         .default({}),
