@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { describe, expect, it, vi, beforeEach } from "vitest";
 
 // Mock the services before importing modules that use them
 vi.mock("../../../src/services/config.js", () => ({
@@ -8,6 +8,18 @@ vi.mock("../../../src/services/config.js", () => ({
 vi.mock("../../../src/services/migrations.js", () => ({
   updateMigrationProgress: vi.fn(),
   emitNextStep: vi.fn(),
+}));
+
+vi.mock("../../../src/services/dashboard.js", () => ({
+  updateDashboardInRepo: vi.fn(),
+}));
+
+vi.mock("../../../src/services/state-inference.js", () => ({
+  getMigrationStateWithDocument: vi.fn(),
+}));
+
+vi.mock("../../../src/utils/pr.js", () => ({
+  extractMigrationMetadata: vi.fn(),
 }));
 
 // Mock the logger
@@ -34,6 +46,9 @@ vi.mock("../../../src/utils/git.js", () => ({
 import { handlePullRequest } from "../../../src/webhooks/pull_request.js";
 import { loadHachikoConfig } from "../../../src/services/config.js";
 import { updateMigrationProgress, emitNextStep } from "../../../src/services/migrations.js";
+import { updateDashboardInRepo } from "../../../src/services/dashboard.js";
+import { getMigrationStateWithDocument } from "../../../src/services/state-inference.js";
+import { extractMigrationMetadata } from "../../../src/utils/pr.js";
 import { createMockContext } from "../../mocks/github.js";
 import { createLogger } from "../../../src/utils/logger.js";
 
@@ -64,6 +79,9 @@ describe("handlePullRequest", () => {
           html_url: "https://github.com/test-owner/test-repo/pull/123",
           merge_commit_sha: null,
           labels: [],
+          head: {
+            ref: "feature/some-regular-branch",
+          },
         },
       },
       mockOctokit
@@ -76,6 +94,9 @@ describe("handlePullRequest", () => {
   describe("when PR is not a migration PR", () => {
     beforeEach(() => {
       mockContext.payload.pull_request.labels = [];
+      mockContext.payload.pull_request.head = {
+        ref: "feature/some-regular-branch",
+      };
     });
 
     it("should skip processing non-Hachiko PRs", async () => {
@@ -89,29 +110,43 @@ describe("handlePullRequest", () => {
   describe("when PR is a migration PR", () => {
     beforeEach(() => {
       mockContext.payload.pull_request.labels = [
-        { name: "hachiko" },
-        { name: "migration" },
-        { name: "hachiko:plan:react-upgrade" },
-        { name: "hachiko:step:react-upgrade:step1:src" },
+        { name: "hachiko:migration" },
       ];
       mockContext.payload.pull_request.head = {
-        ref: "hachiko/react-upgrade/step1/src",
+        ref: "hachiko/react-upgrade-utility-functions",
       };
+      mockContext.payload.pull_request.title = "[react-upgrade] Update utility functions";
       vi.mocked(loadHachikoConfig).mockResolvedValue({
         plans: { directory: "migrations/" },
         defaults: { agent: "claude-cli" },
       });
+      vi.mocked(getMigrationStateWithDocument).mockResolvedValue({
+        state: "active",
+        openPRs: [],
+        closedPRs: [],
+        allTasksComplete: false,
+        totalTasks: 5,
+        completedTasks: 2,
+        lastUpdated: new Date().toISOString(),
+      });
+      vi.mocked(updateDashboardInRepo).mockResolvedValue(undefined);
     });
 
     describe("and PR was merged", () => {
       beforeEach(() => {
         mockContext.payload.pull_request.merged = true;
         mockContext.payload.pull_request.merge_commit_sha = "abc123";
+        mockContext.payload.action = "closed";
+        vi.mocked(extractMigrationMetadata).mockReturnValue({
+          planId: "react-upgrade",
+          stepId: "step1",
+          chunk: "src",
+        });
         vi.mocked(updateMigrationProgress).mockResolvedValue(undefined);
         vi.mocked(emitNextStep).mockResolvedValue(undefined);
       });
 
-      it("should handle merged PR correctly", async () => {
+      it("should handle merged PR with legacy metadata correctly", async () => {
         await handlePullRequest(mockContext, mockLogger);
 
         expect(loadHachikoConfig).toHaveBeenCalledWith(mockContext);
@@ -136,12 +171,22 @@ describe("handlePullRequest", () => {
         );
       });
 
-      it("should handle migration metadata extraction correctly", async () => {
+      it("should handle merged PR with new state inference system", async () => {
+        vi.mocked(extractMigrationMetadata).mockReturnValue(null);
+        
         await handlePullRequest(mockContext, mockLogger);
 
-        expect(mockLogger.info).toHaveBeenCalledWith(
-          { migrationMeta: { planId: "react-upgrade", stepId: "step1", chunk: "src" } },
-          "Extracted migration metadata"
+        expect(loadHachikoConfig).toHaveBeenCalledWith(mockContext);
+        expect(getMigrationStateWithDocument).toHaveBeenCalledWith(
+          mockContext,
+          "react-upgrade",
+          "main",
+          mockLogger
+        );
+        expect(updateDashboardInRepo).toHaveBeenCalledWith(
+          mockContext,
+          "MIGRATION_DASHBOARD.md",
+          mockLogger
         );
       });
     });
@@ -149,6 +194,12 @@ describe("handlePullRequest", () => {
     describe("and PR was closed without merging", () => {
       beforeEach(() => {
         mockContext.payload.pull_request.merged = false;
+        mockContext.payload.action = "closed";
+        vi.mocked(extractMigrationMetadata).mockReturnValue({
+          planId: "react-upgrade",
+          stepId: "step1",
+          chunk: "src",
+        });
         vi.mocked(updateMigrationProgress).mockResolvedValue(undefined);
         mockOctokit.issues.listForRepo.mockResolvedValue({
           data: [{ number: 456, title: "Migration: react-upgrade" }],
@@ -156,7 +207,7 @@ describe("handlePullRequest", () => {
         mockOctokit.issues.createComment.mockResolvedValue({});
       });
 
-      it("should handle closed PR correctly", async () => {
+      it("should handle closed PR with legacy metadata correctly", async () => {
         await handlePullRequest(mockContext, mockLogger);
 
         expect(updateMigrationProgress).toHaveBeenCalledWith(
@@ -202,26 +253,47 @@ describe("handlePullRequest", () => {
         );
         expect(mockOctokit.issues.createComment).not.toHaveBeenCalled();
       });
-    });
 
-    describe("when migration metadata cannot be extracted", () => {
-      beforeEach(() => {
-        mockContext.payload.pull_request.labels = [
-          { name: "hachiko" },
-          { name: "migration" },
-          // No hachiko:step: label, so metadata extraction will fail
-        ];
-        mockContext.payload.pull_request.head = undefined; // No branch ref to avoid require issue
-      });
-
-      it("should handle invalid migration metadata gracefully", async () => {
+      it("should handle closed PR with new state inference system", async () => {
+        vi.mocked(extractMigrationMetadata).mockReturnValue(null);
+        
         await handlePullRequest(mockContext, mockLogger);
 
-        expect(mockLogger.warn).toHaveBeenCalledWith(
-          "Could not extract migration metadata from PR"
+        expect(getMigrationStateWithDocument).toHaveBeenCalledWith(
+          mockContext,
+          "react-upgrade",
+          "main",
+          mockLogger
         );
-        expect(updateMigrationProgress).not.toHaveBeenCalled();
-        expect(emitNextStep).not.toHaveBeenCalled();
+        expect(updateDashboardInRepo).toHaveBeenCalledWith(
+          mockContext,
+          "MIGRATION_DASHBOARD.md",
+          mockLogger
+        );
+      });
+    });
+
+    describe("when PR validation fails", () => {
+      beforeEach(() => {
+        mockContext.payload.action = "opened";
+        mockContext.payload.pull_request.labels = [
+          // Missing hachiko:migration label
+        ];
+        mockContext.payload.pull_request.head = {
+          ref: "hachiko/react-upgrade-utility", // Valid hachiko branch
+        };
+        mockContext.payload.pull_request.title = "Regular PR title"; // No bracket notation
+      });
+
+      it("should provide validation feedback for improperly formatted PRs", async () => {
+        await handlePullRequest(mockContext, mockLogger);
+
+        expect(mockOctokit.issues.createComment).toHaveBeenCalledWith({
+          owner: "test-owner",
+          repo: "test-repo",
+          issue_number: 123,
+          body: expect.stringContaining("🤖 **Hachiko PR Validation**"),
+        });
       });
     });
 
@@ -236,47 +308,36 @@ describe("handlePullRequest", () => {
         );
 
         expect(mockLogger.error).toHaveBeenCalledWith(
-          { error: expect.any(Error) },
+          { error: expect.any(Error), migrationId: "react-upgrade" },
           "Failed to handle pull request event"
         );
       });
     });
 
-    describe("when no chunk is specified in PR title", () => {
-      beforeEach(() => {
-        mockContext.payload.pull_request.labels = [
-          { name: "hachiko" },
-          { name: "migration" },
-          { name: "hachiko:plan:react-upgrade" },
-          { name: "hachiko:step:react-upgrade:step1" }, // No chunk specified
-        ];
-        mockContext.payload.pull_request.merged = false;
-        vi.mocked(updateMigrationProgress).mockResolvedValue(undefined);
-        mockOctokit.issues.listForRepo.mockResolvedValue({
-          data: [{ number: 456, title: "Migration: react-upgrade" }],
-        });
-      });
-
-      it("should handle undefined chunk correctly", async () => {
+    describe("when handling different PR actions", () => {
+      it("should handle opened PR", async () => {
+        mockContext.payload.action = "opened";
+        
         await handlePullRequest(mockContext, mockLogger);
 
-        expect(updateMigrationProgress).toHaveBeenCalledWith(
+        expect(loadHachikoConfig).toHaveBeenCalledWith(mockContext);
+        expect(updateDashboardInRepo).toHaveBeenCalledWith(
           mockContext,
-          "react-upgrade",
-          "step1",
-          "skipped",
-          {
-            prNumber: 123,
-            chunk: undefined,
-            reason: "PR closed without merging",
-          },
+          "MIGRATION_DASHBOARD.md",
           mockLogger
         );
+      });
 
-        expect(mockOctokit.issues.createComment).toHaveBeenCalledWith(
-          expect.objectContaining({
-            body: expect.stringContaining("⚠️ **Step Skipped**: `step1`"),
-          })
+      it("should handle synchronize PR", async () => {
+        mockContext.payload.action = "synchronize";
+        
+        await handlePullRequest(mockContext, mockLogger);
+
+        expect(loadHachikoConfig).toHaveBeenCalledWith(mockContext);
+        expect(updateDashboardInRepo).toHaveBeenCalledWith(
+          mockContext,
+          "MIGRATION_DASHBOARD.md",
+          mockLogger
         );
       });
     });
