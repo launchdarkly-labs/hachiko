@@ -1,116 +1,244 @@
 import type { Context } from "probot";
 import { loadHachikoConfig } from "../services/config.js";
 import { emitNextStep, updateMigrationProgress } from "../services/migrations.js";
+import { detectHachikoPR, validateHachikoPR } from "../services/pr-detection.js";
+import { getMigrationStateWithDocument } from "../services/state-inference.js";
+import { updateDashboardInRepo } from "../services/dashboard.js";
 import type { Logger } from "../utils/logger.js";
-import { extractMigrationMetadata, isMigrationPR } from "../utils/pr.js";
+import { extractMigrationMetadata } from "../utils/pr.js";
 
 export async function handlePullRequest(
-  context: Context<"pull_request.closed">,
+  context: Context<"pull_request.closed" | "pull_request.opened" | "pull_request.synchronize">,
   logger: Logger
 ): Promise<void> {
   const { payload } = context;
-  const { pull_request: pr, repository: _repository } = payload;
+  const { pull_request: pr, action } = payload;
 
   logger.info(
     {
       prNumber: pr.number,
+      action,
       merged: pr.merged,
       title: pr.title,
     },
-    "Processing pull request closure"
+    "Processing pull request event"
   );
 
-  // Only process Hachiko-managed PRs
-  if (!isMigrationPR(pr)) {
+  // Check if this is a Hachiko PR using new detection service
+  const hachikoPR = detectHachikoPR(pr as any);
+  if (!hachikoPR) {
     logger.debug("PR is not managed by Hachiko, skipping");
     return;
   }
 
+  logger.info(
+    { migrationId: hachikoPR.migrationId, action },
+    "Processing Hachiko migration PR"
+  );
+
   try {
     const config = await loadHachikoConfig(context);
-    const migrationMeta = extractMigrationMetadata(pr);
-
-    if (!migrationMeta) {
-      logger.warn("Could not extract migration metadata from PR");
-      return;
+    
+    // Handle different PR actions
+    switch (action) {
+      case "opened":
+        await handlePROpened(context, hachikoPR, config, logger);
+        break;
+      case "synchronize":
+        await handlePRUpdated(context, hachikoPR, config, logger);
+        break;
+      case "closed":
+        if (pr.merged) {
+          await handlePRMerged(context, hachikoPR, config, logger);
+        } else {
+          await handlePRClosed(context, hachikoPR, config, logger);
+        }
+        break;
     }
 
-    logger.info({ migrationMeta }, "Extracted migration metadata");
+    // Update dashboard for all PR events (state may have changed)
+    await updateMigrationDashboard(context, hachikoPR.migrationId, logger);
+    
+  } catch (error) {
+    logger.error({ error, migrationId: hachikoPR.migrationId }, "Failed to handle pull request event");
+    throw error;
+  }
+}
 
-    if (pr.merged) {
-      await handleMergedPR(context, migrationMeta, config, logger);
+async function handlePROpened(
+  context: Context<"pull_request.opened">,
+  hachikoPR: { migrationId: string; number: number; title: string },
+  _config: any, // TODO: Type this properly
+  logger: Logger
+): Promise<void> {
+  logger.info({ migrationId: hachikoPR.migrationId, prNumber: hachikoPR.number }, "Handling opened migration PR");
+
+  try {
+    // Validate PR follows conventions and provide feedback if needed
+    const validation = validateHachikoPR(context.payload.pull_request as any);
+    if (!validation.isValid && validation.recommendations.length > 0) {
+      const comment = `🤖 **Hachiko PR Validation**
+
+I noticed this PR could better follow Hachiko conventions:
+
+${validation.recommendations.map(r => `- ${r}`).join('\n')}
+
+This will help ensure reliable tracking and dashboard updates.`;
+      
+      await context.octokit.issues.createComment({
+        owner: context.payload.repository.owner.login,
+        repo: context.payload.repository.name,
+        issue_number: hachikoPR.number,
+        body: comment,
+      });
+    }
+
+    logger.info(
+      { migrationId: hachikoPR.migrationId, prNumber: hachikoPR.number, validation },
+      "Processed opened migration PR"
+    );
+  } catch (error) {
+    logger.error({ error, migrationId: hachikoPR.migrationId }, "Failed to handle opened PR");
+    throw error;
+  }
+}
+
+async function handlePRUpdated(
+  context: Context<"pull_request.synchronize">,
+  hachikoPR: { migrationId: string; number: number; title: string },
+  _config: any, // TODO: Type this properly
+  logger: Logger
+): Promise<void> {
+  logger.info({ migrationId: hachikoPR.migrationId, prNumber: hachikoPR.number }, "Handling updated migration PR");
+
+  // For now, just log. In the future, we might want to re-analyze the PR
+  // or update progress based on new commits
+}
+
+async function handlePRMerged(
+  context: Context<"pull_request.closed">,
+  hachikoPR: { migrationId: string; number: number; title: string },
+  _config: any, // TODO: Type this properly
+  logger: Logger
+): Promise<void> {
+  logger.info({ migrationId: hachikoPR.migrationId, prNumber: hachikoPR.number }, "Handling merged migration PR");
+
+  try {
+    // Legacy support: if this uses the old system, try to extract metadata
+    const migrationMeta = extractMigrationMetadata(context.payload.pull_request);
+    if (migrationMeta) {
+      const { planId, stepId, chunk } = migrationMeta;
+      
+      // Update migration progress - mark step as done
+      await updateMigrationProgress(
+        context,
+        planId,
+        stepId,
+        "completed",
+        {
+          prNumber: context.payload.pull_request.number,
+          mergeCommit: context.payload.pull_request.merge_commit_sha,
+          chunk,
+        },
+        logger
+      );
+
+      // Emit repository dispatch for next step/chunk
+      await emitNextStep(context, planId, stepId, chunk, logger);
     } else {
-      await handleClosedPR(context, migrationMeta, config, logger);
+      // New system: State will be inferred automatically
+      // The dashboard update will handle the state change
+      logger.info(
+        { migrationId: hachikoPR.migrationId },
+        "Merged PR using new state inference system"
+      );
     }
   } catch (error) {
-    logger.error({ error }, "Failed to handle pull request event");
+    logger.error({ error, migrationId: hachikoPR.migrationId }, "Failed to handle merged PR");
     throw error;
   }
 }
 
-async function handleMergedPR(
+async function handlePRClosed(
   context: Context<"pull_request.closed">,
-  migrationMeta: { planId: string; stepId: string; chunk: string | undefined },
+  hachikoPR: { migrationId: string; number: number; title: string },
   _config: any, // TODO: Type this properly
   logger: Logger
 ): Promise<void> {
-  const { planId, stepId, chunk } = migrationMeta;
-
-  logger.info({ planId, stepId, chunk }, "Handling merged migration PR");
+  logger.info({ migrationId: hachikoPR.migrationId, prNumber: hachikoPR.number }, "Handling closed (unmerged) migration PR");
 
   try {
-    // Update migration progress - mark step as done
-    await updateMigrationProgress(
-      context,
-      planId,
-      stepId,
-      "completed",
-      {
-        prNumber: context.payload.pull_request.number,
-        mergeCommit: context.payload.pull_request.merge_commit_sha,
-        chunk,
-      },
-      logger
-    );
+    // Legacy support: if this uses the old system, try to extract metadata
+    const migrationMeta = extractMigrationMetadata(context.payload.pull_request);
+    if (migrationMeta) {
+      const { planId, stepId, chunk } = migrationMeta;
+      
+      // Update migration progress - mark step as skipped/ignored
+      await updateMigrationProgress(
+        context,
+        planId,
+        stepId,
+        "skipped",
+        {
+          prNumber: context.payload.pull_request.number,
+          chunk,
+          reason: "PR closed without merging",
+        },
+        logger
+      );
 
-    // Emit repository dispatch for next step/chunk
-    await emitNextStep(context, planId, stepId, chunk, logger);
+      // Add helpful comment to the Migration Issue
+      await addSkippedStepComment(context, planId, stepId, chunk, logger);
+    } else {
+      // New system: Just log and let dashboard update handle state change
+      logger.info(
+        { migrationId: hachikoPR.migrationId },
+        "Closed unmerged PR using new state inference system"
+      );
+    }
   } catch (error) {
-    logger.error({ error, planId, stepId }, "Failed to handle merged PR");
+    logger.error({ error, migrationId: hachikoPR.migrationId }, "Failed to handle closed PR");
     throw error;
   }
 }
 
-async function handleClosedPR(
-  context: Context<"pull_request.closed">,
-  migrationMeta: { planId: string; stepId: string; chunk: string | undefined },
-  _config: any, // TODO: Type this properly
+/**
+ * Update migration dashboard when PR events occur
+ * This triggers a dashboard refresh to reflect the new state
+ */
+async function updateMigrationDashboard(
+  context: Context,
+  migrationId: string,
   logger: Logger
 ): Promise<void> {
-  const { planId, stepId, chunk } = migrationMeta;
-
-  logger.info({ planId, stepId, chunk }, "Handling closed (unmerged) migration PR");
-
   try {
-    // Update migration progress - mark step as skipped/ignored
-    await updateMigrationProgress(
-      context,
-      planId,
-      stepId,
-      "skipped",
+    // Get current migration state using the new inference system
+    const stateInfo = await getMigrationStateWithDocument(context as any, migrationId, "main", logger);
+    
+    logger.info(
       {
-        prNumber: context.payload.pull_request.number,
-        chunk,
-        reason: "PR closed without merging",
+        migrationId,
+        state: stateInfo.state,
+        openPRs: stateInfo.openPRs.length,
+        closedPRs: stateInfo.closedPRs.length,
+        completedTasks: stateInfo.completedTasks,
+        totalTasks: stateInfo.totalTasks,
       },
-      logger
+      "Updated migration state info"
     );
 
-    // Add helpful comment to the Migration Issue
-    await addSkippedStepComment(context, planId, stepId, chunk, logger);
+    // Update the dashboard file in the repository
+    // This will regenerate the entire dashboard with current states
+    await updateDashboardInRepo(context as any, "MIGRATION_DASHBOARD.md", logger);
+    
+    logger.info(
+      { migrationId },
+      "Successfully updated migration dashboard"
+    );
+    
   } catch (error) {
-    logger.error({ error, planId, stepId }, "Failed to handle closed PR");
-    throw error;
+    logger.error({ error, migrationId }, "Failed to update migration dashboard");
+    // Don't throw - this is not critical for PR processing
   }
 }
 
