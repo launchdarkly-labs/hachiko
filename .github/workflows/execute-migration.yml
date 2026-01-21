@@ -182,7 +182,7 @@ jobs:
           echo "🚀 Executing migration step with $AGENT agent..."
 
           # Extract migration instructions from document (content after frontmatter)
-          MIGRATION_CONTENT=$(awk '/^---$/,/^---$/{if(seen++ > 0) next} /^---$/{f=1; next} f' "$MIGRATION_FILE")
+          MIGRATION_CONTENT=$(awk 'BEGIN{f=0} /^---$/{f++; next} f==2' "$MIGRATION_FILE")
 
           # Execute based on agent type
           case "$AGENT" in
