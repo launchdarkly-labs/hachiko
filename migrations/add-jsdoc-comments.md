@@ -2,7 +2,7 @@
 schema_version: 1
 id: add-jsdoc-comments
 title: "Add JSDoc comments to utility functions"
-agent: mock
+agent: devin
 status: pending
 current_step: 1
 total_steps: 4
