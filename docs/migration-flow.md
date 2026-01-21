@@ -270,17 +270,22 @@ When a migration starts, the `execute-migration.yml` workflow performs these ste
    pnpm test      # Unit test execution
    ```
 
-8. **PR Creation**
+8. **PR Creation/Update**
    - Push working branch to origin
-   - Create pull request with:
+   - Check if PR already exists for the branch
+   - If PR exists: Update existing PR with:
+     - Updated title and description
+     - Current migration context
+     - Refreshed labels and metadata
+   - If no PR exists: Create new pull request with:
      - Descriptive title including step progress
      - Migration context and changes summary
      - Links to migration document
-     - Next steps instructions
+     - Proper labels and metadata
 
 9. **Migration Document Update**
-   - Add PR number to migration document
-   - Update timestamp
+   - Add/update PR number in migration document
+   - Update timestamp and progress
    - Commit changes to the same PR
 
 ### Agent Execution Details
@@ -500,14 +505,27 @@ Monitor migrations through:
 3. Review migration instructions for clarity
 4. Test with `mock` agent first
 
-#### PR Creation Fails
+#### PR Creation/Update Issues
 
-**Symptoms**: Agent succeeds but no PR created
+**Symptoms**: Agent succeeds but no PR created or PR not updated
 
 **Solutions**:
-1. Check repository permissions for `pull-requests: write`
-2. Verify GitHub token has necessary scopes
-3. Ensure branch protection rules allow PR creation
+1. **New PR Creation Failures**:
+   - Check repository permissions for `pull-requests: write`
+   - Verify GitHub token has necessary scopes
+   - Ensure branch protection rules allow PR creation
+
+2. **PR Update Failures**:
+   - Verify PR exists for the branch: `gh pr view <branch-name>`
+   - Check permissions for PR editing
+   - Ensure branch is pushed to origin before PR operations
+
+3. **General Troubleshooting**:
+   - Check GitHub CLI authentication: `gh auth status`
+   - Review workflow logs for specific error messages
+   - Verify branch naming follows Hachiko conventions
+
+**Expected Behavior**: Hachiko will update existing PRs instead of creating new ones, preserving review history and comments.
 
 #### Dashboard Not Updating
 
@@ -585,6 +603,7 @@ gh workflow run execute-migration.yml \
 2. **Test Locally**: Pull and test changes before approving
 3. **Scope Verification**: Ensure changes match step objectives
 4. **Documentation Check**: Verify migration progress is accurate
+5. **PR History**: Review the full PR history as Hachiko updates existing PRs rather than creating new ones
 
 ### Risk Management
 
