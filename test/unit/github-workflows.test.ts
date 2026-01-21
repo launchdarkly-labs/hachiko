@@ -56,6 +56,68 @@ describe("GitHub Workflows Validation", () => {
       });
     });
   });
+
+  describe("Migration ID Extraction Logic", () => {
+    it("should correctly extract migration ID from Hachiko branch names", () => {
+      // Test cases for the migration ID extraction logic used in migration-dashboard.yml
+      const testCases = [
+        {
+          branch: "hachiko/add-jsdoc-comments-step-1",
+          expected: "add-jsdoc-comments",
+          description: "multi-word migration with step number"
+        },
+        {
+          branch: "hachiko/flatten-monorepo-step-2",
+          expected: "flatten-monorepo",
+          description: "hyphenated migration with step number"
+        },
+        {
+          branch: "hachiko/test-simple-validation-step-1",
+          expected: "test-simple-validation",
+          description: "triple-word migration with step number"
+        },
+        {
+          branch: "hachiko/optimize-imports-step-10",
+          expected: "optimize-imports",
+          description: "double-digit step number"
+        }
+      ];
+
+      testCases.forEach(({ branch, expected, description }) => {
+        // Simulate the exact extraction logic from migration-dashboard.yml:182
+        const extractedId = branch
+          .replace(/^hachiko\//, '')  // Remove 'hachiko/' prefix
+          .replace(/-step-[0-9]+$/, ''); // Remove '-step-{number}' suffix
+
+        expect(extractedId).toBe(expected, 
+          `Failed for ${description}: ${branch} should extract '${expected}' but got '${extractedId}'`);
+      });
+    });
+
+    it("should handle edge cases in migration ID extraction", () => {
+      const edgeCases = [
+        {
+          branch: "hachiko/single-step-1",
+          expected: "single",
+          description: "single word migration"
+        },
+        {
+          branch: "hachiko/has-step-in-name-step-1",
+          expected: "has-step-in-name", 
+          description: "migration name containing 'step'"
+        }
+      ];
+
+      edgeCases.forEach(({ branch, expected, description }) => {
+        const extractedId = branch
+          .replace(/^hachiko\//, '')
+          .replace(/-step-[0-9]+$/, '');
+
+        expect(extractedId).toBe(expected,
+          `Failed for edge case ${description}: ${branch} should extract '${expected}' but got '${extractedId}'`);
+      });
+    });
+  });
 });
 
 /**
