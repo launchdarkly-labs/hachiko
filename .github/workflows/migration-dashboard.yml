@@ -5,7 +5,7 @@ on:
   issues:
     types: [edited]
   pull_request:
-    types: [closed]
+    types: [opened, synchronize, closed]
 
   # Allow manual trigger for testing
   workflow_dispatch:
@@ -133,6 +133,23 @@ jobs:
           # Set output for conditional issue update
           echo "migrations_triggered=$MIGRATIONS_TRIGGERED" >> $GITHUB_OUTPUT
 
+      - name: Handle PR opened/updated
+        if: github.event_name == 'pull_request' && (github.event.action == 'opened' || github.event.action == 'synchronize')
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_BRANCH: ${{ github.event.pull_request.head.ref }}
+          PR_TITLE: ${{ github.event.pull_request.title }}
+        run: |
+          echo "PR ${{ github.event.action }}: $PR_TITLE"
+          echo "Branch: $PR_BRANCH"
+
+          # Check if this is a Hachiko migration PR (by branch or label)
+          if [[ "$PR_BRANCH" == hachiko/* ]] || gh pr view ${{ github.event.pull_request.number }} --json labels --jq '.labels[].name' | grep -q "hachiko:migration"; then
+            echo "Hachiko migration PR detected - will update dashboard"
+          else
+            echo "Not a Hachiko migration PR - no dashboard update needed"
+          fi
+
       - name: Handle PR closure
         if: github.event_name == 'pull_request' && github.event.pull_request.state == 'closed'
         env:
@@ -165,7 +182,11 @@ jobs:
           fi
 
       - name: Update migration-dashboard issue
-        if: steps.handle-edit.outputs.migrations_triggered != 'true'
+        if: |
+          steps.handle-edit.outputs.migrations_triggered != 'true' &&
+          (github.event_name == 'pull_request' || 
+           github.event_name == 'workflow_dispatch' ||
+           (github.event_name == 'issues' && github.event.issue.number == fromJson(steps.find-issue.outputs.migration_dashboard_issue)))
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           ISSUE_NUMBER: ${{ steps.find-issue.outputs.migration_dashboard_issue }}
