@@ -72,7 +72,7 @@ jobs:
       - name: Validate workflow shell scripts
         run: |
           echo "🔍 Validating workflow shell scripts..."
-          
+
           # Test migration parsing logic with existing migration files
           echo "Testing migration file parsing logic..."
           for migration_file in migrations/*.md; do
@@ -96,7 +96,7 @@ jobs:
               echo "  ✅ Parsed: $TITLE (agent: $AGENT, status: $STATUS)"
             fi
           done
-          
+
           # Validate shell script syntax in workflow files
           echo "Validating shell script syntax in workflow files..."
           find .github/workflows -name "*.yml" | while read workflow; do
@@ -112,7 +112,7 @@ jobs:
               fi
             fi
           done
-          
+
           echo "✅ Workflow validation completed"
 
       - name: Docs link check

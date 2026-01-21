@@ -5,7 +5,7 @@ on:
   issues:
     types: [edited]
   pull_request:
-    types: [closed]
+    types: [opened, synchronize, closed]
 
   # Allow manual trigger for testing
   workflow_dispatch:
@@ -129,9 +129,41 @@ jobs:
               MIGRATIONS_TRIGGERED=true
             fi
           done
-          
+
           # Set output for conditional issue update
           echo "migrations_triggered=$MIGRATIONS_TRIGGERED" >> $GITHUB_OUTPUT
+
+      - name: Handle PR opened/updated
+        if: github.event_name == 'pull_request' && (github.event.action == 'opened' || github.event.action == 'synchronize')
+        id: handle-pr
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_BRANCH: ${{ github.event.pull_request.head.ref }}
+          PR_TITLE: ${{ github.event.pull_request.title }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          echo "PR ${{ github.event.action }}: $PR_TITLE"
+          echo "Branch: $PR_BRANCH"
+
+          # Check if this is a Hachiko migration PR (by branch or label)
+          IS_HACHIKO_PR=false
+          if [[ "$PR_BRANCH" == hachiko/* ]]; then
+            IS_HACHIKO_PR=true
+            echo "✅ Hachiko migration PR detected by branch name: $PR_BRANCH"
+          elif gh pr view "$PR_NUMBER" --json labels --jq '.labels[].name' | grep -q "hachiko:migration"; then
+            IS_HACHIKO_PR=true
+            echo "✅ Hachiko migration PR detected by label"
+          else
+            echo "ℹ️ Not a Hachiko migration PR - no dashboard update needed"
+          fi
+
+          echo "is_hachiko_pr=$IS_HACHIKO_PR" >> $GITHUB_OUTPUT
+
+          # If this is a Hachiko migration PR being opened, it means a migration just started
+          if [ "$IS_HACHIKO_PR" = "true" ] && [ "${{ github.event.action }}" = "opened" ]; then
+            echo "🚀 Migration PR opened - this indicates migration execution started"
+            echo "📊 Dashboard will be updated to reflect the new in-progress migration"
+          fi
 
       - name: Handle PR closure
         if: github.event_name == 'pull_request' && github.event.pull_request.state == 'closed'
@@ -165,7 +197,10 @@ jobs:
           fi
 
       - name: Update migration-dashboard issue
-        if: steps.handle-edit.outputs.migrations_triggered != 'true'
+        if: |
+          (github.event_name == 'pull_request' && steps.handle-pr.outputs.is_hachiko_pr == 'true') || 
+          github.event_name == 'workflow_dispatch' ||
+          (github.event_name == 'issues' && github.event.issue.number == fromJson(steps.find-issue.outputs.migration_dashboard_issue) && steps.handle-edit.outputs.migrations_triggered != 'true')
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           ISSUE_NUMBER: ${{ steps.find-issue.outputs.migration_dashboard_issue }}

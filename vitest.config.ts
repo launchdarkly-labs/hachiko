@@ -26,6 +26,10 @@ export default defineConfig({
         "self-test/**",
         // CLI scripts - require integration testing
         "src/scripts/**",
+        // Test scripts - not production code
+        "scripts/reproduce-dashboard-issue.js",
+        "scripts/test-pr-driven-dashboard.js", 
+        "scripts/test-webhooks-local.js",
         // Entry points - require full integration setup
         "src/index.ts",
         "src/probot.ts",
@@ -44,7 +48,7 @@ export default defineConfig({
         "src/services/metrics.ts",
       ],
       thresholds: {
-        // Meaningful coverage thresholds focusing on testable business logic  
+        // Meaningful coverage thresholds focusing on testable business logic
         // Updated: Adjusted to reflect current achievable coverage levels
         // Major achievements: Cloud agents (84%+), Config schema (100%), Plans (75%), Issues (98%), State (89.7%)
         statements: 52, // Lowered from 55% to reflect current level (52.81%)

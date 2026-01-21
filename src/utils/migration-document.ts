@@ -75,8 +75,12 @@ export async function updateMigrationDocument(
   try {
     const parsed = await parseMigrationDocument(filePath);
 
-    // Update frontmatter
-    const updatedFrontmatter: MigrationFrontmatter = {
+    // Update frontmatter (only works for v1 schema)
+    if (parsed.frontmatter.schema_version !== 1) {
+      throw new Error("Can only update legacy schema version 1 frontmatter");
+    }
+
+    const updatedFrontmatter = {
       ...parsed.frontmatter,
       ...updates,
       last_updated: new Date().toISOString(),

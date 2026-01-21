@@ -24,7 +24,7 @@ Hachiko offers two deployment options:
 | **Infrastructure**    | Managed service           | Serverless (your repo)       |
 | **Best For**          | Organizations, production | Individual repos, dogfooding |
 | **Agent Support**     | All agents                | All agents                   |
-| **Control Interface** | Issue comments            | Migration Dashboard      |
+| **Control Interface** | Issue comments            | Migration Dashboard          |
 | **State Management**  | Database                  | Migration documents          |
 | **Maintenance**       | Zero                      | Minimal                      |
 
