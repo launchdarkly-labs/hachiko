@@ -206,6 +206,7 @@ jobs:
           # Create PR
           gh pr create \
             --title "📋 Enhanced Migration: $MIGRATION_ID" \
+            --label "hachiko:migration" \
             --body "$(cat <<'EOF'
           ## Migration Enhancement
 
