@@ -15,6 +15,9 @@ import {
   hasMigrationFrontmatter,
 } from "../src/utils/migration-document.js";
 import { createMigrationFrontmatter } from "../src/config/migration-schema.js";
+import { Octokit } from "@octokit/rest";
+import { getMigrationState } from "../src/services/state-inference.js";
+import { getOpenHachikoPRs } from "../src/services/pr-detection.js";
 
 const program = new Command();
 
@@ -214,12 +217,34 @@ program
     }
   });
 
-// Generate migration dashboard issue body
+// Generate migration dashboard issue body using state inference
 program
   .command("generate-migration-dashboard")
-  .description("Generate migration dashboard issue body from migrations")
+  .description("Generate migration dashboard issue body from migrations using state inference")
   .action(async () => {
     try {
+      // Create Octokit client for state inference
+      const octokit = new Octokit({ auth: process.env.GITHUB_TOKEN });
+      
+      // Extract repository info from environment
+      const repo = process.env.GITHUB_REPOSITORY;
+      if (!repo) {
+        throw new Error("GITHUB_REPOSITORY environment variable not set");
+      }
+      const [owner, repoName] = repo.split("/");
+      
+      // Create context object for services
+      const context = {
+        repo: {
+          owner,
+          repo: repoName,
+        },
+        octokit,
+        // Add minimal payload for ContextWithRepository compatibility
+        payload: { repository: { name: repoName, owner: { login: owner } } }
+      };
+      
+      // Discover migration files
       const files = await readdir("migrations");
       const migrationFiles = files.filter((f) => f.endsWith(".md"));
       
@@ -233,24 +258,34 @@ program
           const parsed = await parseMigrationDocument(filePath);
           const { frontmatter } = parsed;
           
-          const checkboxLine = `- [ ] \`${frontmatter.id}\` - ${frontmatter.title}`;
-          const regularLine = `- \`${frontmatter.id}\` - ${frontmatter.title}`;
+          // Use state inference instead of frontmatter status
+          const stateInfo = await getMigrationState(context, frontmatter.id, parsed.content);
+          const state = stateInfo.state;
           
-          switch (frontmatter.status) {
+          const checkboxLine = `- [ ] \`${frontmatter.id}\` - ${frontmatter.title}`;
+          
+          switch (state) {
             case "pending":
               pendingMigrations += `${checkboxLine}\n`;
               break;
-            case "in_progress":
-              const prLink = frontmatter.pr_number 
-                ? `([PR #${frontmatter.pr_number}](https://github.com/${process.env.GITHUB_REPOSITORY}/pull/${frontmatter.pr_number}))`
-                : "";
-              inProgressMigrations += `- \`${frontmatter.id}\` - ${frontmatter.title} ${prLink} - ${frontmatter.current_step}/${frontmatter.total_steps} steps completed\n`;
+            case "active":
+              // Get PR links for active migrations
+              const openPRs = await getOpenHachikoPRs(context, frontmatter.id);
+              const prLinks = openPRs.map(pr => `[PR #${pr.number}](${pr.url})`).join(", ");
+              const prText = prLinks ? ` (${prLinks})` : "";
+              const progressText = stateInfo.totalTasks > 0 ? ` - ${stateInfo.completedTasks}/${stateInfo.totalTasks} steps completed` : "";
+              inProgressMigrations += `- \`${frontmatter.id}\` - ${frontmatter.title}${prText}${progressText}\n`;
               break;
             case "paused":
-              pausedMigrations += `${checkboxLine} (last attempt: step ${frontmatter.current_step}/${frontmatter.total_steps})\n`;
+              const progressInfo = stateInfo.totalTasks > 0 ? ` (last attempt: step ${stateInfo.completedTasks}/${stateInfo.totalTasks})` : "";
+              pausedMigrations += `${checkboxLine}${progressInfo}\n`;
+              break;
+            case "completed":
+              // Completed migrations don't appear in the dashboard checkboxes
               break;
           }
-        } catch {
+        } catch (error) {
+          console.error(`Failed to process migration ${file}:`, error);
           // Skip invalid migration files
         }
       }
