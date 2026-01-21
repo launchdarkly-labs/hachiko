@@ -181,8 +181,25 @@ jobs:
         run: |
           echo "🚀 Executing migration step with $AGENT agent..."
 
-          # Extract migration instructions from document (content after frontmatter)
-          MIGRATION_CONTENT=$(awk 'BEGIN{f=0} /^---$/{f++; next} f==2' "$MIGRATION_FILE")
+          # Create standard agent instructions with migration file pointer
+          AGENT_INSTRUCTIONS="You are executing step $STEP_ID of migration \"$MIGRATION_ID\" using the Hachiko migration system.
+
+          Instructions:
+          1. Read and understand the migration document at: $MIGRATION_FILE
+          2. Focus on completing step $STEP_ID of the migration as described in the document
+          3. Make the necessary code changes following the migration requirements
+          4. Commit your changes with clear, descriptive commit messages
+          5. Ensure all tests pass and code quality checks succeed
+          6. Follow the coding standards and patterns established in the codebase
+
+          Migration Details:
+          - Migration ID: $MIGRATION_ID
+          - Current Step: $STEP_ID of ${{ steps.migration.outputs.total_steps }}
+          - Migration File: $MIGRATION_FILE
+          - Repository: https://github.com/${{ github.repository }}
+          - Working Branch: ${{ steps.branch.outputs.branch_name }}
+
+          The migration document contains the full context, requirements, and success criteria. Focus on delivering high-quality, well-tested changes that advance the migration to completion."
 
           # Execute based on agent type
           case "$AGENT" in
@@ -204,10 +221,10 @@ jobs:
                 -H "User-Agent: Hachiko/1.0" \
                 -d "{
                   \"name\": \"Hachiko Migration: $MIGRATION_ID Step $STEP_ID\",
-                  \"description\": \"Automated migration execution\",
+                  \"description\": \"Automated migration execution - Step $STEP_ID\",
                   \"repositoryUrl\": \"https://github.com/${{ github.repository }}\",
                   \"branch\": \"${{ steps.branch.outputs.branch_name }}\",
-                  \"instructions\": $(echo "$MIGRATION_CONTENT" | jq -Rs .)
+                  \"instructions\": $(echo "$AGENT_INSTRUCTIONS" | jq -Rs .)
                 }")
 
               echo "Devin API Response: $SESSION_RESPONSE"
@@ -263,7 +280,7 @@ jobs:
                 -d "{
                   \"repository\": \"https://github.com/${{ github.repository }}\",
                   \"branch\": \"${{ steps.branch.outputs.branch_name }}\",
-                  \"instructions\": $(echo "$MIGRATION_CONTENT" | jq -Rs .),
+                  \"instructions\": $(echo "$AGENT_INSTRUCTIONS" | jq -Rs .),
                   \"webhookUrl\": \"$CURSOR_WEBHOOK_URL\"
                 }")
 
@@ -310,7 +327,7 @@ jobs:
                     },
                     {
                       \"role\": \"user\",
-                      \"content\": $(echo "$MIGRATION_CONTENT" | jq -Rs .)
+                      \"content\": $(echo "$AGENT_INSTRUCTIONS" | jq -Rs .)
                     }
                   ],
                   \"max_tokens\": 4000,
