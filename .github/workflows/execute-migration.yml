@@ -248,6 +248,7 @@ jobs:
           # Create pull request
           gh pr create \
             --title "🔄 Migration: $MIGRATION_TITLE (Step $STEP_ID/$TOTAL_STEPS)" \
+            --label "hachiko:migration" \
             --body "$(cat <<EOF
           ## Migration Progress: Step $STEP_ID/$TOTAL_STEPS
 
@@ -338,6 +339,7 @@ jobs:
           # Create PR for failure status update
           gh pr create \
             --title "❌ Migration failed: $MIGRATION_ID" \
+            --label "hachiko:migration" \
             --body "Migration execution failed and status has been updated.
 
           **Migration**: \`$MIGRATION_ID\`
