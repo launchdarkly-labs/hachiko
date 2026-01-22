@@ -54,7 +54,7 @@ describe("State Inference - Merged PR Logic", () => {
     expect(result.closedPRs).toHaveLength(1);
   });
 
-  it("should be pending when all closed PRs were merged (progressing normally)", async () => {
+  it("should be active when all closed PRs were merged (progressing between steps)", async () => {
     const openPRs: HachikoPR[] = [];
 
     const closedPRs: HachikoPR[] = [
@@ -85,7 +85,7 @@ describe("State Inference - Merged PR Logic", () => {
 
     const result = await getMigrationState(mockContext, "test-migration");
 
-    expect(result.state).toBe("pending");
+    expect(result.state).toBe("active");
     expect(result.openPRs).toHaveLength(0);
     expect(result.closedPRs).toHaveLength(2);
   });
