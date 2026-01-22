@@ -115,7 +115,7 @@ jobs:
             echo "❌ Requested step ($REQUESTED_STEP) doesn't match current step ($CURRENT_STEP) or next step ($NEXT_STEP)"
             exit 1
           fi
-          
+
           if [ "$REQUESTED_STEP" = "$NEXT_STEP" ]; then
             echo "🔄 Advancing to next step: $REQUESTED_STEP (current: $CURRENT_STEP)"
           fi
@@ -231,35 +231,26 @@ jobs:
               # Create Cursor agent task
               CURSOR_AUTH=$(echo -n "$CURSOR_API_KEY:" | base64)
               
-              # Build JSON payload with proper webhook URL handling
+              # Prepare webhook URL field if provided
               if [ -n "$CURSOR_WEBHOOK_URL" ]; then
-                WEBHOOK_JSON="\"webhook_url\": $(echo "$CURSOR_WEBHOOK_URL" | jq -Rs .),"
+                WEBHOOK_FIELD=",\"webhook_url\": $(echo "$CURSOR_WEBHOOK_URL" | jq -Rs .)"
               else
-                WEBHOOK_JSON=""
+                WEBHOOK_FIELD=""
               fi
-              
-              JSON_PAYLOAD=$(cat <<EOF
-{
-  "task": $(echo "$AGENT_INSTRUCTIONS" | jq -Rs .),
-  "repository_url": "https://github.com/${{ github.repository }}",
-  "branch": "main",
-  ${WEBHOOK_JSON}
-  "metadata": {
-    "plan_id": "$MIGRATION_ID",
-    "step_id": "$STEP_ID"
-  }
-}
-EOF
-)
-              
-              echo "Cursor API Request JSON:"
-              echo "$JSON_PAYLOAD"
               
               CURSOR_RESPONSE=$(curl -s -X POST "https://api.cursor.com/v0/agents" \
                 -H "Authorization: Basic $CURSOR_AUTH" \
                 -H "Content-Type: application/json" \
                 -H "User-Agent: Hachiko/1.0" \
-                -d "$JSON_PAYLOAD")
+                -d "{
+                  \"task\": $(echo "$AGENT_INSTRUCTIONS" | jq -Rs .),
+                  \"repository_url\": \"https://github.com/${{ github.repository }}\",
+                  \"branch\": \"main\",
+                  \"metadata\": {
+                    \"plan_id\": \"$MIGRATION_ID\",
+                    \"step_id\": \"$STEP_ID\"
+                  }${WEBHOOK_FIELD}
+                }")
 
               echo "Cursor API Response: $CURSOR_RESPONSE"
               
