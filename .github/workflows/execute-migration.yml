@@ -109,10 +109,15 @@ jobs:
             exit 1
           fi
 
-          # Validate step number
-          if [ "$REQUESTED_STEP" != "$CURRENT_STEP" ] && [ "$FORCE" != "true" ]; then
-            echo "❌ Requested step ($REQUESTED_STEP) doesn't match current step ($CURRENT_STEP)"
+          # Validate step number - allow current step or next step (for automatic advancement)
+          NEXT_STEP=$((CURRENT_STEP + 1))
+          if [ "$REQUESTED_STEP" != "$CURRENT_STEP" ] && [ "$REQUESTED_STEP" != "$NEXT_STEP" ] && [ "$FORCE" != "true" ]; then
+            echo "❌ Requested step ($REQUESTED_STEP) doesn't match current step ($CURRENT_STEP) or next step ($NEXT_STEP)"
             exit 1
+          fi
+
+          if [ "$REQUESTED_STEP" = "$NEXT_STEP" ]; then
+            echo "🔄 Advancing to next step: $REQUESTED_STEP (current: $CURRENT_STEP)"
           fi
 
           echo "✅ Execution conditions validated"
@@ -122,7 +127,7 @@ jobs:
           # Configure git for potential agent commits
           git config user.name "hachiko[bot]"
           git config user.email "hachiko@users.noreply.github.com"
-          
+
           echo "✅ Git configured for agent use"
 
       - name: Update migration status to in_progress
@@ -200,28 +205,13 @@ jobs:
               fi
 
               echo "✅ Created Devin session: $SESSION_ID"
+              echo "🔗 Session URL: https://app.devin.ai/sessions/$SESSION_ID"
               
-              # Wait for session completion (simplified - in production would poll status)
-              echo "⏳ Waiting for Devin to complete migration..."
-              sleep 900  # 15 minutes timeout
-
-              # Check session status
-              STATUS_RESPONSE=$(curl -s "https://api.devin.ai/v3beta1/organizations/$DEVIN_ORG_ID/sessions/$SESSION_ID" \
-                -H "Authorization: Bearer $DEVIN_API_KEY")
-              
-              STATUS=$(echo "$STATUS_RESPONSE" | jq -r '.status // "unknown"')
-              echo "Session status: $STATUS"
-              
-              if [ "$STATUS" = "completed" ]; then
-                echo "success=true" >> $GITHUB_OUTPUT
-                echo "changes_made=true" >> $GITHUB_OUTPUT
-                echo "output=Devin completed the migration successfully" >> $GITHUB_OUTPUT
-                echo "session_id=$SESSION_ID" >> $GITHUB_OUTPUT
-              else
-                echo "success=false" >> $GITHUB_OUTPUT
-                echo "error=Devin session did not complete successfully: $STATUS" >> $GITHUB_OUTPUT
-                exit 1
-              fi
+              # Session created successfully - Devin will work independently and create PR
+              echo "success=true" >> $GITHUB_OUTPUT
+              echo "changes_made=false" >> $GITHUB_OUTPUT  # Changes will come via PR
+              echo "output=Devin session created successfully, working independently" >> $GITHUB_OUTPUT
+              echo "session_id=$SESSION_ID" >> $GITHUB_OUTPUT
               ;;
 
             "cursor")
@@ -257,12 +247,11 @@ jobs:
               fi
 
               echo "✅ Created Cursor task: $TASK_ID"
-              echo "⏳ Waiting for Cursor to complete migration..."
-              sleep 1200  # 20 minutes timeout
-
+              
+              # Task created successfully - Cursor will work independently and create PR  
               echo "success=true" >> $GITHUB_OUTPUT
-              echo "changes_made=true" >> $GITHUB_OUTPUT
-              echo "output=Cursor completed the migration successfully" >> $GITHUB_OUTPUT
+              echo "changes_made=false" >> $GITHUB_OUTPUT  # Changes will come via PR
+              echo "output=Cursor task created successfully, working independently" >> $GITHUB_OUTPUT
               echo "task_id=$TASK_ID" >> $GITHUB_OUTPUT
               ;;
 

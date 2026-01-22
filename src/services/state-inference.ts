@@ -23,9 +23,9 @@ export interface MigrationStateInfo {
  * Get the inferred state of a migration based on PR activity and task completion
  *
  * State inference rules:
- * - "pending": No hachiko PRs ever opened
- * - "active": Has open hachiko PRs
- * - "paused": No open PRs, but has closed hachiko PRs
+ * - "pending": No hachiko PRs have ever been created (not started)
+ * - "active": Has open PRs OR has merged PRs (migration in progress)
+ * - "paused": No open PRs, but has closed PRs that were NOT merged (agent gave up)
  * - "completed": All tasks checked off in main branch migration doc
  */
 export async function getMigrationState(
@@ -62,9 +62,16 @@ export async function getMigrationState(
     } else if (openPRs.length > 0) {
       state = "active";
     } else if (closedPRs.length > 0) {
-      state = "paused";
+      // Check if any closed PRs were NOT merged
+      const nonMergedClosedPRs = closedPRs.filter((pr) => !pr.merged);
+      if (nonMergedClosedPRs.length > 0) {
+        state = "paused"; // Agent gave up
+      } else {
+        // All closed PRs were merged - migration is still in progress between steps
+        state = "active";
+      }
     } else {
-      state = "pending";
+      state = "pending"; // No PRs ever created
     }
 
     const stateInfo: MigrationStateInfo = {
@@ -83,6 +90,8 @@ export async function getMigrationState(
         state,
         openPRs: openPRs.length,
         closedPRs: closedPRs.length,
+        mergedPRs: closedPRs.filter((pr) => pr.merged).length,
+        nonMergedClosedPRs: closedPRs.filter((pr) => !pr.merged).length,
         completedTasks,
         totalTasks,
       },

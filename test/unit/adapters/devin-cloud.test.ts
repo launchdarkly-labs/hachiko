@@ -116,21 +116,19 @@ describe("DevinCloudAdapter", () => {
     it("should successfully execute a migration", async () => {
       const sessionId = "session-123";
       const createResponse = {
-        session: {
-          id: sessionId,
-          status: "pending",
-          prompt: "test prompt",
-          created_at: "2024-01-01T00:00:00Z",
-          updated_at: "2024-01-01T00:00:00Z",
-        },
+        session_id: sessionId,
+        status: "pending",
+        prompt: "test prompt",
+        created_at: 1704067200,
+        updated_at: 1704067200,
       };
 
       const completedResponse = {
-        id: sessionId,
+        session_id: sessionId,
         status: "completed",
         prompt: "test prompt",
         created_at: "2024-01-01T00:00:00Z",
-        updated_at: "2024-01-01T00:01:00Z",
+        updated_at: 1704067260,
         output: {
           files_modified: ["src/test.ts"],
           files_created: [],
@@ -186,21 +184,19 @@ describe("DevinCloudAdapter", () => {
     it("should handle failed migration", async () => {
       const sessionId = "session-456";
       const createResponse = {
-        session: {
-          id: sessionId,
-          status: "pending",
-          prompt: "test prompt",
-          created_at: "2024-01-01T00:00:00Z",
-          updated_at: "2024-01-01T00:00:00Z",
-        },
+        session_id: sessionId,
+        status: "pending",
+        prompt: "test prompt",
+        created_at: 1704067200,
+        updated_at: 1704067200,
       };
 
       const failedResponse = {
-        id: sessionId,
+        session_id: sessionId,
         status: "failed",
         prompt: "test prompt",
         created_at: "2024-01-01T00:00:00Z",
-        updated_at: "2024-01-01T00:01:00Z",
+        updated_at: 1704067260,
         output: {
           error: "Migration failed due to syntax error",
         },
@@ -259,14 +255,12 @@ describe("DevinCloudAdapter", () => {
       };
 
       const createResponse = {
-        session: {
-          id: "session-123",
-          status: "completed",
-          prompt: "test prompt",
-          created_at: "2024-01-01T00:00:00Z",
-          updated_at: "2024-01-01T00:00:00Z",
-          output: { summary: "Done" },
-        },
+        session_id: "session-123",
+        status: "completed",
+        prompt: "test prompt",
+        created_at: 1704067200,
+        updated_at: 1704067200,
+        output: { summary: "Done" },
       };
 
       mockHttpClient.post.mockResolvedValue({
@@ -277,7 +271,7 @@ describe("DevinCloudAdapter", () => {
 
       mockHttpClient.get.mockResolvedValue({
         ok: true,
-        json: () => Promise.resolve(createResponse.session),
+        json: () => Promise.resolve(createResponse),
         headers: { get: () => "application/json" },
       });
 
@@ -304,13 +298,11 @@ describe("DevinCloudAdapter", () => {
 
       const sessionId = "session-789";
       const createResponse = {
-        session: {
-          id: sessionId,
-          status: "pending",
-          prompt: "test prompt",
-          created_at: "2024-01-01T00:00:00Z",
-          updated_at: "2024-01-01T00:00:00Z",
-        },
+        session_id: sessionId,
+        status: "pending",
+        prompt: "test prompt",
+        created_at: 1704067200,
+        updated_at: 1704067200,
       };
 
       const completedResponse = {
@@ -318,7 +310,7 @@ describe("DevinCloudAdapter", () => {
         status: "completed",
         prompt: "test prompt",
         created_at: "2024-01-01T00:00:00Z",
-        updated_at: "2024-01-01T00:01:00Z",
+        updated_at: 1704067260,
         output: { summary: "Migration completed" },
       };
 
@@ -370,14 +362,12 @@ describe("DevinCloudAdapter", () => {
 
       const sessionId = "session-beta";
       const createResponse = {
-        session: {
-          id: sessionId,
-          status: "completed",
-          prompt: "test prompt",
-          created_at: "2024-01-01T00:00:00Z",
-          updated_at: "2024-01-01T00:00:00Z",
-          output: { summary: "Beta migration completed" },
-        },
+        session_id: sessionId,
+        status: "completed",
+        prompt: "test prompt",
+        created_at: 1704067200,
+        updated_at: 1704067200,
+        output: { summary: "Beta migration completed" },
       };
 
       mockHttpClient.post.mockResolvedValue({
@@ -388,7 +378,7 @@ describe("DevinCloudAdapter", () => {
 
       mockHttpClient.get.mockResolvedValue({
         ok: true,
-        json: () => Promise.resolve(createResponse.session),
+        json: () => Promise.resolve(createResponse),
         headers: { get: () => "application/json" },
       });
 

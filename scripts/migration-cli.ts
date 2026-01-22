@@ -17,7 +17,7 @@ import {
 import { createMigrationFrontmatter } from "../src/config/migration-schema.js";
 import { Octokit } from "@octokit/rest";
 import { getMigrationState } from "../src/services/state-inference.js";
-import { getOpenHachikoPRs } from "../src/services/pr-detection.js";
+import { getOpenHachikoPRs, getClosedHachikoPRs } from "../src/services/pr-detection.js";
 import { createLogger } from "../src/utils/logger.js";
 
 const program = new Command();
@@ -276,12 +276,37 @@ program
               pendingMigrations += `${checkboxLine}\n`;
               break;
             case "active":
-              // Get PR links for active migrations
+              // Get both open and closed PRs for active migrations
               const openPRs = await getOpenHachikoPRs(context, frontmatter.id, logger);
-              const prLinks = openPRs.map(pr => `[PR #${pr.number}](${pr.url})`).join(", ");
-              const prText = prLinks ? ` (${prLinks})` : "";
-              const progressText = stateInfo.totalTasks > 0 ? ` - ${stateInfo.completedTasks}/${stateInfo.totalTasks} steps completed` : "";
-              inProgressMigrations += `- \`${frontmatter.id}\` - ${frontmatter.title}${prText}${progressText}\n`;
+              const closedPRs = await getClosedHachikoPRs(context, frontmatter.id, logger);
+              
+              // Start with migration title
+              inProgressMigrations += `- \`${frontmatter.id}\` - ${frontmatter.title}\n`;
+              
+              // Show completed steps count
+              const mergedPRs = closedPRs.filter(pr => pr.merged);
+              if (mergedPRs.length > 0) {
+                const stepText = mergedPRs.length === 1 ? "step" : "steps";
+                inProgressMigrations += `  - ${mergedPRs.length} ${stepText} complete\n`;
+              }
+              
+              // Add current open PRs
+              for (const pr of openPRs) {
+                const stepInfo = pr.title.match(/Step (\d+)/i);
+                const stepText = stepInfo ? `Step ${stepInfo[1]}: ` : "";
+                inProgressMigrations += `  - ${stepText}[Open PR #${pr.number}](${pr.url})\n`;
+              }
+              
+              // If no open PRs but has merged PRs, show waiting for next step
+              if (openPRs.length === 0 && mergedPRs.length > 0) {
+                inProgressMigrations += `  - Ready for next step\n`;
+              }
+              
+              // If no PRs at all (shouldn't happen for active state)
+              if (openPRs.length === 0 && mergedPRs.length === 0) {
+                inProgressMigrations += `  - In progress\n`;
+              }
+              
               break;
             case "paused":
               const progressInfo = stateInfo.totalTasks > 0 ? ` (last attempt: step ${stateInfo.completedTasks}/${stateInfo.totalTasks})` : "";

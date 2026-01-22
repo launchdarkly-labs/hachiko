@@ -131,11 +131,16 @@ export function extractMigrationId(pr: PullRequest): string | null {
   // Method 2: Check labels - we don't extract migration ID from labels anymore
   // Labels are just used for identification, not for storing the migration ID
 
-  // Method 3: Check title for bracketed migration ID
-  const titleMatch = pr.title.match(/\[([^\]]+)\]/);
-  if (titleMatch && titleMatch[1]) {
-    return titleMatch[1];
+  // Method 3: Check title for migration ID patterns
+  // Pattern 1: [migration-id] in brackets
+  const bracketMatch = pr.title.match(/\[([^\]]+)\]/);
+  if (bracketMatch && bracketMatch[1]) {
+    return bracketMatch[1];
   }
+
+  // Pattern 2: "Migration: Title (Step X/Y)" - extract from content
+  // This requires mapping back to migration ID from title, which is fragile
+  // For now, rely on branch name detection for agent PRs
 
   return null;
 }
