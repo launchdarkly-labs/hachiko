@@ -21,11 +21,20 @@ export interface DevinCloudConfig {
 }
 
 interface DevinSession {
-  id: string;
-  status: "pending" | "running" | "completed" | "failed" | "cancelled";
-  prompt: string;
-  created_at: string;
-  updated_at: string;
+  session_id: string;
+  status: "new" | "pending" | "running" | "completed" | "failed" | "cancelled";
+  prompt?: string;
+  created_at: number;
+  updated_at: number;
+  url?: string;
+  user_id?: string;
+  org_id?: string;
+  is_archived?: boolean;
+  acus_consumed?: number;
+  pull_requests?: any[];
+  is_advanced?: boolean;
+  parent_session_id?: string | null;
+  child_session_ids?: string[] | null;
   output?: {
     files_modified?: string[];
     files_created?: string[];
@@ -47,9 +56,8 @@ interface CreateSessionRequest {
   };
 }
 
-interface CreateSessionResponse {
-  session: DevinSession;
-}
+// The API response is the session object directly, not nested
+type CreateSessionResponse = DevinSession;
 
 /**
  * Devin Cloud API agent adapter
@@ -152,7 +160,7 @@ export class DevinCloudAdapter extends BaseAgentAdapter {
         }
       );
 
-      const sessionId = createResponse.session.id;
+      const sessionId = createResponse.session_id;
       logger.info(
         { sessionId, planId: input.planId, stepId: input.stepId },
         "Devin session created"
