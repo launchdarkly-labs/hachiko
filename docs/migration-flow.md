@@ -21,12 +21,12 @@ This comprehensive guide walks you through the complete migration lifecycle in H
 
 Hachiko provides two deployment modes with slightly different workflows:
 
-| Feature | GitHub App | GitHub Actions |
-|---------|------------|----------------|
-| **Migration Control** | Issue comments (`/hachi pause`) | Dashboard checkboxes |
-| **State Storage** | Database | Migration documents |
-| **Dashboard** | Real-time updates | Issue-based dashboard |
-| **Agent Integration** | Direct API calls | Cloud agent APIs |
+| Feature               | GitHub App                      | GitHub Actions        |
+| --------------------- | ------------------------------- | --------------------- |
+| **Migration Control** | Issue comments (`/hachi pause`) | Dashboard checkboxes  |
+| **State Storage**     | Database                        | Migration documents   |
+| **Dashboard**         | Real-time updates               | Issue-based dashboard |
+| **Agent Integration** | Direct API calls                | Cloud agent APIs      |
 
 This guide covers both workflows, with GitHub Actions being the current focus.
 
@@ -120,29 +120,29 @@ Detailed instructions for the AI agent:
 
 ### Frontmatter Fields Reference
 
-| Field | Required | Description |
-|-------|----------|-------------|
-| `schema_version` | Yes | Always use `1` |
-| `id` | Yes | Unique identifier (kebab-case) |
-| `title` | Yes | Human-readable title |
-| `agent` | Yes | `mock`, `devin`, `cursor`, or `codex` |
-| `status` | Yes | `pending`, `in_progress`, `paused`, `completed`, `failed` |
-| `current_step` | Yes | Current step number (starts at 1) |
-| `total_steps` | Yes | Total number of steps |
-| `created` | Yes | ISO 8601 timestamp |
-| `last_updated` | Yes | ISO 8601 timestamp |
-| `branch` | No | Current working branch (auto-generated) |
-| `pr_number` | No | Current PR number (auto-generated) |
-| `error` | No | Error message if failed |
+| Field            | Required | Description                                               |
+| ---------------- | -------- | --------------------------------------------------------- |
+| `schema_version` | Yes      | Always use `1`                                            |
+| `id`             | Yes      | Unique identifier (kebab-case)                            |
+| `title`          | Yes      | Human-readable title                                      |
+| `agent`          | Yes      | `mock`, `devin`, `cursor`, or `codex`                     |
+| `status`         | Yes      | `pending`, `in_progress`, `paused`, `completed`, `failed` |
+| `current_step`   | Yes      | Current step number (starts at 1)                         |
+| `total_steps`    | Yes      | Total number of steps                                     |
+| `created`        | Yes      | ISO 8601 timestamp                                        |
+| `last_updated`   | Yes      | ISO 8601 timestamp                                        |
+| `branch`         | No       | Current working branch (auto-generated)                   |
+| `pr_number`      | No       | Current PR number (auto-generated)                        |
+| `error`          | No       | Error message if failed                                   |
 
 ### Agent Selection Guide
 
-| Agent | Best For | Timeout | Capabilities |
-|-------|----------|---------|--------------|
-| `mock` | Testing, documentation | N/A | Simulated changes only |
-| `devin` | Complex refactoring | 600s | Full codebase understanding |
-| `cursor` | Code improvements | 1200s | IDE-like code editing |
-| `codex` | Specific code tasks | 600s | GPT-4 powered coding |
+| Agent    | Best For               | Timeout | Capabilities                |
+| -------- | ---------------------- | ------- | --------------------------- |
+| `mock`   | Testing, documentation | N/A     | Simulated changes only      |
+| `devin`  | Complex refactoring    | 600s    | Full codebase understanding |
+| `cursor` | Code improvements      | 1200s   | IDE-like code editing       |
+| `codex`  | Specific code tasks    | 600s    | GPT-4 powered coding        |
 
 ## Step 2: Migration Detection and Dashboard Creation
 
@@ -212,6 +212,7 @@ gh workflow run execute-migration.yml \
 ### Validation Before Execution
 
 Before starting, Hachiko validates:
+
 - ✅ Migration document exists and is valid
 - ✅ Current step matches requested step
 - ✅ Migration is not already in progress
@@ -225,11 +226,12 @@ Before starting, Hachiko validates:
 When a migration starts, the `execute-migration.yml` workflow performs these steps:
 
 1. **Environment Setup**
+
    ```bash
    # Repository checkout with full history
    git checkout main
    git pull origin main
-   
+
    # Install dependencies and build
    pnpm install && pnpm build
    ```
@@ -245,6 +247,7 @@ When a migration starts, the `execute-migration.yml` workflow performs these ste
    - Confirm agent availability
 
 4. **Working Branch Creation**
+
    ```bash
    # Create unique branch for this step
    BRANCH_NAME="hachiko/${MIGRATION_ID}-step-${STEP_ID}"
@@ -263,6 +266,7 @@ When a migration starts, the `execute-migration.yml` workflow performs these ste
    - Apply changes to codebase
 
 7. **Quality Gates**
+
    ```bash
    # Automatic validation
    pnpm lint      # Code style validation
@@ -337,11 +341,11 @@ Each migration step creates a PR that should be reviewed for:
 
 ### Review Outcomes
 
-| Action | Result | Next Step |
-|--------|--------|-----------|
-| **Merge PR** | Migration advances to next step | Auto-triggers next step if available |
-| **Close PR** | Migration pauses | Can resume via dashboard checkbox |
-| **Request Changes** | PR stays open for fixes | Address feedback and re-request review |
+| Action              | Result                          | Next Step                              |
+| ------------------- | ------------------------------- | -------------------------------------- |
+| **Merge PR**        | Migration advances to next step | Auto-triggers next step if available   |
+| **Close PR**        | Migration pauses                | Can resume via dashboard checkbox      |
+| **Request Changes** | PR stays open for fixes         | Address feedback and re-request review |
 
 ## Step 6: Completion and Tracking
 
@@ -355,6 +359,7 @@ For migrations with multiple steps:
    - Next step can be triggered automatically or manually
 
 2. **Progress Tracking**: Dashboard shows real-time progress:
+
    ```
    🔄 In-Progress Migrations
    - `my-migration` - My Migration Title ([PR #123](link)) - 2/3 steps
@@ -374,6 +379,7 @@ When all steps are complete:
    - `current_step` equals `total_steps`
 
 2. **Dashboard Update**
+
    ```
    ✅ Completed Migrations
    - `my-migration` - My Migration Title (completed 2024-12-16)
@@ -419,13 +425,13 @@ stateDiagram-v2
 
 **Note**: Migration states are automatically inferred from PR activity and repository state, not stored in frontmatter.
 
-| State | Description | Actions Available |
-|-------|-------------|------------------|
-| `pending` | Migration created, no active PRs | Start via dashboard |
-| `in_progress` | Has open Hachiko PRs | Pause via PR close |
-| `paused` | Had PRs that were closed | Resume via dashboard |
-| `completed` | Successfully finished | None (archived) |
-| `failed` | Execution error occurred | Reset or debug |
+| State         | Description                      | Actions Available    |
+| ------------- | -------------------------------- | -------------------- |
+| `pending`     | Migration created, no active PRs | Start via dashboard  |
+| `in_progress` | Has open Hachiko PRs             | Pause via PR close   |
+| `paused`      | Had PRs that were closed         | Resume via dashboard |
+| `completed`   | Successfully finished            | None (archived)      |
+| `failed`      | Execution error occurred         | Reset or debug       |
 
 ## Control and Monitoring
 
@@ -490,6 +496,7 @@ Monitor migrations through:
 **Symptoms**: Checkbox checked but no workflow runs
 
 **Solutions**:
+
 1. Check workflow permissions in repository settings
 2. Verify GitHub Actions is enabled
 3. Ensure migration document syntax is valid:
@@ -502,6 +509,7 @@ Monitor migrations through:
 **Symptoms**: Workflow runs but fails at agent step
 
 **Solutions**:
+
 1. Verify API keys are configured as repository secrets
 2. Check agent timeout settings
 3. Review migration instructions for clarity
@@ -512,6 +520,7 @@ Monitor migrations through:
 **Symptoms**: Agent succeeds but no PR created or PR not updated
 
 **Solutions**:
+
 1. **New PR Creation Failures**:
    - Check repository permissions for `pull-requests: write`
    - Verify GitHub token has necessary scopes
@@ -534,6 +543,7 @@ Monitor migrations through:
 **Symptoms**: Migration states not reflected in dashboard
 
 **Solutions**:
+
 1. Manually trigger dashboard workflow:
    ```bash
    gh workflow run migration-dashboard.yml -f action="update_issue"
@@ -639,6 +649,7 @@ After reading this guide, you should:
 5. **Train Team Members**: Share this guide with your development team
 
 For additional help:
+
 - [Configuration Reference](config.md)
 - [Security Model](security.md)
 - [Developer Setup](developer-setup.md)

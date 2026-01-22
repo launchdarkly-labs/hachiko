@@ -24,7 +24,10 @@ import {
   generateDashboardMarkdown,
   updateDashboardInRepo,
 } from "../../../src/services/dashboard.js";
-import { getMultipleMigrationStates, getMigrationStateSummary } from "../../../src/services/state-inference.js";
+import {
+  getMultipleMigrationStates,
+  getMigrationStateSummary,
+} from "../../../src/services/state-inference.js";
 import { parseMigrationDocumentContent } from "../../../src/utils/migration-document.js";
 
 describe("Dashboard Service", () => {
@@ -81,11 +84,11 @@ Content here`;
 
       // Mock parsing migration documents
       vi.mocked(parseMigrationDocumentContent)
-        .mockReturnValueOnce({ 
+        .mockReturnValueOnce({
           frontmatter: { id: "migration1", title: "First Migration", agent: "claude" },
           content: "Content here",
         })
-        .mockReturnValueOnce({ 
+        .mockReturnValueOnce({
           frontmatter: { id: "migration2", title: "Second Migration", agent: "devin" },
           content: "Content here",
         });
@@ -97,7 +100,13 @@ Content here`;
             "migration1",
             {
               state: "active",
-              openPRs: [{ number: 123, url: "https://github.com/test/repo/pull/123", title: "Test PR" } as any],
+              openPRs: [
+                {
+                  number: 123,
+                  url: "https://github.com/test/repo/pull/123",
+                  title: "Test PR",
+                } as any,
+              ],
               closedPRs: [],
               allTasksComplete: false,
               totalTasks: 5,
@@ -169,7 +178,13 @@ Content here`;
             summary: "Active (1 open PR)",
             stateInfo: {
               state: "active" as const,
-              openPRs: [{ number: 123, url: "https://github.com/test/repo/pull/123", title: "Test PR" } as any],
+              openPRs: [
+                {
+                  number: 123,
+                  url: "https://github.com/test/repo/pull/123",
+                  title: "Test PR",
+                } as any,
+              ],
               closedPRs: [],
               totalTasks: 5,
               completedTasks: 2,

@@ -10,7 +10,7 @@ describe("State Inference - Merged PR Logic", () => {
   const mockContext = {
     repo: { owner: "test-org", repo: "test-repo" },
     octokit: {} as any,
-    payload: { repository: { name: "test-repo", owner: { login: "test-org" } } }
+    payload: { repository: { name: "test-repo", owner: { login: "test-org" } } },
   };
 
   beforeEach(() => {
@@ -24,24 +24,24 @@ describe("State Inference - Merged PR Logic", () => {
         title: "Migration step 2",
         state: "open",
         migrationId: "test-migration",
-        branch: "hachiko/test-migration-step-2", 
+        branch: "hachiko/test-migration-step-2",
         labels: ["hachiko:migration"],
         url: "https://github.com/test-org/test-repo/pull/100",
-        merged: false
-      }
+        merged: false,
+      },
     ];
 
     const closedPRs: HachikoPR[] = [
       {
         number: 99,
-        title: "Migration step 1", 
+        title: "Migration step 1",
         state: "closed",
         migrationId: "test-migration",
         branch: "hachiko/test-migration-step-1",
         labels: ["hachiko:migration"],
         url: "https://github.com/test-org/test-repo/pull/99",
-        merged: true // Merged PR
-      }
+        merged: true, // Merged PR
+      },
     ];
 
     vi.mocked(prDetection.getOpenHachikoPRs).mockResolvedValue(openPRs);
@@ -61,23 +61,23 @@ describe("State Inference - Merged PR Logic", () => {
       {
         number: 99,
         title: "Migration step 1",
-        state: "closed", 
+        state: "closed",
         migrationId: "test-migration",
         branch: "hachiko/test-migration-step-1",
         labels: ["hachiko:migration"],
         url: "https://github.com/test-org/test-repo/pull/99",
-        merged: true // Successfully merged
+        merged: true, // Successfully merged
       },
       {
         number: 98,
-        title: "Migration step 0", 
+        title: "Migration step 0",
         state: "closed",
-        migrationId: "test-migration", 
+        migrationId: "test-migration",
         branch: "hachiko/test-migration-step-0",
         labels: ["hachiko:migration"],
         url: "https://github.com/test-org/test-repo/pull/98",
-        merged: true // Also merged
-      }
+        merged: true, // Also merged
+      },
     ];
 
     vi.mocked(prDetection.getOpenHachikoPRs).mockResolvedValue(openPRs);
@@ -98,22 +98,22 @@ describe("State Inference - Merged PR Logic", () => {
         number: 99,
         title: "Migration step 1",
         state: "closed",
-        migrationId: "test-migration", 
+        migrationId: "test-migration",
         branch: "hachiko/test-migration-step-1",
         labels: ["hachiko:migration"],
         url: "https://github.com/test-org/test-repo/pull/99",
-        merged: false // Closed without merging - agent gave up
+        merged: false, // Closed without merging - agent gave up
       },
       {
         number: 98,
         title: "Migration step 0",
         state: "closed",
         migrationId: "test-migration",
-        branch: "hachiko/test-migration-step-0", 
+        branch: "hachiko/test-migration-step-0",
         labels: ["hachiko:migration"],
         url: "https://github.com/test-org/test-repo/pull/98",
-        merged: true // This one was merged successfully
-      }
+        merged: true, // This one was merged successfully
+      },
     ];
 
     vi.mocked(prDetection.getOpenHachikoPRs).mockResolvedValue(openPRs);
@@ -137,8 +137,8 @@ describe("State Inference - Merged PR Logic", () => {
         migrationId: "test-migration",
         branch: "hachiko/test-migration-step-2",
         labels: ["hachiko:migration"],
-        url: "https://github.com/test-org/test-repo/pull/100", 
-        merged: false // Failed attempt
+        url: "https://github.com/test-org/test-repo/pull/100",
+        merged: false, // Failed attempt
       },
       {
         number: 99,
@@ -146,10 +146,10 @@ describe("State Inference - Merged PR Logic", () => {
         state: "closed",
         migrationId: "test-migration",
         branch: "hachiko/test-migration-step-1",
-        labels: ["hachiko:migration"], 
+        labels: ["hachiko:migration"],
         url: "https://github.com/test-org/test-repo/pull/99",
-        merged: true // Successful step
-      }
+        merged: true, // Successful step
+      },
     ];
 
     vi.mocked(prDetection.getOpenHachikoPRs).mockResolvedValue(openPRs);

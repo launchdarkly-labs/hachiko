@@ -24,16 +24,16 @@ describe("Workflow API Response Parsing", () => {
         pull_requests: [],
         is_advanced: false,
         parent_session_id: null,
-        child_session_ids: null
+        child_session_ids: null,
       };
 
       // Simulate the jq extraction used in the workflow:
       // SESSION_ID=$(echo "$SESSION_RESPONSE" | jq -r '.session_id // empty')
-      const sessionId = mockDevinResponse.session_id || '';
-      
+      const sessionId = mockDevinResponse.session_id || "";
+
       expect(sessionId).toBe("4ecd8a92151c407383bff1338ca3196b");
       expect(sessionId).not.toBe(""); // Should not be empty
-      
+
       // Verify the old field name would fail
       const legacyId = (mockDevinResponse as any).id;
       expect(legacyId).toBeUndefined();
@@ -42,11 +42,11 @@ describe("Workflow API Response Parsing", () => {
     it("should handle missing session_id gracefully", () => {
       const invalidResponse = {
         error: "Invalid request",
-        status: "failed"
+        status: "failed",
       };
 
-      const sessionId = (invalidResponse as any).session_id || '';
-      expect(sessionId).toBe('');
+      const sessionId = (invalidResponse as any).session_id || "";
+      expect(sessionId).toBe("");
     });
   });
 
@@ -57,12 +57,12 @@ describe("Workflow API Response Parsing", () => {
         taskId: "cursor-task-123",
         status: "created",
         repositoryUrl: "https://github.com/launchdarkly-labs/hachiko",
-        webhookUrl: null
+        webhookUrl: null,
       };
 
       // Simulate: TASK_ID=$(echo "$CURSOR_RESPONSE" | jq -r '.taskId // empty')
-      const taskId = mockCursorResponse.taskId || '';
-      
+      const taskId = mockCursorResponse.taskId || "";
+
       expect(taskId).toBe("cursor-task-123");
       expect(taskId).not.toBe("");
     });
@@ -70,20 +70,20 @@ describe("Workflow API Response Parsing", () => {
 
   describe("Field Name Validation", () => {
     it("should validate all expected API response fields exist", () => {
-      const requiredDevinFields = ['session_id', 'status', 'url', 'created_at', 'updated_at'];
-      const requiredCursorFields = ['taskId', 'status'];
+      const requiredDevinFields = ["session_id", "status", "url", "created_at", "updated_at"];
+      const requiredCursorFields = ["taskId", "status"];
 
       const mockDevinResponse = {
         session_id: "test-session",
-        status: "new", 
+        status: "new",
         url: "https://app.devin.ai/sessions/test-session",
         created_at: 1704067200,
-        updated_at: 1704067200
+        updated_at: 1704067200,
       };
 
       const mockCursorResponse = {
         taskId: "test-task",
-        status: "created"
+        status: "created",
       };
 
       // Validate Devin response has all required fields
@@ -92,7 +92,7 @@ describe("Workflow API Response Parsing", () => {
         expect((mockDevinResponse as any)[field]).toBeDefined();
       }
 
-      // Validate Cursor response has all required fields  
+      // Validate Cursor response has all required fields
       for (const field of requiredCursorFields) {
         expect(mockCursorResponse).toHaveProperty(field);
         expect((mockCursorResponse as any)[field]).toBeDefined();

@@ -42,6 +42,7 @@ jobs:
       - name: Verify build artifacts are up to date
         run: |
           # Rebuild and check if there are any meaningful changes to dist/ (excluding source maps)
+          echo "🏗️  Running build to verify artifacts are up to date..."
           pnpm build
 
           # Check for changes excluding source maps which can vary between environments
@@ -51,12 +52,38 @@ jobs:
           if [ -z "$CHANGED_FILES" ]; then
             echo "✅ Build artifacts are up to date"
           else
-            echo "❌ Build artifacts are out of date. Please run 'pnpm build' and commit the changes."
-            echo "Changed files (excluding source maps):"
-            echo "$CHANGED_FILES"
             echo ""
-            echo "Diff of changes:"
-            git diff dist/ | grep -v -E '\.(js|d\.ts)\.map$' || true
+            echo "❌ Build artifacts are out of date!"
+            echo ""
+            echo "🔍 The following files have changes after running 'pnpm build':"
+            for file in $CHANGED_FILES; do
+              echo "   • $file"
+            done
+            echo ""
+            echo "📝 Please run the following commands locally to fix this:"
+            echo "   pnpm format  # Fix any formatting issues"
+            echo "   pnpm build   # Rebuild the project"
+            echo "   git add .    # Stage the changes"
+            echo "   git commit -m 'Update build artifacts'"
+            echo ""
+            echo "🔧 Here are the specific differences found:"
+            echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+            
+            # Show diff for each changed file with better formatting
+            for file in $CHANGED_FILES; do
+              echo ""
+              echo "📄 Changes in $file:"
+              echo "────────────────────────────────────────────────────────────────────────────────"
+              git diff "$file" | sed 's/^-/🔴 -/; s/^+/🟢 +/; s/^@@/📍 @@/'
+            done
+            
+            echo ""
+            echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+            echo "💡 This usually happens when:"
+            echo "   • Code formatting rules changed (run 'pnpm format')"
+            echo "   • TypeScript compiler settings changed"
+            echo "   • Source files were updated but dist/ wasn't rebuilt"
+            echo ""
             exit 1
           fi
 

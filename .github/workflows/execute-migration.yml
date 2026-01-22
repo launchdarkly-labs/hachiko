@@ -115,7 +115,7 @@ jobs:
             echo "❌ Requested step ($REQUESTED_STEP) doesn't match current step ($CURRENT_STEP) or next step ($NEXT_STEP)"
             exit 1
           fi
-          
+
           if [ "$REQUESTED_STEP" = "$NEXT_STEP" ]; then
             echo "🔄 Advancing to next step: $REQUESTED_STEP (current: $CURRENT_STEP)"
           fi
@@ -127,7 +127,7 @@ jobs:
           # Configure git for potential agent commits
           git config user.name "hachiko[bot]"
           git config user.email "hachiko@users.noreply.github.com"
-          
+
           echo "✅ Git configured for agent use"
 
       - name: Update migration status to in_progress

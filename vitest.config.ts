@@ -28,7 +28,7 @@ export default defineConfig({
         "src/scripts/**",
         // Test scripts - not production code
         "scripts/reproduce-dashboard-issue.js",
-        "scripts/test-pr-driven-dashboard.js", 
+        "scripts/test-pr-driven-dashboard.js",
         "scripts/test-webhooks-local.js",
         // Entry points - require full integration setup
         "src/index.ts",
