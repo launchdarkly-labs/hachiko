@@ -230,20 +230,36 @@ jobs:
 
               # Create Cursor agent task
               CURSOR_AUTH=$(echo -n "$CURSOR_API_KEY:" | base64)
+              
+              # Build JSON payload with proper webhook URL handling
+              if [ -n "$CURSOR_WEBHOOK_URL" ]; then
+                WEBHOOK_JSON="\"webhook_url\": $(echo "$CURSOR_WEBHOOK_URL" | jq -Rs .),"
+              else
+                WEBHOOK_JSON=""
+              fi
+              
+              JSON_PAYLOAD=$(cat <<EOF
+{
+  "task": $(echo "$AGENT_INSTRUCTIONS" | jq -Rs .),
+  "repository_url": "https://github.com/${{ github.repository }}",
+  "branch": "main",
+  ${WEBHOOK_JSON}
+  "metadata": {
+    "plan_id": "$MIGRATION_ID",
+    "step_id": "$STEP_ID"
+  }
+}
+EOF
+)
+              
+              echo "Cursor API Request JSON:"
+              echo "$JSON_PAYLOAD"
+              
               CURSOR_RESPONSE=$(curl -s -X POST "https://api.cursor.com/v0/agents" \
                 -H "Authorization: Basic $CURSOR_AUTH" \
                 -H "Content-Type: application/json" \
                 -H "User-Agent: Hachiko/1.0" \
-                -d "{
-                  \"task\": $(echo "$AGENT_INSTRUCTIONS" | jq -Rs .),
-                  \"repository_url\": \"https://github.com/${{ github.repository }}\",
-                  \"branch\": \"main\",
-                  \"webhook_url\": \"$CURSOR_WEBHOOK_URL\",
-                  \"metadata\": {
-                    \"plan_id\": \"$MIGRATION_ID\",
-                    \"step_id\": \"$STEP_ID\"
-                  }
-                }")
+                -d "$JSON_PAYLOAD")
 
               echo "Cursor API Response: $CURSOR_RESPONSE"
               
