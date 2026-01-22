@@ -1,5 +1,30 @@
 /**
- * Parse a Hachiko command from a comment body
+ * Parses a Hachiko command from a GitHub comment body.
+ *
+ * This function extracts and validates slash commands from comment text.
+ * Commands must start with `/hachi` followed by an action and optional arguments.
+ * Only the first line of the comment is considered for command parsing.
+ *
+ * @param commentBody - The full text content of the GitHub comment
+ * @returns A parsed HachikoCommand object if valid, or null if the comment doesn't contain a valid command
+ * @example
+ * ```typescript
+ * // Valid command with arguments
+ * parseHachikoCommand('/hachi run add-jsdoc step-1');
+ * // Returns: { action: 'run', args: ['add-jsdoc', 'step-1'], rawCommand: '/hachi run add-jsdoc step-1' }
+ *
+ * // Valid command without arguments
+ * parseHachikoCommand('/hachi status');
+ * // Returns: { action: 'status', args: [], rawCommand: '/hachi status' }
+ *
+ * // Invalid - doesn't start with /hachi
+ * parseHachikoCommand('Hello world');
+ * // Returns: null
+ *
+ * // Invalid - no action specified
+ * parseHachikoCommand('/hachi');
+ * // Returns: null
+ * ```
  */
 export function parseHachikoCommand(commentBody) {
     const lines = commentBody.trim().split("\n");
@@ -26,7 +51,36 @@ export function parseHachikoCommand(commentBody) {
     };
 }
 /**
- * Validate command permissions (basic implementation)
+ * Validates whether a user has permission to execute a Hachiko command.
+ *
+ * This function implements basic permission checking for command execution.
+ * Status commands are always allowed for any user, while other commands
+ * require the user to be authenticated (non-bot with a valid login).
+ *
+ * @param command - The parsed Hachiko command to validate
+ * @param user - The GitHub user attempting to execute the command
+ * @param user.login - The GitHub username
+ * @param user.type - The account type (e.g., "User", "Bot")
+ * @param _repository - The repository context (reserved for future permission checks)
+ * @param _repository.owner.login - The repository owner's username
+ * @returns True if the user can execute the command, false otherwise
+ * @example
+ * ```typescript
+ * const command = { action: 'status', args: [], rawCommand: '/hachi status' };
+ * const user = { login: 'developer', type: 'User' };
+ * const repo = { owner: { login: 'org' } };
+ *
+ * canExecuteCommand(command, user, repo);
+ * // Returns: true (status is always allowed)
+ *
+ * const runCommand = { action: 'run', args: ['migration-1'], rawCommand: '/hachi run migration-1' };
+ * canExecuteCommand(runCommand, user, repo);
+ * // Returns: true (authenticated user)
+ *
+ * const botUser = { login: 'github-actions[bot]', type: 'Bot' };
+ * canExecuteCommand(runCommand, botUser, repo);
+ * // Returns: false (bots cannot execute non-status commands)
+ * ```
  */
 export function canExecuteCommand(command, user, _repository) {
     // For now, allow repository owners and collaborators
@@ -39,7 +93,43 @@ export function canExecuteCommand(command, user, _repository) {
     return user.type !== "Bot" && user.login.length > 0;
 }
 /**
- * Format command response with consistent styling
+ * Formats a command response with consistent styling for GitHub comments.
+ *
+ * This function generates a formatted markdown response for Hachiko commands,
+ * including an appropriate emoji indicator, the command name, a message,
+ * and optional additional details.
+ *
+ * @param command - The command name to display in the response header
+ * @param status - The status of the command execution: "success", "error", or "info"
+ * @param message - The main message to display to the user
+ * @param details - Optional additional details to append to the response
+ * @returns A formatted markdown string suitable for posting as a GitHub comment
+ * @example
+ * ```typescript
+ * // Success response
+ * formatCommandResponse('status', 'success', 'Migration is running');
+ * // Returns:
+ * // "✅ **Command**: `status`
+ * //
+ * // Migration is running"
+ *
+ * // Error response with details
+ * formatCommandResponse('run', 'error', 'Failed to start migration', 'Step 2 has a syntax error');
+ * // Returns:
+ * // "❌ **Command**: `run`
+ * //
+ * // Failed to start migration
+ * //
+ * // **Details:**
+ * // Step 2 has a syntax error"
+ *
+ * // Info response
+ * formatCommandResponse('help', 'info', 'Available commands: status, run, pause');
+ * // Returns:
+ * // "ℹ️ **Command**: `help`
+ * //
+ * // Available commands: status, run, pause"
+ * ```
  */
 export function formatCommandResponse(command, status, message, details) {
     const emoji = status === "success" ? "✅" : status === "error" ? "❌" : "ℹ️";
