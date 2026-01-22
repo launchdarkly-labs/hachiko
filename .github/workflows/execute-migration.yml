@@ -185,7 +185,7 @@ jobs:
                   \"description\": \"Automated migration execution - Step $STEP_ID\",
                   \"repositoryUrl\": \"https://github.com/${{ github.repository }}\",
                   \"branch\": \"main\",
-                  \"instructions\": $(echo "$AGENT_INSTRUCTIONS" | jq -Rs .)
+                  \"prompt\": $(echo "$AGENT_INSTRUCTIONS" | jq -Rs .)
                 }")
 
               echo "Devin API Response: $SESSION_RESPONSE"
