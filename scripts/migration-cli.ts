@@ -332,4 +332,56 @@ ${pausedMigrations}
     }
   });
 
+// Generate agent instructions command
+program
+  .command("get-agent-instructions")
+  .description("Generate standardized instructions for migration agents")
+  .argument("<migration-id>", "Migration ID")
+  .argument("<step-id>", "Step number to execute") 
+  .argument("<agent>", "Agent type (devin, cursor, codex)")
+  .option("--repository <repo>", "Repository name", process.env.GITHUB_REPOSITORY)
+  .option("--branch <branch>", "Working branch name")
+  .action(async (migrationId: string, stepId: string, agent: string, options) => {
+    try {
+      const migrationPath = getMigrationPath(migrationId);
+      const migration = parseMigrationDocument(migrationPath);
+      const totalSteps = migration.total_steps || 1;
+      const repository = options.repository;
+      const branch = options.branch || `hachiko/${migrationId}-step-${stepId}`;
+
+      if (!repository) {
+        throw new Error("Repository name is required (set GITHUB_REPOSITORY or use --repository)");
+      }
+
+      // Generate standardized agent instructions
+      // TODO: Replace with AI Configs integration in the future
+      const instructions = `You are executing step ${stepId} of migration "${migrationId}" using the Hachiko migration system.
+
+Instructions:
+1. Read and understand the migration document at: migrations/${migrationId}.md
+2. Focus on completing step ${stepId} of the migration as described in the document
+3. Make the necessary code changes following the migration requirements
+4. Create a new branch following the pattern "hachiko/${migrationId}-step-${stepId}" or similar descriptive name
+5. Commit your changes with clear, descriptive commit messages
+6. Ensure all tests pass and code quality checks succeed
+7. Follow the coding standards and patterns established in the codebase
+
+Migration Details:
+- Migration ID: ${migrationId}
+- Current Step: ${stepId} of ${totalSteps}
+- Migration File: migrations/${migrationId}.md
+- Repository: https://github.com/${repository}
+- Agent Type: ${agent}
+
+The migration document contains the full context, requirements, and success criteria. Focus on delivering high-quality, well-tested changes that advance the migration to completion.
+
+Branch Naming: Create a branch following the pattern "hachiko/${migrationId}-step-${stepId}" or "hachiko/${migrationId}-{descriptive-name}". This helps with tracking and cleanup.`;
+
+      console.log(instructions);
+    } catch (error) {
+      console.error("Failed to generate agent instructions:", error);
+      process.exit(1);
+    }
+  });
+
 program.parse();
