@@ -190,7 +190,7 @@ jobs:
 
               echo "Devin API Response: $SESSION_RESPONSE"
               
-              SESSION_ID=$(echo "$SESSION_RESPONSE" | jq -r '.id // empty')
+              SESSION_ID=$(echo "$SESSION_RESPONSE" | jq -r '.session_id // empty')
               if [ -z "$SESSION_ID" ]; then
                 echo "❌ Failed to create Devin session"
                 echo "success=false" >> $GITHUB_OUTPUT
