@@ -2,20 +2,21 @@
  * Extracts a deduplicated list of changed files from a list of commits.
  *
  * This function aggregates all files that were added, modified, or removed
- * across multiple commits and returns them as a unique set of file paths.
+ * across multiple commits and returns them as a unique set. This is useful
+ * for determining which files were affected by a series of commits.
  *
- * @param commits - Array of commit objects containing file change information
- * @param commits[].added - Optional array of file paths that were added in the commit
- * @param commits[].modified - Optional array of file paths that were modified in the commit
- * @param commits[].removed - Optional array of file paths that were removed in the commit
- * @returns Array of unique file paths that were changed across all commits
+ * @param commits - An array of commit objects containing file change information
+ * @param commits[].added - Files that were added in the commit
+ * @param commits[].modified - Files that were modified in the commit
+ * @param commits[].removed - Files that were removed in the commit
+ * @returns An array of unique file paths that were changed across all commits
  * @example
  * ```typescript
  * const commits = [
  *   { added: ['src/new.ts'], modified: ['src/existing.ts'] },
  *   { modified: ['src/existing.ts'], removed: ['src/old.ts'] }
  * ];
- * const changedFiles = extractChangedFiles(commits);
+ * const files = extractChangedFiles(commits);
  * // Returns: ['src/new.ts', 'src/existing.ts', 'src/old.ts']
  * ```
  */
@@ -43,8 +44,8 @@ export function extractChangedFiles(
 /**
  * Checks if a Git reference points to the default branch.
  *
- * This function handles GitHub's ref format (refs/heads/branch-name) by
- * stripping the prefix before comparing against the default branch name.
+ * This function handles GitHub's ref format (refs/heads/branch-name) and
+ * compares the extracted branch name against the provided default branch.
  *
  * @param ref - The Git reference to check (e.g., "refs/heads/main" or "main")
  * @param defaultBranch - The name of the default branch (e.g., "main" or "master")
@@ -65,21 +66,20 @@ export function isDefaultBranch(ref: string, defaultBranch: string): boolean {
 /**
  * Generates a standardized branch name for a Hachiko migration step.
  *
- * Branch names follow the pattern: hachi/{planId}/{stepId}[/{chunk}]
- * This naming convention enables automatic detection and tracking of
- * migration-related branches by the Hachiko system.
+ * Branch names follow the format: `hachi/{planId}/{stepId}` with an optional
+ * chunk suffix for migrations that are split into multiple chunks.
  *
  * @param planId - The unique identifier for the migration plan
  * @param stepId - The identifier for the specific step within the migration
  * @param chunk - Optional chunk identifier for large migrations split into parts
- * @returns The formatted branch name string
+ * @returns A formatted branch name string
  * @example
  * ```typescript
- * generateMigrationBranchName('add-jsdoc', '1');
- * // Returns: 'hachi/add-jsdoc/1'
+ * generateMigrationBranchName('add-jsdoc', 'step-1');
+ * // Returns: 'hachi/add-jsdoc/step-1'
  *
- * generateMigrationBranchName('add-jsdoc', '2', 'chunk-a');
- * // Returns: 'hachi/add-jsdoc/2/chunk-a'
+ * generateMigrationBranchName('add-jsdoc', 'step-1', 'chunk-a');
+ * // Returns: 'hachi/add-jsdoc/step-1/chunk-a'
  * ```
  */
 export function generateMigrationBranchName(
@@ -94,19 +94,18 @@ export function generateMigrationBranchName(
 /**
  * Parses a Hachiko migration branch name to extract its metadata components.
  *
- * This function uses regex matching to extract the plan ID, step ID, and
- * optional chunk identifier from branch names following the Hachiko naming
- * convention (hachi/{planId}/{stepId}[/{chunk}]).
+ * This function extracts the plan ID, step ID, and optional chunk identifier
+ * from a branch name that follows the Hachiko naming convention.
  *
- * @param branchName - The branch name to parse
- * @returns An object containing planId, stepId, and optional chunk, or null if the branch name doesn't match the expected pattern
+ * @param branchName - The branch name to parse (e.g., "hachi/add-jsdoc/step-1")
+ * @returns An object containing planId, stepId, and optional chunk, or null if the branch name doesn't match the expected format
  * @example
  * ```typescript
- * parseMigrationBranchName('hachi/add-jsdoc/1');
- * // Returns: { planId: 'add-jsdoc', stepId: '1', chunk: undefined }
+ * parseMigrationBranchName('hachi/add-jsdoc/step-1');
+ * // Returns: { planId: 'add-jsdoc', stepId: 'step-1', chunk: undefined }
  *
- * parseMigrationBranchName('hachi/add-jsdoc/2/chunk-a');
- * // Returns: { planId: 'add-jsdoc', stepId: '2', chunk: 'chunk-a' }
+ * parseMigrationBranchName('hachi/add-jsdoc/step-1/chunk-a');
+ * // Returns: { planId: 'add-jsdoc', stepId: 'step-1', chunk: 'chunk-a' }
  *
  * parseMigrationBranchName('feature/my-branch');
  * // Returns: null
@@ -133,14 +132,14 @@ export function parseMigrationBranchName(branchName: string): {
 /**
  * Checks if a branch name follows the Hachiko migration branch naming convention.
  *
- * Hachiko migration branches are identified by the "hachi/" prefix. This is a
- * quick check used to filter branches before more detailed parsing.
+ * Hachiko migration branches are identified by the "hachi/" prefix, which
+ * distinguishes them from regular feature or development branches.
  *
  * @param branchName - The branch name to check
  * @returns True if the branch name starts with "hachi/", false otherwise
  * @example
  * ```typescript
- * isMigrationBranch('hachi/add-jsdoc/1'); // Returns: true
+ * isMigrationBranch('hachi/add-jsdoc/step-1'); // Returns: true
  * isMigrationBranch('feature/my-feature'); // Returns: false
  * isMigrationBranch('main'); // Returns: false
  * ```
