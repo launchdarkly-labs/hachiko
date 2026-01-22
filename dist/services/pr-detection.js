@@ -105,6 +105,9 @@ export function extractMigrationId(pr) {
     // Pattern 2: "Migration: Title (Step X/Y)" - extract from content
     // This requires mapping back to migration ID from title, which is fragile
     // For now, rely on branch name detection for agent PRs
+    // Pattern 2: "Migration: Title (Step X/Y)" - extract from content
+    // This requires mapping back to migration ID from title, which is fragile
+    // For now, rely on branch name detection for agent PRs
     return null;
 }
 /**

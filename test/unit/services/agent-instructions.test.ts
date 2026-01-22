@@ -161,7 +161,7 @@ Content here`;
       vi.mocked(join).mockReturnValue("/template/path");
 
       const agents = ["claude-cli", "cursor-cli", "devin", "codex", "mock"];
-      
+
       for (const agent of agents) {
         const result = await generateAgentSpecificInstructions(
           agent,

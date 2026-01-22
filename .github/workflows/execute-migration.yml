@@ -120,6 +120,10 @@ jobs:
             echo "🔄 Advancing to next step: $REQUESTED_STEP (current: $CURRENT_STEP)"
           fi
 
+          if [ "$REQUESTED_STEP" = "$NEXT_STEP" ]; then
+            echo "🔄 Advancing to next step: $REQUESTED_STEP (current: $CURRENT_STEP)"
+          fi
+
           echo "✅ Execution conditions validated"
 
       - name: Configure git for agents
@@ -127,7 +131,7 @@ jobs:
           # Configure git for potential agent commits
           git config user.name "hachiko[bot]"
           git config user.email "hachiko@users.noreply.github.com"
-          
+
           echo "✅ Git configured for agent use"
 
       - name: Update migration status to in_progress

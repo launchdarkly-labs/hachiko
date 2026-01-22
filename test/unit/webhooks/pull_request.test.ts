@@ -109,9 +109,7 @@ describe("handlePullRequest", () => {
 
   describe("when PR is a migration PR", () => {
     beforeEach(() => {
-      mockContext.payload.pull_request.labels = [
-        { name: "hachiko:migration" },
-      ];
+      mockContext.payload.pull_request.labels = [{ name: "hachiko:migration" }];
       mockContext.payload.pull_request.head = {
         ref: "hachiko/react-upgrade-utility-functions",
       };
@@ -173,7 +171,7 @@ describe("handlePullRequest", () => {
 
       it("should handle merged PR with new state inference system", async () => {
         vi.mocked(extractMigrationMetadata).mockReturnValue(null);
-        
+
         await handlePullRequest(mockContext, mockLogger);
 
         expect(loadHachikoConfig).toHaveBeenCalledWith(mockContext);
@@ -256,7 +254,7 @@ describe("handlePullRequest", () => {
 
       it("should handle closed PR with new state inference system", async () => {
         vi.mocked(extractMigrationMetadata).mockReturnValue(null);
-        
+
         await handlePullRequest(mockContext, mockLogger);
 
         expect(getMigrationStateWithDocument).toHaveBeenCalledWith(
@@ -317,7 +315,7 @@ describe("handlePullRequest", () => {
     describe("when handling different PR actions", () => {
       it("should handle opened PR", async () => {
         mockContext.payload.action = "opened";
-        
+
         await handlePullRequest(mockContext, mockLogger);
 
         expect(loadHachikoConfig).toHaveBeenCalledWith(mockContext);
@@ -330,7 +328,7 @@ describe("handlePullRequest", () => {
 
       it("should handle synchronize PR", async () => {
         mockContext.payload.action = "synchronize";
-        
+
         await handlePullRequest(mockContext, mockLogger);
 
         expect(loadHachikoConfig).toHaveBeenCalledWith(mockContext);

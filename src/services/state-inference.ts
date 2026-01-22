@@ -63,7 +63,7 @@ export async function getMigrationState(
       state = "active";
     } else if (closedPRs.length > 0) {
       // Check if any closed PRs were NOT merged
-      const nonMergedClosedPRs = closedPRs.filter(pr => !pr.merged);
+      const nonMergedClosedPRs = closedPRs.filter((pr) => !pr.merged);
       if (nonMergedClosedPRs.length > 0) {
         state = "paused"; // Agent gave up
       } else {
@@ -90,8 +90,8 @@ export async function getMigrationState(
         state,
         openPRs: openPRs.length,
         closedPRs: closedPRs.length,
-        mergedPRs: closedPRs.filter(pr => pr.merged).length,
-        nonMergedClosedPRs: closedPRs.filter(pr => !pr.merged).length,
+        mergedPRs: closedPRs.filter((pr) => pr.merged).length,
+        nonMergedClosedPRs: closedPRs.filter((pr) => !pr.merged).length,
         completedTasks,
         totalTasks,
       },

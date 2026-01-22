@@ -117,7 +117,7 @@ describe("DevinCloudAdapter", () => {
       const sessionId = "session-123";
       const createResponse = {
         session_id: sessionId,
-        status: "pending", 
+        status: "pending",
         prompt: "test prompt",
         created_at: 1704067200,
         updated_at: 1704067200,
@@ -185,7 +185,7 @@ describe("DevinCloudAdapter", () => {
       const sessionId = "session-456";
       const createResponse = {
         session_id: sessionId,
-        status: "pending", 
+        status: "pending",
         prompt: "test prompt",
         created_at: 1704067200,
         updated_at: 1704067200,
@@ -299,7 +299,7 @@ describe("DevinCloudAdapter", () => {
       const sessionId = "session-789";
       const createResponse = {
         session_id: sessionId,
-        status: "pending", 
+        status: "pending",
         prompt: "test prompt",
         created_at: 1704067200,
         updated_at: 1704067200,

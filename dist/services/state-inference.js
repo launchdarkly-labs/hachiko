@@ -41,7 +41,7 @@ export async function getMigrationState(context, migrationId, migrationDocConten
         }
         else if (closedPRs.length > 0) {
             // Check if any closed PRs were NOT merged
-            const nonMergedClosedPRs = closedPRs.filter(pr => !pr.merged);
+            const nonMergedClosedPRs = closedPRs.filter((pr) => !pr.merged);
             if (nonMergedClosedPRs.length > 0) {
                 state = "paused"; // Agent gave up
             }
@@ -67,8 +67,8 @@ export async function getMigrationState(context, migrationId, migrationDocConten
             state,
             openPRs: openPRs.length,
             closedPRs: closedPRs.length,
-            mergedPRs: closedPRs.filter(pr => pr.merged).length,
-            nonMergedClosedPRs: closedPRs.filter(pr => !pr.merged).length,
+            mergedPRs: closedPRs.filter((pr) => pr.merged).length,
+            nonMergedClosedPRs: closedPRs.filter((pr) => !pr.merged).length,
             completedTasks,
             totalTasks,
         }, "Inferred migration state");
