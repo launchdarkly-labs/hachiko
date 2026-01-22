@@ -109,10 +109,15 @@ jobs:
             exit 1
           fi
 
-          # Validate step number
-          if [ "$REQUESTED_STEP" != "$CURRENT_STEP" ] && [ "$FORCE" != "true" ]; then
-            echo "❌ Requested step ($REQUESTED_STEP) doesn't match current step ($CURRENT_STEP)"
+          # Validate step number - allow current step or next step (for automatic advancement)
+          NEXT_STEP=$((CURRENT_STEP + 1))
+          if [ "$REQUESTED_STEP" != "$CURRENT_STEP" ] && [ "$REQUESTED_STEP" != "$NEXT_STEP" ] && [ "$FORCE" != "true" ]; then
+            echo "❌ Requested step ($REQUESTED_STEP) doesn't match current step ($CURRENT_STEP) or next step ($NEXT_STEP)"
             exit 1
+          fi
+          
+          if [ "$REQUESTED_STEP" = "$NEXT_STEP" ]; then
+            echo "🔄 Advancing to next step: $REQUESTED_STEP (current: $CURRENT_STEP)"
           fi
 
           echo "✅ Execution conditions validated"
