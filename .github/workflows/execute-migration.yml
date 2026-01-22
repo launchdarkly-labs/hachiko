@@ -124,6 +124,10 @@ jobs:
             echo "🔄 Advancing to next step: $REQUESTED_STEP (current: $CURRENT_STEP)"
           fi
 
+          if [ "$REQUESTED_STEP" = "$NEXT_STEP" ]; then
+            echo "🔄 Advancing to next step: $REQUESTED_STEP (current: $CURRENT_STEP)"
+          fi
+
           echo "✅ Execution conditions validated"
 
       - name: Configure git for agents
@@ -229,34 +233,46 @@ jobs:
               fi
 
               # Create Cursor agent task
+              CURSOR_AUTH=$(echo -n "$CURSOR_API_KEY:" | base64)
+              
+              # Prepare webhook URL field if provided
+              if [ -n "$CURSOR_WEBHOOK_URL" ]; then
+                WEBHOOK_FIELD=",\"webhook_url\": $(echo "$CURSOR_WEBHOOK_URL" | jq -Rs .)"
+              else
+                WEBHOOK_FIELD=""
+              fi
+              
               CURSOR_RESPONSE=$(curl -s -X POST "https://api.cursor.com/v0/agents" \
-                -H "Authorization: Bearer $CURSOR_API_KEY" \
+                -H "Authorization: Basic $CURSOR_AUTH" \
                 -H "Content-Type: application/json" \
                 -H "User-Agent: Hachiko/1.0" \
                 -d "{
-                  \"repository\": \"https://github.com/${{ github.repository }}\",
+                  \"task\": $(echo "$AGENT_INSTRUCTIONS" | jq -Rs .),
+                  \"repository_url\": \"https://github.com/${{ github.repository }}\",
                   \"branch\": \"main\",
-                  \"instructions\": $(echo "$AGENT_INSTRUCTIONS" | jq -Rs .),
-                  \"webhookUrl\": \"$CURSOR_WEBHOOK_URL\"
+                  \"metadata\": {
+                    \"plan_id\": \"$MIGRATION_ID\",
+                    \"step_id\": \"$STEP_ID\"
+                  }${WEBHOOK_FIELD}
                 }")
 
               echo "Cursor API Response: $CURSOR_RESPONSE"
               
-              TASK_ID=$(echo "$CURSOR_RESPONSE" | jq -r '.taskId // empty')
-              if [ -z "$TASK_ID" ]; then
-                echo "❌ Failed to create Cursor task"
+              AGENT_ID=$(echo "$CURSOR_RESPONSE" | jq -r '.agent.id // empty')
+              if [ -z "$AGENT_ID" ]; then
+                echo "❌ Failed to create Cursor agent"
                 echo "success=false" >> $GITHUB_OUTPUT
-                echo "error=Failed to create Cursor task" >> $GITHUB_OUTPUT
+                echo "error=Failed to create Cursor agent" >> $GITHUB_OUTPUT
                 exit 1
               fi
 
-              echo "✅ Created Cursor task: $TASK_ID"
+              echo "✅ Created Cursor agent: $AGENT_ID"
               
-              # Task created successfully - Cursor will work independently and create PR  
+              # Agent created successfully - Cursor will work independently and create PR  
               echo "success=true" >> $GITHUB_OUTPUT
               echo "changes_made=false" >> $GITHUB_OUTPUT  # Changes will come via PR
-              echo "output=Cursor task created successfully, working independently" >> $GITHUB_OUTPUT
-              echo "task_id=$TASK_ID" >> $GITHUB_OUTPUT
+              echo "output=Cursor agent created successfully, working independently" >> $GITHUB_OUTPUT
+              echo "agent_id=$AGENT_ID" >> $GITHUB_OUTPUT
               ;;
 
             "codex")
