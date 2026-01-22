@@ -11,6 +11,8 @@ export interface MigrationFrontmatterV1 {
     title: string;
     /** Cloud agent to use (cursor, codex, devin, mock) */
     agent: string;
+    /** GitHub usernames to request as PR reviewers (optional) */
+    reviewers?: string[];
     /** Current migration status */
     status: "pending" | "in_progress" | "completed" | "paused" | "failed";
     /** Current step number (1-indexed) */
@@ -37,6 +39,8 @@ export interface MigrationFrontmatterV2 {
     title: string;
     /** Cloud agent to use (cursor, codex, devin, mock) */
     agent: string;
+    /** GitHub usernames to request as PR reviewers (optional) */
+    reviewers?: string[];
     /** When migration was created */
     created: string;
 }
