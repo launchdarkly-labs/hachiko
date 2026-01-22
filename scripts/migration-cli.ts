@@ -283,19 +283,23 @@ program
               // Start with migration title
               inProgressMigrations += `- \`${frontmatter.id}\` - ${frontmatter.title}\n`;
               
-              // Add open PRs
+              // Show completed steps count
+              const mergedPRs = closedPRs.filter(pr => pr.merged);
+              if (mergedPRs.length > 0) {
+                const stepText = mergedPRs.length === 1 ? "step" : "steps";
+                inProgressMigrations += `  - ${mergedPRs.length} ${stepText} complete\n`;
+              }
+              
+              // Add current open PRs
               for (const pr of openPRs) {
                 const stepInfo = pr.title.match(/Step (\d+)/i);
                 const stepText = stepInfo ? `Step ${stepInfo[1]}: ` : "";
                 inProgressMigrations += `  - ${stepText}[Open PR #${pr.number}](${pr.url})\n`;
               }
               
-              // Add merged PRs (most recent first)
-              const mergedPRs = closedPRs.filter(pr => pr.merged).sort((a, b) => b.number - a.number);
-              for (const pr of mergedPRs.slice(0, 3)) { // Show max 3 recent merged PRs
-                const stepInfo = pr.title.match(/Step (\d+)/i);
-                const stepText = stepInfo ? `Step ${stepInfo[1]}: ` : "";
-                inProgressMigrations += `  - ${stepText}[Merged PR #${pr.number}](${pr.url})\n`;
+              // If no open PRs but has merged PRs, show waiting for next step
+              if (openPRs.length === 0 && mergedPRs.length > 0) {
+                inProgressMigrations += `  - Ready for next step\n`;
               }
               
               // If no PRs at all (shouldn't happen for active state)
