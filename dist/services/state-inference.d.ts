@@ -19,9 +19,9 @@ export interface MigrationStateInfo {
  * Get the inferred state of a migration based on PR activity and task completion
  *
  * State inference rules:
- * - "pending": No hachiko PRs ever opened
- * - "active": Has open hachiko PRs
- * - "paused": No open PRs, but has closed hachiko PRs
+ * - "pending": No hachiko PRs have ever been created (not started)
+ * - "active": Has open PRs OR has merged PRs (migration in progress)
+ * - "paused": No open PRs, but has closed PRs that were NOT merged (agent gave up)
  * - "completed": All tasks checked off in main branch migration doc
  */
 export declare function getMigrationState(context: ContextWithRepository, migrationId: string, migrationDocContent?: string, logger?: Logger): Promise<MigrationStateInfo>;

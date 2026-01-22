@@ -82,7 +82,7 @@ export class DevinCloudAdapter extends BaseAgentAdapter {
                 headers: this.getAuthHeaders(),
                 timeout: 30000,
             });
-            const sessionId = createResponse.session.id;
+            const sessionId = createResponse.session_id;
             logger.info({ sessionId, planId: input.planId, stepId: input.stepId }, "Devin session created");
             // Build polling URL
             let pollUrl;
