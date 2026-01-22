@@ -327,14 +327,11 @@ jobs:
               ;;
           esac
 
-          # Check if there are changes to commit (for real agents that modify files directly)
-          if git diff --staged --quiet && [ "$AGENT" != "mock" ]; then
-            echo "changes_made=false" >> $GITHUB_OUTPUT
-            echo "output=No changes were made by the agent" >> $GITHUB_OUTPUT
-          elif [ "$AGENT" != "mock" ]; then
+          # Handle mock agent git changes (cloud agents work independently)
+          if [ "$AGENT" = "mock" ] && ! git diff --staged --quiet; then
             git commit -m "Apply migration: $MIGRATION_ID step $STEP_ID
 
-          Automated changes applied by $AGENT cloud agent.
+          Mock agent changes for testing.
 
           Migration: ${{ steps.migration.outputs.title }}
           Step: $STEP_ID
