@@ -140,7 +140,7 @@ describe("validateConfig", () => {
 
   it("should handle non-Error validation failures", async () => {
     // Import the module dynamically to avoid import issues
-    const { validateHachikoConfig } = await import("../../../src/config/schema.js");
+    await import("../../../src/config/schema.js");
 
     // Mock the schema validation to throw a string instead of Error
     const spy = vi

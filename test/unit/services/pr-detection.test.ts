@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 // Mock the logger
 vi.mock("../../../src/utils/logger.js", () => ({
@@ -20,7 +20,6 @@ import {
   detectHachikoPR,
   extractMigrationId,
   validateHachikoPR,
-  getHachikoPRs,
   type PullRequest,
 } from "../../../src/services/pr-detection.js";
 
