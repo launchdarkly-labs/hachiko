@@ -297,23 +297,27 @@ jobs:
               CURSOR_AUTH=$(echo -n "$CURSOR_API_KEY:" | base64)
               echo "🔐 Authorization header prepared"
               
-              # Prepare webhook URL field if provided
+              # Prepare webhook field if provided
               if [ -n "$CURSOR_WEBHOOK_URL" ]; then
-                WEBHOOK_FIELD=",\"webhook_url\": $(echo "$CURSOR_WEBHOOK_URL" | jq -Rs .)"
+                WEBHOOK_FIELD=",\"webhook\": {\"url\": $(echo "$CURSOR_WEBHOOK_URL" | jq -Rs .)}"
                 echo "🔗 Webhook URL configured"
               else
                 WEBHOOK_FIELD=""
                 echo "🔗 No webhook URL configured"
               fi
               
-              # Create request payload
+              # Create request payload using correct Cursor API format
               REQUEST_PAYLOAD="{
-                \"task\": $(echo "$AGENT_INSTRUCTIONS" | jq -Rs .),
-                \"repository_url\": \"https://github.com/${{ github.repository }}\",
-                \"branch\": \"main\",
-                \"metadata\": {
-                  \"plan_id\": \"$MIGRATION_ID\",
-                  \"step_id\": \"$STEP_ID\"
+                \"prompt\": {
+                  \"text\": $(echo "$AGENT_INSTRUCTIONS" | jq -Rs .)
+                },
+                \"source\": {
+                  \"repository\": \"https://github.com/${{ github.repository }}\",
+                  \"ref\": \"main\"
+                },
+                \"target\": {
+                  \"autoCreatePr\": true,
+                  \"branchName\": \"hachiko/${MIGRATION_ID}-step-${STEP_ID}\"
                 }${WEBHOOK_FIELD}
               }"
               
@@ -321,61 +325,12 @@ jobs:
               echo "Endpoint: https://api.cursor.com/v0/agents"
               echo "Payload size: ${#REQUEST_PAYLOAD} bytes"
               
-              # Debug curl command parameters (without exposing secrets)
-              echo "🔍 Debug Information:"
-              echo "AUTH header present: $([ -n "$CURSOR_AUTH" ] && echo "✅ Yes (${#CURSOR_AUTH} chars)" || echo "❌ No")"
-              echo "Payload structure validation:"
-              echo "$REQUEST_PAYLOAD" | jq -r 'keys[]' 2>/dev/null || echo "❌ Invalid JSON structure"
-              echo "Payload has required fields: $(echo "$REQUEST_PAYLOAD" | jq -r 'has("task") and has("repository_url")' 2>/dev/null || echo "unknown")"
-              
-              # Validate curl command syntax without making the request
-              echo "🔧 Validating curl command syntax..."
-              CURL_SYNTAX_CHECK=$(curl --help >/dev/null 2>&1 && echo "✅ curl available" || echo "❌ curl not available")
-              echo "$CURL_SYNTAX_CHECK"
-              
-              # Make API call with detailed error handling
-              echo "🔧 Executing curl command..."
+              # Make API call with error handling
+              echo "🔧 Making Cursor API request..."
               
               # Write payload to temporary file to avoid shell escaping issues
               PAYLOAD_FILE=$(mktemp)
               echo "$REQUEST_PAYLOAD" > "$PAYLOAD_FILE"
-              
-              echo "📝 Payload written to temporary file: $PAYLOAD_FILE"
-              echo "🔍 Payload file contents (first/last 2 lines):"
-              head -2 "$PAYLOAD_FILE" || echo "Failed to read payload file"
-              echo "..."
-              tail -2 "$PAYLOAD_FILE" || echo "Failed to read payload file"
-              
-              # Test individual curl parameters step by step
-              echo "🧪 Testing curl parameters individually..."
-              echo "Test 1: Basic curl functionality"
-              curl --version >/dev/null && echo "✅ curl version OK" || echo "❌ curl version failed"
-              
-              echo "Test 2: URL reachability (HEAD request)"
-              set +e
-              curl -s --head "https://api.cursor.com/v0/agents" >/dev/null 2>&1
-              HEAD_EXIT=$?
-              set -e
-              [ $HEAD_EXIT -eq 0 ] && echo "✅ URL reachable" || echo "❌ URL unreachable (exit $HEAD_EXIT)"
-              
-              echo "Test 3: Auth header format"
-              echo "Auth header length: ${#CURSOR_AUTH}"
-              echo "First 10 chars of auth: ${CURSOR_AUTH:0:10}..."
-              
-              echo "Test 4: Minimal POST request (no auth, no payload)"
-              set +e
-              MINIMAL_TEST=$(curl -s -w "\nEXIT_CODE:%{exitcode}" -X POST "https://httpbin.org/post" 2>&1)
-              MINIMAL_EXIT=$?
-              set -e
-              echo "Minimal curl exit code: $MINIMAL_EXIT"
-              
-              echo "Test 5: POST with auth header only (to httpbin)"
-              set +e  
-              AUTH_TEST=$(curl -s -w "\nEXIT_CODE:%{exitcode}" -X POST "https://httpbin.org/post" \
-                -H "Authorization: Basic $CURSOR_AUTH" 2>&1)
-              AUTH_EXIT=$?
-              set -e
-              echo "Auth test curl exit code: $AUTH_EXIT"
               
               # Temporarily disable exit-on-error to capture curl's exit code
               set +e
@@ -463,8 +418,8 @@ jobs:
                   ;;
               esac
               
-              # Parse agent ID from response
-              AGENT_ID=$(echo "$CURSOR_RESPONSE" | jq -r '.agent.id // empty' 2>/dev/null)
+              # Parse agent ID from response (Cursor API returns .id not .agent.id)
+              AGENT_ID=$(echo "$CURSOR_RESPONSE" | jq -r '.id // empty' 2>/dev/null)
               if [ -z "$AGENT_ID" ]; then
                 echo "❌ Failed to extract agent ID from response"
                 echo "Response may be malformed or missing 'agent.id' field"
