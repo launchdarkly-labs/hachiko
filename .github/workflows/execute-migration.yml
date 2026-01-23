@@ -104,11 +104,6 @@ jobs:
             exit 1
           fi
 
-          if [ "$MIGRATION_STATUS" = "in_progress" ] && [ "$FORCE" != "true" ]; then
-            echo "❌ Migration already in progress. Use force=true to override."
-            exit 1
-          fi
-
           # Validate step number - allow current step or next step (for automatic advancement)
           NEXT_STEP=$((CURRENT_STEP + 1))
           if [ "$REQUESTED_STEP" != "$CURRENT_STEP" ] && [ "$REQUESTED_STEP" != "$NEXT_STEP" ] && [ "$FORCE" != "true" ]; then
