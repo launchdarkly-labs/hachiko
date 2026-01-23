@@ -5,8 +5,8 @@
  */
 
 import { Octokit } from "@octokit/rest";
-import { getMigrationStateWithDocument } from "../src/services/state-inference.js";
-import { createLogger } from "../src/utils/logger.js";
+import { getMigrationStateWithDocument } from "../services/state-inference.js";
+import { createLogger } from "../utils/logger.js";
 
 async function main() {
   const migrationId = process.argv[2];

@@ -78,7 +78,7 @@ jobs:
 
           # Get calculated state from PR activity
           echo "🔍 Calculating migration state from PR activity..."
-          STATE_OUTPUT=$(node dist/scripts/get-migration-state.js "$MIGRATION_ID" 2>/dev/null || echo "")
+          STATE_OUTPUT=$(GITHUB_TOKEN="${GITHUB_TOKEN}" GITHUB_REPOSITORY="${{ github.repository }}" node dist/scripts/get-migration-state.js "$MIGRATION_ID" 2>/dev/null || echo "")
           
           if [ -z "$STATE_OUTPUT" ]; then
             echo "⚠️ Could not calculate state from PR activity, falling back to frontmatter"
