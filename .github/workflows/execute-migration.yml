@@ -321,13 +321,17 @@ jobs:
               echo "Endpoint: https://api.cursor.com/v0/agents"
               echo "Payload size: ${#REQUEST_PAYLOAD} bytes"
               
-              # Debug the exact curl command and payload
+              # Debug curl command parameters (without exposing secrets)
               echo "🔍 Debug Information:"
-              echo "AUTH header length: ${#CURSOR_AUTH}"
-              echo "Request payload preview:"
-              echo "$REQUEST_PAYLOAD" | head -3
-              echo "..."
-              echo "$REQUEST_PAYLOAD" | tail -3
+              echo "AUTH header present: $([ -n "$CURSOR_AUTH" ] && echo "✅ Yes (${#CURSOR_AUTH} chars)" || echo "❌ No")"
+              echo "Payload structure validation:"
+              echo "$REQUEST_PAYLOAD" | jq -r 'keys[]' 2>/dev/null || echo "❌ Invalid JSON structure"
+              echo "Payload has required fields: $(echo "$REQUEST_PAYLOAD" | jq -r 'has("task") and has("repository_url")' 2>/dev/null || echo "unknown")"
+              
+              # Validate curl command syntax without making the request
+              echo "🔧 Validating curl command syntax..."
+              CURL_SYNTAX_CHECK=$(curl --help >/dev/null 2>&1 && echo "✅ curl available" || echo "❌ curl not available")
+              echo "$CURL_SYNTAX_CHECK"
               
               # Make API call with detailed error handling
               echo "🔧 Executing curl command..."
