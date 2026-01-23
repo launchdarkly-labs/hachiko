@@ -323,6 +323,9 @@ jobs:
               
               # Make API call with detailed error handling
               echo "🔧 Executing curl command..."
+              
+              # Temporarily disable exit-on-error to capture curl's exit code
+              set +e
               HTTP_RESPONSE=$(curl -w "\nHTTP_STATUS:%{http_code}\nHTTP_SIZE:%{size_download}" \
                 -s -X POST "https://api.cursor.com/v0/agents" \
                 -H "Authorization: Basic $CURSOR_AUTH" \
@@ -331,6 +334,8 @@ jobs:
                 -d "$REQUEST_PAYLOAD" 2>&1)
               
               CURL_EXIT_CODE=$?
+              set -e  # Re-enable exit-on-error
+              
               echo "🔍 Curl exit code: $CURL_EXIT_CODE"
               
               if [ $CURL_EXIT_CODE -ne 0 ]; then
