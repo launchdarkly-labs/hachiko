@@ -522,19 +522,6 @@ Some regular content here.`;
     });
 
     it("should handle PRs without step identifiers in branch names", async () => {
-      const openPRs = [
-        {
-          number: 123,
-          title: "Migration PR",
-          state: "open" as const,
-          migrationId: "test-migration",
-          branch: "hachiko/test-migration",
-          labels: [],
-          url: "https://github.com/test/123",
-          merged: false,
-        },
-      ];
-
       mockGetOpenHachikoPRs.mockResolvedValue([]);
       mockGetClosedHachikoPRs.mockResolvedValue([]);
 

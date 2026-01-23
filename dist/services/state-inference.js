@@ -237,21 +237,29 @@ export async function getMultipleMigrationStates(context, migrationIds, ref = "m
                 return [migrationId, state];
             }
             catch (error) {
-                log.error({ error, migrationId }, "Failed to get state for migration");
-                // Return default state info for failed migrations
-                return [
-                    migrationId,
-                    {
-                        state: "pending",
-                        openPRs: [],
-                        closedPRs: [],
-                        allTasksComplete: false,
-                        totalTasks: 0,
-                        completedTasks: 0,
-                        currentStep: 1,
-                        lastUpdated: new Date().toISOString(),
-                    },
-                ];
+                log.warn({ error, migrationId }, "Failed to get migration state with document, falling back to PR-only inference");
+                // Instead of returning pending, try to infer state from PR activity only
+                try {
+                    const state = await getMigrationState(context, migrationId, undefined, log);
+                    return [migrationId, state];
+                }
+                catch (prError) {
+                    log.error({ error: prError, migrationId }, "Failed to get state even without document");
+                    // Only return default state if both document fetch AND PR detection fail
+                    return [
+                        migrationId,
+                        {
+                            state: "pending",
+                            openPRs: [],
+                            closedPRs: [],
+                            allTasksComplete: false,
+                            totalTasks: 0,
+                            completedTasks: 0,
+                            currentStep: 1,
+                            lastUpdated: new Date().toISOString(),
+                        },
+                    ];
+                }
             }
         });
         const results = await Promise.all(statePromises);
