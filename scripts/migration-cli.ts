@@ -261,14 +261,14 @@ program
           
           // Create logger with debug output for GitHub Actions
           const logger = createLogger("migration-cli");
+          // Always silence the logs to prevent pollution in issue descriptions
+          logger.info = () => {};
+          logger.debug = () => {};
+          logger.error = () => {};
+          
           if (process.env.GITHUB_ACTIONS) {
-            // In GitHub Actions, we want to see debug info
+            // In GitHub Actions, we want to see debug info via stderr
             console.error(`[DEBUG] Processing migration: ${frontmatter.id}`);
-          } else {
-            // Locally, silence the logs to prevent pollution
-            logger.info = () => {};
-            logger.debug = () => {};
-            logger.error = () => {};
           }
           
           // Use state inference instead of frontmatter status
@@ -293,24 +293,30 @@ program
               const mergedPRs = closedPRs.filter(pr => pr.merged);
               const totalSteps = frontmatter.total_steps || 1;
               
-              // Start with migration title and progress summary
+              // Start with migration title
+              inProgressMigrations += `- \`${frontmatter.id}\` - ${frontmatter.title}\n`;
+              
+              // Add progress summary as sub-bullet
               const completedSteps = mergedPRs.length;
-              const progressSummary = completedSteps > 0 ? ` - ${completedSteps} of ${totalSteps} steps completed` : "";
-              inProgressMigrations += `- \`${frontmatter.id}\`${progressSummary}\n`;
+              if (completedSteps > 0) {
+                inProgressMigrations += `  - ${completedSteps} of ${totalSteps} steps completed\n`;
+              }
               
               // Add current open PRs with just the link and title (title already includes step info)
               for (const pr of openPRs) {
-                inProgressMigrations += `  ○ [${pr.title}](${pr.url})\n`;
+                inProgressMigrations += `  - [${pr.title}](${pr.url})\n`;
               }
               
-              // If no open PRs but has merged PRs, show waiting for next step
+              // If no open PRs but has merged PRs, show waiting for next step with re-kick option
               if (openPRs.length === 0 && mergedPRs.length > 0) {
-                inProgressMigrations += `  ○ Ready for next step\n`;
+                const nextStep = completedSteps + 1;
+                inProgressMigrations += `  - Ready for next step (should have kicked off automatically, might have failed)\n`;
+                inProgressMigrations += `    - [ ] Manually kick off step ${nextStep}\n`;
               }
               
               // If no PRs at all (shouldn't happen for active state)
               if (openPRs.length === 0 && mergedPRs.length === 0) {
-                inProgressMigrations += `  ○ In progress\n`;
+                inProgressMigrations += `  - In progress\n`;
               }
               
               break;

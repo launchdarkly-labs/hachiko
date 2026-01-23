@@ -115,6 +115,29 @@ jobs:
           # Extract checked migrations from Paused section  
           CHECKED_PAUSED=$(echo "$ISSUE_BODY" | awk '/## ⏸️ Paused Migrations/,/---/ { if (/^- \[x\]/) print }' | sed 's/^- \[x\] `//' | sed 's/`.*$//')
 
+          # Extract restart requests from In-Progress section (nested checkboxes like "- [ ] Start step X")
+          RESTART_REQUESTS=$(echo "$ISSUE_BODY" | awk '
+            /## 🔄 In-Progress Migrations/,/## ⏸️ Paused Migrations/ {
+              if (/^    - \[x\] Start step/) {
+                # Extract step number
+                gsub(/.*Start step /, "")
+                gsub(/[^0-9].*/, "")
+                step = $0
+                
+                # Find the migration ID from the previous lines
+                for (i = NR-10; i < NR; i++) {
+                  if (lines[i] ~ /^- `[^`]+` - /) {
+                    gsub(/^- `/, "", lines[i])
+                    gsub(/` - .*/, "", lines[i])
+                    print lines[i] ":" step
+                    break
+                  }
+                }
+              }
+              lines[NR] = $0
+            }
+          ')
+
           # Process checked migrations
           MIGRATIONS_TRIGGERED=false
           for MIGRATION_ID in $CHECKED_PENDING $CHECKED_PAUSED; do
@@ -152,6 +175,22 @@ jobs:
               MIGRATIONS_TRIGGERED=true
             fi
           done
+
+          # Process restart requests from In-Progress section
+          if [ -n "$RESTART_REQUESTS" ]; then
+            echo "$RESTART_REQUESTS" | while IFS=':' read -r MIGRATION_ID STEP_ID; do
+              if [ -n "$MIGRATION_ID" ] && [ -n "$STEP_ID" ]; then
+                echo "Manually restarting migration: $MIGRATION_ID at step $STEP_ID"
+                
+                # Trigger migration execution with specified step
+                gh workflow run execute-migration.yml \
+                  -f migration_id="$MIGRATION_ID" \
+                  -f step_id="$STEP_ID"
+                
+                MIGRATIONS_TRIGGERED=true
+              fi
+            done
+          fi
 
           # Set output for conditional issue update
           echo "migrations_triggered=$MIGRATIONS_TRIGGERED" >> $GITHUB_OUTPUT
