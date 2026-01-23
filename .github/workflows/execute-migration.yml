@@ -177,7 +177,54 @@ jobs:
           echo "🚀 Executing migration step with $AGENT agent..."
 
           # Generate agent instructions using CLI
-          AGENT_INSTRUCTIONS=$(pnpm migration get-agent-instructions "$MIGRATION_ID" "$STEP_ID" "$AGENT" --repository "${{ github.repository }}")
+          echo "🔧 Generating agent instructions..."
+          echo "Migration ID: $MIGRATION_ID"
+          echo "Step ID: $STEP_ID"
+          echo "Agent: $AGENT"
+          echo "Repository: ${{ github.repository }}"
+          
+          # Check if migration file exists
+          MIGRATION_FILE="migrations/${MIGRATION_ID}.md"
+          if [ ! -f "$MIGRATION_FILE" ]; then
+            echo "❌ Migration file not found: $MIGRATION_FILE"
+            echo "Available migration files:"
+            ls -la migrations/ || echo "migrations/ directory not found"
+            echo "success=false" >> $GITHUB_OUTPUT
+            echo "error=Migration file not found: $MIGRATION_FILE" >> $GITHUB_OUTPUT
+            exit 1
+          fi
+          echo "✅ Migration file found: $MIGRATION_FILE"
+          
+          # Check if CLI is working
+          echo "🔍 Testing migration CLI..."
+          if ! pnpm migration --help > /dev/null 2>&1; then
+            echo "❌ Migration CLI not working"
+            echo "success=false" >> $GITHUB_OUTPUT
+            echo "error=Migration CLI not accessible" >> $GITHUB_OUTPUT
+            exit 1
+          fi
+          echo "✅ Migration CLI is accessible"
+          
+          # Generate agent instructions with detailed error capture
+          echo "🚀 Running: pnpm migration get-agent-instructions \"$MIGRATION_ID\" \"$STEP_ID\" \"$AGENT\" --repository \"${{ github.repository }}\""
+          
+          # Capture both stdout and stderr
+          if ! AGENT_INSTRUCTIONS=$(pnpm migration get-agent-instructions "$MIGRATION_ID" "$STEP_ID" "$AGENT" --repository "${{ github.repository }}" 2>&1); then
+            echo "❌ Failed to generate agent instructions"
+            echo "Exit code: $?"
+            echo "Output/Error: $AGENT_INSTRUCTIONS"
+            echo "Environment info:"
+            echo "Node version: $(node --version)"
+            echo "NPM version: $(npm --version)"
+            echo "PNPM version: $(pnpm --version)"
+            echo "Working directory: $(pwd)"
+            echo "success=false" >> $GITHUB_OUTPUT
+            echo "error=Failed to generate agent instructions" >> $GITHUB_OUTPUT
+            exit 1
+          fi
+          
+          echo "✅ Agent instructions generated successfully"
+          echo "Instructions length: ${#AGENT_INSTRUCTIONS} characters"
 
           # Execute based on agent type
           case "$AGENT" in
