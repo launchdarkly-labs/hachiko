@@ -321,6 +321,14 @@ jobs:
               echo "Endpoint: https://api.cursor.com/v0/agents"
               echo "Payload size: ${#REQUEST_PAYLOAD} bytes"
               
+              # Debug the exact curl command and payload
+              echo "🔍 Debug Information:"
+              echo "AUTH header length: ${#CURSOR_AUTH}"
+              echo "Request payload preview:"
+              echo "$REQUEST_PAYLOAD" | head -3
+              echo "..."
+              echo "$REQUEST_PAYLOAD" | tail -3
+              
               # Make API call with detailed error handling
               echo "🔧 Executing curl command..."
               
@@ -347,6 +355,7 @@ jobs:
                   7) echo "Failed to connect to host." ;;
                   28) echo "Operation timeout. The specified time-out period was reached." ;;
                   35) echo "SSL connect error. A TLS/SSL handshake problem occurred." ;;
+                  43) echo "Internal curl error - bad function parameter. Check curl command syntax." ;;
                   56) echo "Failure in receiving network data." ;;
                   *) echo "Unknown curl error. Check network connectivity and API endpoint." ;;
                 esac
