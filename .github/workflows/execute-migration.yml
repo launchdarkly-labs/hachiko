@@ -322,12 +322,34 @@ jobs:
               echo "Payload size: ${#REQUEST_PAYLOAD} bytes"
               
               # Make API call with detailed error handling
+              echo "🔧 Executing curl command..."
               HTTP_RESPONSE=$(curl -w "\nHTTP_STATUS:%{http_code}\nHTTP_SIZE:%{size_download}" \
                 -s -X POST "https://api.cursor.com/v0/agents" \
                 -H "Authorization: Basic $CURSOR_AUTH" \
                 -H "Content-Type: application/json" \
                 -H "User-Agent: Hachiko/1.0" \
                 -d "$REQUEST_PAYLOAD" 2>&1)
+              
+              CURL_EXIT_CODE=$?
+              echo "🔍 Curl exit code: $CURL_EXIT_CODE"
+              
+              if [ $CURL_EXIT_CODE -ne 0 ]; then
+                echo "❌ Curl command failed with exit code $CURL_EXIT_CODE"
+                echo "Raw curl output: $HTTP_RESPONSE"
+                
+                case $CURL_EXIT_CODE in
+                  6) echo "Couldn't resolve host. DNS resolution failed." ;;
+                  7) echo "Failed to connect to host." ;;
+                  28) echo "Operation timeout. The specified time-out period was reached." ;;
+                  35) echo "SSL connect error. A TLS/SSL handshake problem occurred." ;;
+                  56) echo "Failure in receiving network data." ;;
+                  *) echo "Unknown curl error. Check network connectivity and API endpoint." ;;
+                esac
+                
+                echo "success=false" >> $GITHUB_OUTPUT
+                echo "error=Cursor API request failed - curl exit code $CURL_EXIT_CODE" >> $GITHUB_OUTPUT
+                exit 1
+              fi
               
               # Extract HTTP status and response body
               CURSOR_RESPONSE=$(echo "$HTTP_RESPONSE" | sed '/^HTTP_STATUS:/,$d')
