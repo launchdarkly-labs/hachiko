@@ -341,6 +341,41 @@ jobs:
               echo "$REQUEST_PAYLOAD" > "$PAYLOAD_FILE"
               
               echo "📝 Payload written to temporary file: $PAYLOAD_FILE"
+              echo "🔍 Payload file contents (first/last 2 lines):"
+              head -2 "$PAYLOAD_FILE" || echo "Failed to read payload file"
+              echo "..."
+              tail -2 "$PAYLOAD_FILE" || echo "Failed to read payload file"
+              
+              # Test individual curl parameters step by step
+              echo "🧪 Testing curl parameters individually..."
+              echo "Test 1: Basic curl functionality"
+              curl --version >/dev/null && echo "✅ curl version OK" || echo "❌ curl version failed"
+              
+              echo "Test 2: URL reachability (HEAD request)"
+              set +e
+              curl -s --head "https://api.cursor.com/v0/agents" >/dev/null 2>&1
+              HEAD_EXIT=$?
+              set -e
+              [ $HEAD_EXIT -eq 0 ] && echo "✅ URL reachable" || echo "❌ URL unreachable (exit $HEAD_EXIT)"
+              
+              echo "Test 3: Auth header format"
+              echo "Auth header length: ${#CURSOR_AUTH}"
+              echo "First 10 chars of auth: ${CURSOR_AUTH:0:10}..."
+              
+              echo "Test 4: Minimal POST request (no auth, no payload)"
+              set +e
+              MINIMAL_TEST=$(curl -s -w "\nEXIT_CODE:%{exitcode}" -X POST "https://httpbin.org/post" 2>&1)
+              MINIMAL_EXIT=$?
+              set -e
+              echo "Minimal curl exit code: $MINIMAL_EXIT"
+              
+              echo "Test 5: POST with auth header only (to httpbin)"
+              set +e  
+              AUTH_TEST=$(curl -s -w "\nEXIT_CODE:%{exitcode}" -X POST "https://httpbin.org/post" \
+                -H "Authorization: Basic $CURSOR_AUTH" 2>&1)
+              AUTH_EXIT=$?
+              set -e
+              echo "Auth test curl exit code: $AUTH_EXIT"
               
               # Temporarily disable exit-on-error to capture curl's exit code
               set +e
