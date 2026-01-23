@@ -259,15 +259,25 @@ program
           const parsed = await parseMigrationDocument(filePath);
           const { frontmatter } = parsed;
           
-          // Create silent logger to prevent pollution
+          // Create logger with debug output for GitHub Actions
           const logger = createLogger("migration-cli");
-          logger.info = () => {}; // Silence info logs
-          logger.debug = () => {}; // Silence debug logs
-          logger.error = () => {}; // Silence error logs
+          if (process.env.GITHUB_ACTIONS) {
+            // In GitHub Actions, we want to see debug info
+            console.error(`[DEBUG] Processing migration: ${frontmatter.id}`);
+          } else {
+            // Locally, silence the logs to prevent pollution
+            logger.info = () => {};
+            logger.debug = () => {};
+            logger.error = () => {};
+          }
           
           // Use state inference instead of frontmatter status
           const stateInfo = await getMigrationState(context, frontmatter.id, parsed.content, logger);
           const state = stateInfo.state;
+          
+          if (process.env.GITHUB_ACTIONS) {
+            console.error(`[DEBUG] ${frontmatter.id}: state=${state}, currentStep=${stateInfo.currentStep}, openPRs=${stateInfo.openPRs.length}, closedPRs=${stateInfo.closedPRs.length}`);
+          }
           
           const checkboxLine = `- [ ] \`${frontmatter.id}\` - ${frontmatter.title}`;
           
