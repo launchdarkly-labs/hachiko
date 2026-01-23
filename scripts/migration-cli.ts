@@ -280,31 +280,27 @@ program
               const openPRs = await getOpenHachikoPRs(context, frontmatter.id, logger);
               const closedPRs = await getClosedHachikoPRs(context, frontmatter.id, logger);
               
-              // Start with migration title
-              inProgressMigrations += `- \`${frontmatter.id}\` - ${frontmatter.title}\n`;
-              
-              // Show completed steps count
               const mergedPRs = closedPRs.filter(pr => pr.merged);
-              if (mergedPRs.length > 0) {
-                const stepText = mergedPRs.length === 1 ? "step" : "steps";
-                inProgressMigrations += `  - ${mergedPRs.length} ${stepText} complete\n`;
-              }
+              const totalSteps = frontmatter.total_steps || 1;
               
-              // Add current open PRs
+              // Start with migration title and progress summary
+              const completedSteps = mergedPRs.length;
+              const progressSummary = completedSteps > 0 ? ` - ${completedSteps} of ${totalSteps} steps completed` : "";
+              inProgressMigrations += `- \`${frontmatter.id}\`${progressSummary}\n`;
+              
+              // Add current open PRs with just the link and title (title already includes step info)
               for (const pr of openPRs) {
-                const stepInfo = pr.title.match(/Step (\d+)/i);
-                const stepText = stepInfo ? `Step ${stepInfo[1]}: ` : "";
-                inProgressMigrations += `  - ${stepText}[Open PR #${pr.number}](${pr.url})\n`;
+                inProgressMigrations += `  ○ [${pr.title}](${pr.url})\n`;
               }
               
               // If no open PRs but has merged PRs, show waiting for next step
               if (openPRs.length === 0 && mergedPRs.length > 0) {
-                inProgressMigrations += `  - Ready for next step\n`;
+                inProgressMigrations += `  ○ Ready for next step\n`;
               }
               
               // If no PRs at all (shouldn't happen for active state)
               if (openPRs.length === 0 && mergedPRs.length === 0) {
-                inProgressMigrations += `  - In progress\n`;
+                inProgressMigrations += `  ○ In progress\n`;
               }
               
               break;
