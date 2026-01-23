@@ -168,7 +168,20 @@ jobs:
           echo "🚀 Executing migration step with $AGENT agent..."
 
           # Generate agent instructions using CLI
-          AGENT_INSTRUCTIONS=$(pnpm migration get-agent-instructions "$MIGRATION_ID" "$STEP_ID" "$AGENT" --repository "${{ github.repository }}")
+          echo "🔧 Generating agent instructions..."
+          echo "Migration ID: $MIGRATION_ID"
+          echo "Step ID: $STEP_ID"
+          echo "Agent: $AGENT"
+          echo "Repository: ${{ github.repository }}"
+          
+          if ! AGENT_INSTRUCTIONS=$(pnpm migration get-agent-instructions "$MIGRATION_ID" "$STEP_ID" "$AGENT" --repository "${{ github.repository }}"); then
+            echo "❌ Failed to generate agent instructions"
+            echo "success=false" >> $GITHUB_OUTPUT
+            echo "error=Failed to generate agent instructions" >> $GITHUB_OUTPUT
+            exit 1
+          fi
+          
+          echo "✅ Agent instructions generated successfully"
 
           # Execute based on agent type
           case "$AGENT" in
