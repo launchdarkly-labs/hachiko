@@ -62,13 +62,18 @@ export async function getMigrationState(
     } else if (openPRs.length > 0) {
       state = "active";
     } else if (closedPRs.length > 0) {
-      // Check if any closed PRs were NOT merged
+      const mergedPRs = closedPRs.filter((pr) => pr.merged);
       const nonMergedClosedPRs = closedPRs.filter((pr) => !pr.merged);
-      if (nonMergedClosedPRs.length > 0) {
-        state = "paused"; // Agent gave up
-      } else {
-        // All closed PRs were merged - migration is still in progress between steps
+      
+      if (mergedPRs.length > 0) {
+        // Has merged PRs - migration is in progress between steps
         state = "active";
+      } else if (nonMergedClosedPRs.length > 0) {
+        // Only non-merged closed PRs - agent gave up
+        state = "paused";
+      } else {
+        // Shouldn't happen but safe fallback
+        state = "pending";
       }
     } else {
       state = "pending"; // No PRs ever created
