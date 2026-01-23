@@ -336,6 +336,12 @@ jobs:
               # Make API call with detailed error handling
               echo "🔧 Executing curl command..."
               
+              # Write payload to temporary file to avoid shell escaping issues
+              PAYLOAD_FILE=$(mktemp)
+              echo "$REQUEST_PAYLOAD" > "$PAYLOAD_FILE"
+              
+              echo "📝 Payload written to temporary file: $PAYLOAD_FILE"
+              
               # Temporarily disable exit-on-error to capture curl's exit code
               set +e
               HTTP_RESPONSE=$(curl -w "\nHTTP_STATUS:%{http_code}\nHTTP_SIZE:%{size_download}" \
@@ -343,10 +349,13 @@ jobs:
                 -H "Authorization: Basic $CURSOR_AUTH" \
                 -H "Content-Type: application/json" \
                 -H "User-Agent: Hachiko/1.0" \
-                -d "$REQUEST_PAYLOAD" 2>&1)
+                -d "@$PAYLOAD_FILE" 2>&1)
               
               CURL_EXIT_CODE=$?
               set -e  # Re-enable exit-on-error
+              
+              # Clean up temporary file
+              rm -f "$PAYLOAD_FILE"
               
               echo "🔍 Curl exit code: $CURL_EXIT_CODE"
               
