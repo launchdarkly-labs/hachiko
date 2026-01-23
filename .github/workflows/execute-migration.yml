@@ -49,10 +49,11 @@ jobs:
           pnpm install
           pnpm build
 
-      - name: Load migration document
+      - name: Load migration configuration
         id: migration
         env:
           MIGRATION_ID: ${{ github.event.inputs.migration_id }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           MIGRATION_FILE="migrations/${MIGRATION_ID}.md"
 
@@ -62,7 +63,7 @@ jobs:
             exit 1
           fi
 
-          # Extract and parse frontmatter
+          # Extract static config from frontmatter (title, agent, total_steps, etc.)
           FRONTMATTER=$(awk '/^---$/{if(f==1) exit; f=1; next} f' "$MIGRATION_FILE")
 
           if [ -z "$FRONTMATTER" ]; then
@@ -70,12 +71,26 @@ jobs:
             exit 1
           fi
 
-          # Parse key fields (simplified YAML parsing)
+          # Parse static fields from frontmatter
           TITLE=$(echo "$FRONTMATTER" | grep "^title:" | sed 's/title: *//' | tr -d "'" | tr -d '"')
           AGENT=$(echo "$FRONTMATTER" | grep "^agent:" | sed 's/agent: *//' | tr -d "'" | tr -d '"')
-          STATUS=$(echo "$FRONTMATTER" | grep "^status:" | sed 's/status: *//' | tr -d "'" | tr -d '"')
-          CURRENT_STEP=$(echo "$FRONTMATTER" | grep "^current_step:" | sed 's/current_step: *//')
           TOTAL_STEPS=$(echo "$FRONTMATTER" | grep "^total_steps:" | sed 's/total_steps: *//')
+
+          # Get calculated state from PR activity
+          echo "🔍 Calculating migration state from PR activity..."
+          STATE_OUTPUT=$(node dist/scripts/get-migration-state.js "$MIGRATION_ID" 2>/dev/null || echo "")
+          
+          if [ -z "$STATE_OUTPUT" ]; then
+            echo "⚠️ Could not calculate state from PR activity, falling back to frontmatter"
+            STATUS=$(echo "$FRONTMATTER" | grep "^status:" | sed 's/status: *//' | tr -d "'" | tr -d '"')
+            CURRENT_STEP=$(echo "$FRONTMATTER" | grep "^current_step:" | sed 's/current_step: *//')
+            echo "📊 Status: $STATUS (from frontmatter)"
+          else
+            # Parse the calculated state
+            STATUS=$(echo "$STATE_OUTPUT" | grep "^status=" | cut -d'=' -f2)
+            CURRENT_STEP=$(echo "$STATE_OUTPUT" | grep "^current_step=" | cut -d'=' -f2)
+            echo "📊 Status: $STATUS (calculated from PR activity)"
+          fi
 
           echo "migration_file=$MIGRATION_FILE" >> $GITHUB_OUTPUT
           echo "title=$TITLE" >> $GITHUB_OUTPUT
@@ -86,7 +101,6 @@ jobs:
 
           echo "📋 Migration: $TITLE"
           echo "🤖 Agent: $AGENT"
-          echo "📊 Status: $STATUS"
           echo "📈 Progress: $CURRENT_STEP/$TOTAL_STEPS"
 
       - name: Validate execution conditions
@@ -104,23 +118,29 @@ jobs:
             exit 1
           fi
 
-          # Validate step number - allow current step or next step (for automatic advancement)
+          # Calculate next step for validation
           NEXT_STEP=$((CURRENT_STEP + 1))
+
+          # For active/paused status, only allow if re-executing current step or advancing to next step
+          if [ "$MIGRATION_STATUS" = "active" ] || [ "$MIGRATION_STATUS" = "paused" ]; then
+            if [ "$FORCE" != "true" ]; then
+              if [ "$REQUESTED_STEP" != "$CURRENT_STEP" ] && [ "$REQUESTED_STEP" != "$NEXT_STEP" ]; then
+                echo "❌ Migration $MIGRATION_STATUS. Can only re-execute current step ($CURRENT_STEP) or advance to next step ($NEXT_STEP). Use force=true to override."
+                exit 1
+              fi
+            fi
+          fi
+
+          # Validate step number - allow current step or next step (for automatic advancement)
           if [ "$REQUESTED_STEP" != "$CURRENT_STEP" ] && [ "$REQUESTED_STEP" != "$NEXT_STEP" ] && [ "$FORCE" != "true" ]; then
             echo "❌ Requested step ($REQUESTED_STEP) doesn't match current step ($CURRENT_STEP) or next step ($NEXT_STEP)"
             exit 1
           fi
-          
-          if [ "$REQUESTED_STEP" = "$NEXT_STEP" ]; then
-            echo "🔄 Advancing to next step: $REQUESTED_STEP (current: $CURRENT_STEP)"
-          fi
 
           if [ "$REQUESTED_STEP" = "$NEXT_STEP" ]; then
             echo "🔄 Advancing to next step: $REQUESTED_STEP (current: $CURRENT_STEP)"
-          fi
-
-          if [ "$REQUESTED_STEP" = "$NEXT_STEP" ]; then
-            echo "🔄 Advancing to next step: $REQUESTED_STEP (current: $CURRENT_STEP)"
+          elif [ "$REQUESTED_STEP" = "$CURRENT_STEP" ]; then
+            echo "🔄 Re-executing current step: $REQUESTED_STEP"
           fi
 
           echo "✅ Execution conditions validated"
@@ -133,24 +153,13 @@ jobs:
 
           echo "✅ Git configured for agent use"
 
-      - name: Update migration status to in_progress
+      - name: Log execution start
         env:
-          MIGRATION_FILE: ${{ steps.migration.outputs.migration_file }}
+          MIGRATION_ID: ${{ github.event.inputs.migration_id }}
           STEP_ID: ${{ github.event.inputs.step_id }}
         run: |
-          echo "📝 Updating migration status..."
-
-          # Update frontmatter in migration document
-          # This is a simplified approach - in production, we'd use proper YAML parsing
-          sed -i "s/status: .*/status: in_progress/" "$MIGRATION_FILE"
-          sed -i "s/current_step: .*/current_step: $STEP_ID/" "$MIGRATION_FILE"
-          sed -i "s/last_updated: .*/last_updated: $(date -u +%Y-%m-%dT%H:%M:%SZ)/" "$MIGRATION_FILE"
-
-          # Commit the status update
-          git add "$MIGRATION_FILE"
-          git commit -m "Update migration status: ${{ github.event.inputs.migration_id }} step $STEP_ID in progress"
-
-          echo "✅ Migration status updated"
+          echo "🚀 Starting execution of migration $MIGRATION_ID step $STEP_ID"
+          echo "Migration status and current step are now calculated dynamically from PR activity"
 
       - name: Execute migration with cloud agent
         id: execute
@@ -356,27 +365,12 @@ jobs:
       - name: Handle execution failure
         if: steps.execute.outputs.success != 'true'
         env:
-          MIGRATION_FILE: ${{ steps.migration.outputs.migration_file }}
           MIGRATION_ID: ${{ github.event.inputs.migration_id }}
+          STEP_ID: ${{ github.event.inputs.step_id }}
         run: |
-          echo "❌ Migration execution failed"
-
-          # Update migration status to failed
-          sed -i "s/status: .*/status: failed/" "$MIGRATION_FILE"
-          sed -i "s/last_updated: .*/last_updated: $(date -u +%Y-%m-%dT%H:%M:%SZ)/" "$MIGRATION_FILE"
-
-          # Add error message
-          if ! grep -q "^error:" "$MIGRATION_FILE"; then
-            sed -i "/^last_updated:/a error: Agent execution failed" "$MIGRATION_FILE"
-          else
-            sed -i "s/error: .*/error: Agent execution failed/" "$MIGRATION_FILE"
-          fi
-
-          git add "$MIGRATION_FILE"
-          git commit -m "Mark migration as failed: $MIGRATION_ID"
-          git push origin main
-
-          echo "Migration marked as failed in repository"
+          echo "❌ Migration execution failed for $MIGRATION_ID step $STEP_ID"
+          echo "Migration status will be inferred as 'paused' based on the failed PR attempt"
+          echo "Error: ${{ steps.execute.outputs.error }}"
           exit 1
 
       - name: Trigger migration-dashboard update

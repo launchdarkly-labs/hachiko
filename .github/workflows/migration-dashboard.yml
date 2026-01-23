@@ -121,10 +121,33 @@ jobs:
             if [ -n "$MIGRATION_ID" ] && [ "$MIGRATION_ID" != "✨" ]; then
               echo "Starting migration: $MIGRATION_ID"
               
-              # Trigger migration execution
+              # Get current step from calculated state (preferred) or fallback to migration file
+              echo "🔍 Calculating current step for $MIGRATION_ID from PR activity..."
+              STATE_OUTPUT=$(node dist/scripts/get-migration-state.js "$MIGRATION_ID" 2>/dev/null || echo "")
+              
+              if [ -n "$STATE_OUTPUT" ]; then
+                CURRENT_STEP=$(echo "$STATE_OUTPUT" | grep "^current_step=" | cut -d'=' -f2)
+                echo "Migration $MIGRATION_ID at step: $CURRENT_STEP (calculated from PR activity)"
+              else
+                echo "⚠️ Could not calculate step from PR activity, falling back to migration file"
+                MIGRATION_FILE="migrations/${MIGRATION_ID}.md"
+                if [ -f "$MIGRATION_FILE" ]; then
+                  CURRENT_STEP=$(awk '/^---$/{if(f==1) exit; f=1; next} f' "$MIGRATION_FILE" | grep "^current_step:" | sed 's/current_step: *//')
+                  # Default to step 1 if not found or invalid
+                  if ! [[ "$CURRENT_STEP" =~ ^[0-9]+$ ]] || [ "$CURRENT_STEP" -lt 1 ]; then
+                    CURRENT_STEP=1
+                  fi
+                  echo "Migration $MIGRATION_ID at step: $CURRENT_STEP (from frontmatter)"
+                else
+                  echo "Warning: Migration file not found, defaulting to step 1"
+                  CURRENT_STEP=1
+                fi
+              fi
+              
+              # Trigger migration execution with correct step
               gh workflow run execute-migration.yml \
                 -f migration_id="$MIGRATION_ID" \
-                -f step_id="1"
+                -f step_id="$CURRENT_STEP"
               
               MIGRATIONS_TRIGGERED=true
             fi
