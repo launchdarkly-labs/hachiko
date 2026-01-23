@@ -40,14 +40,18 @@ export async function getMigrationState(context, migrationId, migrationDocConten
             state = "active";
         }
         else if (closedPRs.length > 0) {
-            // Check if any closed PRs were NOT merged
-            const nonMergedClosedPRs = closedPRs.filter((pr) => !pr.merged);
-            if (nonMergedClosedPRs.length > 0) {
-                state = "paused"; // Agent gave up
+            // Sort all closed PRs by creation date (most recent first)
+            // Note: We'll need to get creation dates from the GitHub API
+            // For now, PR numbers are generally chronological, so we can use those
+            const sortedClosedPRs = [...closedPRs].sort((a, b) => b.number - a.number);
+            const mostRecentPR = sortedClosedPRs[0];
+            if (mostRecentPR?.merged) {
+                // Most recent PR was merged - migration is between steps
+                state = "active";
             }
             else {
-                // All closed PRs were merged - migration is still in progress between steps
-                state = "active";
+                // Most recent PR was closed without merging - agent gave up
+                state = "paused";
             }
         }
         else {
