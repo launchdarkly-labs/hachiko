@@ -25,7 +25,7 @@ export interface PullRequest {
         name: string;
     }>;
     html_url: string;
-    merged: boolean;
+    merged_at: string | null;
 }
 /**
  * Detect if a PR is a Hachiko migration PR and extract migration ID

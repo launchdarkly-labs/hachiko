@@ -33,7 +33,7 @@ describe("PR Detection Service", () => {
         head: { ref: "hachiko/add-jsdoc-comments" },
         labels: [],
         html_url: "https://github.com/repo/pull/123",
-        merged: false,
+        merged_at: null,
       };
 
       expect(extractMigrationId(pr)).toBe("add-jsdoc-comments");
@@ -47,7 +47,7 @@ describe("PR Detection Service", () => {
         head: { ref: "hachiko/add-jsdoc-comments-utility-functions" },
         labels: [],
         html_url: "https://github.com/repo/pull/123",
-        merged: false,
+        merged_at: null,
       };
 
       expect(extractMigrationId(pr)).toBe("add-jsdoc-comments");
@@ -61,7 +61,7 @@ describe("PR Detection Service", () => {
         head: { ref: "feature/some-branch" },
         labels: [{ name: "bug" }, { name: "hachiko:migration" }],
         html_url: "https://github.com/repo/pull/123",
-        merged: false,
+        merged_at: null,
       };
 
       expect(extractMigrationId(pr)).toBe("add-jsdoc-comments");
@@ -75,7 +75,7 @@ describe("PR Detection Service", () => {
         head: { ref: "feature/some-branch" },
         labels: [],
         html_url: "https://github.com/repo/pull/123",
-        merged: false,
+        merged_at: null,
       };
 
       expect(extractMigrationId(pr)).toBe("add-jsdoc-comments");
@@ -89,7 +89,7 @@ describe("PR Detection Service", () => {
         head: { ref: "hachiko/correct-migration-id" },
         labels: [{ name: "hachiko:migration" }],
         html_url: "https://github.com/repo/pull/123",
-        merged: false,
+        merged_at: null,
       };
 
       expect(extractMigrationId(pr)).toBe("correct-migration-id");
@@ -103,7 +103,7 @@ describe("PR Detection Service", () => {
         head: { ref: "feature/some-feature" },
         labels: [{ name: "enhancement" }],
         html_url: "https://github.com/repo/pull/123",
-        merged: false,
+        merged_at: null,
       };
 
       expect(extractMigrationId(pr)).toBeNull();
@@ -117,7 +117,7 @@ describe("PR Detection Service", () => {
         head: { ref: "hachiko/" }, // Missing migration ID
         labels: [],
         html_url: "https://github.com/repo/pull/123",
-        merged: false,
+        merged_at: null,
       };
 
       expect(extractMigrationId(pr)).toBeNull();
@@ -133,7 +133,7 @@ describe("PR Detection Service", () => {
         head: { ref: "hachiko/add-jsdoc-comments" },
         labels: [{ name: "hachiko:migration" }],
         html_url: "https://github.com/repo/pull/123",
-        merged: false,
+        merged_at: null,
       };
 
       const result = detectHachikoPR(pr);
@@ -158,7 +158,7 @@ describe("PR Detection Service", () => {
         head: { ref: "feature/some-feature" },
         labels: [{ name: "enhancement" }],
         html_url: "https://github.com/repo/pull/123",
-        merged: false,
+        merged_at: null,
       };
 
       expect(detectHachikoPR(pr)).toBeNull();
@@ -174,7 +174,7 @@ describe("PR Detection Service", () => {
         head: { ref: "hachiko/add-jsdoc-comments" },
         labels: [{ name: "hachiko:migration" }],
         html_url: "https://github.com/repo/pull/123",
-        merged: false,
+        merged_at: null,
       };
 
       const result = validateHachikoPR(pr);
@@ -193,7 +193,7 @@ describe("PR Detection Service", () => {
         head: { ref: "hachiko/add-jsdoc-comments" },
         labels: [{ name: "enhancement" }], // No hachiko label
         html_url: "https://github.com/repo/pull/123",
-        merged: false,
+        merged_at: null,
       };
 
       const result = validateHachikoPR(pr);
@@ -211,7 +211,7 @@ describe("PR Detection Service", () => {
         head: { ref: "hachiko/add-jsdoc-comments" },
         labels: [{ name: "enhancement" }],
         html_url: "https://github.com/repo/pull/123",
-        merged: false,
+        merged_at: null,
       };
 
       const result = validateHachikoPR(pr);
@@ -232,7 +232,7 @@ describe("PR Detection Service", () => {
         head: { ref: "feature/update-utils" },
         labels: [{ name: "enhancement" }],
         html_url: "https://github.com/repo/pull/123",
-        merged: false,
+        merged_at: null,
       };
 
       const result = validateHachikoPR(pr);
@@ -256,7 +256,7 @@ describe("PR Detection Service", () => {
         head: { ref: "hachiko/test-migration" },
         labels: [], // Empty labels array
         html_url: "https://github.com/repo/pull/123",
-        merged: false,
+        merged_at: null,
       };
 
       expect(extractMigrationId(pr)).toBe("test-migration");
@@ -270,7 +270,7 @@ describe("PR Detection Service", () => {
         head: { ref: "hachiko/react-v16-to-v18-hooks-migration" },
         labels: [],
         html_url: "https://github.com/repo/pull/123",
-        merged: false,
+        merged_at: null,
       };
 
       expect(extractMigrationId(pr)).toBe("react-v16-to-v18-hooks-migration");
@@ -284,7 +284,7 @@ describe("PR Detection Service", () => {
         head: { ref: "feature/some-branch" },
         labels: [],
         html_url: "https://github.com/repo/pull/123",
-        merged: false,
+        merged_at: null,
       };
 
       expect(extractMigrationId(pr)).toBe("URGENT"); // Gets first bracketed item
@@ -298,7 +298,7 @@ describe("PR Detection Service", () => {
         head: { ref: "hachiko/test-migration" },
         labels: [{ name: "hachiko:migration" }],
         html_url: "https://github.com/repo/pull/123",
-        merged: true,
+        merged_at: "2023-01-01T00:00:00Z",
       };
 
       const result = detectHachikoPR(pr);
