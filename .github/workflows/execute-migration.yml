@@ -283,37 +283,121 @@ jobs:
                 exit 1
               fi
 
+              # Validate API key format and length
+              echo "🔍 Validating Cursor API key..."
+              if [ ${#CURSOR_API_KEY} -lt 10 ]; then
+                echo "❌ Cursor API key appears invalid (length: ${#CURSOR_API_KEY})"
+                echo "success=false" >> $GITHUB_OUTPUT
+                echo "error=Invalid Cursor API key format" >> $GITHUB_OUTPUT
+                exit 1
+              fi
+              echo "✅ API key format validation passed (length: ${#CURSOR_API_KEY})"
+
               # Create Cursor agent task
               CURSOR_AUTH=$(echo -n "$CURSOR_API_KEY:" | base64)
+              echo "🔐 Authorization header prepared"
               
               # Prepare webhook URL field if provided
               if [ -n "$CURSOR_WEBHOOK_URL" ]; then
                 WEBHOOK_FIELD=",\"webhook_url\": $(echo "$CURSOR_WEBHOOK_URL" | jq -Rs .)"
+                echo "🔗 Webhook URL configured"
               else
                 WEBHOOK_FIELD=""
+                echo "🔗 No webhook URL configured"
               fi
               
-              CURSOR_RESPONSE=$(curl -s -X POST "https://api.cursor.com/v0/agents" \
+              # Create request payload
+              REQUEST_PAYLOAD="{
+                \"task\": $(echo "$AGENT_INSTRUCTIONS" | jq -Rs .),
+                \"repository_url\": \"https://github.com/${{ github.repository }}\",
+                \"branch\": \"main\",
+                \"metadata\": {
+                  \"plan_id\": \"$MIGRATION_ID\",
+                  \"step_id\": \"$STEP_ID\"
+                }${WEBHOOK_FIELD}
+              }"
+              
+              echo "🚀 Making Cursor API request..."
+              echo "Endpoint: https://api.cursor.com/v0/agents"
+              echo "Payload size: ${#REQUEST_PAYLOAD} bytes"
+              
+              # Make API call with detailed error handling
+              HTTP_RESPONSE=$(curl -w "\nHTTP_STATUS:%{http_code}\nHTTP_SIZE:%{size_download}" \
+                -s -X POST "https://api.cursor.com/v0/agents" \
                 -H "Authorization: Basic $CURSOR_AUTH" \
                 -H "Content-Type: application/json" \
                 -H "User-Agent: Hachiko/1.0" \
-                -d "{
-                  \"task\": $(echo "$AGENT_INSTRUCTIONS" | jq -Rs .),
-                  \"repository_url\": \"https://github.com/${{ github.repository }}\",
-                  \"branch\": \"main\",
-                  \"metadata\": {
-                    \"plan_id\": \"$MIGRATION_ID\",
-                    \"step_id\": \"$STEP_ID\"
-                  }${WEBHOOK_FIELD}
-                }")
-
-              echo "Cursor API Response: $CURSOR_RESPONSE"
+                -d "$REQUEST_PAYLOAD" 2>&1)
               
-              AGENT_ID=$(echo "$CURSOR_RESPONSE" | jq -r '.agent.id // empty')
+              # Extract HTTP status and response body
+              CURSOR_RESPONSE=$(echo "$HTTP_RESPONSE" | sed '/^HTTP_STATUS:/,$d')
+              HTTP_STATUS=$(echo "$HTTP_RESPONSE" | grep "^HTTP_STATUS:" | cut -d: -f2)
+              RESPONSE_SIZE=$(echo "$HTTP_RESPONSE" | grep "^HTTP_SIZE:" | cut -d: -f2)
+              
+              echo "📊 API Response Details:"
+              echo "  HTTP Status: $HTTP_STATUS"
+              echo "  Response Size: $RESPONSE_SIZE bytes"
+              echo "  Response Body: $CURSOR_RESPONSE"
+              
+              # Handle different HTTP status codes
+              case "$HTTP_STATUS" in
+                "200"|"201")
+                  echo "✅ API request successful (HTTP $HTTP_STATUS)"
+                  ;;
+                "401")
+                  echo "❌ Authentication failed (HTTP 401 Unauthorized)"
+                  echo "This indicates the CURSOR_API_KEY is invalid, expired, or malformed"
+                  echo "success=false" >> $GITHUB_OUTPUT
+                  echo "error=Cursor API authentication failed - invalid API key" >> $GITHUB_OUTPUT
+                  exit 1
+                  ;;
+                "403")
+                  echo "❌ Access forbidden (HTTP 403 Forbidden)"
+                  echo "The API key may not have permission to create agents"
+                  echo "success=false" >> $GITHUB_OUTPUT
+                  echo "error=Cursor API access forbidden - insufficient permissions" >> $GITHUB_OUTPUT
+                  exit 1
+                  ;;
+                "429")
+                  echo "❌ Rate limit exceeded (HTTP 429 Too Many Requests)"
+                  echo "success=false" >> $GITHUB_OUTPUT
+                  echo "error=Cursor API rate limit exceeded" >> $GITHUB_OUTPUT
+                  exit 1
+                  ;;
+                "500"|"502"|"503"|"504")
+                  echo "❌ Server error (HTTP $HTTP_STATUS)"
+                  echo "Cursor API is experiencing server issues"
+                  echo "success=false" >> $GITHUB_OUTPUT
+                  echo "error=Cursor API server error (HTTP $HTTP_STATUS)" >> $GITHUB_OUTPUT
+                  exit 1
+                  ;;
+                *)
+                  echo "❌ Unexpected HTTP status: $HTTP_STATUS"
+                  echo "success=false" >> $GITHUB_OUTPUT
+                  echo "error=Cursor API unexpected response (HTTP $HTTP_STATUS)" >> $GITHUB_OUTPUT
+                  exit 1
+                  ;;
+              esac
+              
+              # Parse agent ID from response
+              AGENT_ID=$(echo "$CURSOR_RESPONSE" | jq -r '.agent.id // empty' 2>/dev/null)
               if [ -z "$AGENT_ID" ]; then
-                echo "❌ Failed to create Cursor agent"
-                echo "success=false" >> $GITHUB_OUTPUT
-                echo "error=Failed to create Cursor agent" >> $GITHUB_OUTPUT
+                echo "❌ Failed to extract agent ID from response"
+                echo "Response may be malformed or missing 'agent.id' field"
+                echo "Raw response: $CURSOR_RESPONSE"
+                
+                # Check if response contains error information
+                ERROR_CODE=$(echo "$CURSOR_RESPONSE" | jq -r '.code // empty' 2>/dev/null)
+                ERROR_MESSAGE=$(echo "$CURSOR_RESPONSE" | jq -r '.message // empty' 2>/dev/null)
+                
+                if [ -n "$ERROR_CODE" ] && [ -n "$ERROR_MESSAGE" ]; then
+                  echo "API Error Details: code='$ERROR_CODE', message='$ERROR_MESSAGE'"
+                  echo "success=false" >> $GITHUB_OUTPUT
+                  echo "error=Cursor API error: $ERROR_CODE - $ERROR_MESSAGE" >> $GITHUB_OUTPUT
+                else
+                  echo "success=false" >> $GITHUB_OUTPUT
+                  echo "error=Failed to create Cursor agent - malformed response" >> $GITHUB_OUTPUT
+                fi
                 exit 1
               fi
 
