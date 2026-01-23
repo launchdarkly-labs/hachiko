@@ -321,6 +321,18 @@ jobs:
               echo "Endpoint: https://api.cursor.com/v0/agents"
               echo "Payload size: ${#REQUEST_PAYLOAD} bytes"
               
+              # Debug curl command parameters (without exposing secrets)
+              echo "🔍 Debug Information:"
+              echo "AUTH header present: $([ -n "$CURSOR_AUTH" ] && echo "✅ Yes (${#CURSOR_AUTH} chars)" || echo "❌ No")"
+              echo "Payload structure validation:"
+              echo "$REQUEST_PAYLOAD" | jq -r 'keys[]' 2>/dev/null || echo "❌ Invalid JSON structure"
+              echo "Payload has required fields: $(echo "$REQUEST_PAYLOAD" | jq -r 'has("task") and has("repository_url")' 2>/dev/null || echo "unknown")"
+              
+              # Validate curl command syntax without making the request
+              echo "🔧 Validating curl command syntax..."
+              CURL_SYNTAX_CHECK=$(curl --help >/dev/null 2>&1 && echo "✅ curl available" || echo "❌ curl not available")
+              echo "$CURL_SYNTAX_CHECK"
+              
               # Make API call with detailed error handling
               echo "🔧 Executing curl command..."
               
@@ -347,6 +359,7 @@ jobs:
                   7) echo "Failed to connect to host." ;;
                   28) echo "Operation timeout. The specified time-out period was reached." ;;
                   35) echo "SSL connect error. A TLS/SSL handshake problem occurred." ;;
+                  43) echo "Internal curl error - bad function parameter. Check curl command syntax." ;;
                   56) echo "Failure in receiving network data." ;;
                   *) echo "Unknown curl error. Check network connectivity and API endpoint." ;;
                 esac
