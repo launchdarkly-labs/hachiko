@@ -116,7 +116,7 @@ export function parseMigrationBranchName(branchName: string): {
   stepId: string;
   chunk: string | undefined;
 } | null {
-  const match = branchName.match(/^hachi\/([^/]+)\/([^/]+)(?:\/(.+))?$/);
+  const match = branchName.match(/^(?:hachi|hachiko)\/([^/]+)\/([^/]+)(?:\/(.+))?$/);
 
   if (!match || !match[1] || !match[2]) {
     return null;

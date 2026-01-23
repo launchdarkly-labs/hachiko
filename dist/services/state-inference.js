@@ -101,13 +101,18 @@ function calculateCurrentStep(openPRs, closedPRs, logger) {
     const log = logger || createLogger("step-calculation");
     // Helper to extract step number from branch name
     function getStepNumber(pr) {
-        const parsed = parseMigrationBranchName(pr.branch);
-        if (!parsed?.stepId) {
-            return null;
+        // Handle hachiko/{migration-id}-step-{N} format
+        const stepMatch = pr.branch.match(/-step-(\d+)(?:-|$)/);
+        if (stepMatch && stepMatch[1]) {
+            return parseInt(stepMatch[1], 10);
         }
-        // Extract number from stepId (e.g., "step-1" -> 1, "1" -> 1)
-        const stepMatch = parsed.stepId.match(/(\d+)/);
-        return stepMatch?.[1] ? parseInt(stepMatch[1], 10) : null;
+        // Fallback to old hachi/{migration-id}/{step-id} format
+        const parsed = parseMigrationBranchName(pr.branch);
+        if (parsed?.stepId) {
+            const legacyStepMatch = parsed.stepId.match(/(\d+)/);
+            return legacyStepMatch?.[1] ? parseInt(legacyStepMatch[1], 10) : null;
+        }
+        return null;
     }
     // If there are open PRs, find the step being worked on
     if (openPRs.length > 0) {
