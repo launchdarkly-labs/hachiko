@@ -137,7 +137,7 @@ export function extractMigrationId(pr: PullRequest): string | null {
   if (bracketMatch && bracketMatch[1]) {
     return bracketMatch[1];
   }
-  
+
   // Pattern 2: "Migration: Title (Step X/Y)" - extract from content
   // This requires mapping back to migration ID from title, which is fragile
   // For now, rely on branch name detection for agent PRs
@@ -195,7 +195,7 @@ export async function getHachikoPRs(
       per_page: 100,
     });
 
-    const branchPRs = allPRsResponse.data.filter(pr => 
+    const branchPRs = allPRsResponse.data.filter((pr) =>
       pr.head.ref.startsWith(`hachiko/${migrationId}`)
     );
 

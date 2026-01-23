@@ -13,6 +13,7 @@ export interface MigrationStateInfo {
     allTasksComplete: boolean;
     totalTasks: number;
     completedTasks: number;
+    currentStep: number;
     lastUpdated: string;
 }
 /**
