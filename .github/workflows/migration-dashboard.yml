@@ -123,7 +123,7 @@ jobs:
               
               # Get current step from calculated state (preferred) or fallback to migration file
               echo "🔍 Calculating current step for $MIGRATION_ID from PR activity..."
-              STATE_OUTPUT=$(node dist/scripts/get-migration-state.js "$MIGRATION_ID" 2>/dev/null || echo "")
+              STATE_OUTPUT=$(GITHUB_TOKEN="${GITHUB_TOKEN}" GITHUB_REPOSITORY="${GITHUB_REPOSITORY}" node dist/scripts/get-migration-state.js "$MIGRATION_ID" 2>/dev/null || echo "")
               
               if [ -n "$STATE_OUTPUT" ]; then
                 CURRENT_STEP=$(echo "$STATE_OUTPUT" | grep "^current_step=" | cut -d'=' -f2)
