@@ -25,7 +25,7 @@ export interface PullRequest {
   head: { ref: string };
   labels: Array<{ name: string }>;
   html_url: string;
-  merged: boolean;
+  merged_at: string | null;
 }
 
 /**
@@ -46,7 +46,7 @@ export function detectHachikoPR(pr: PullRequest): HachikoPR | null {
     branch: pr.head.ref,
     labels: pr.labels.map((l) => l.name),
     url: pr.html_url,
-    merged: pr.merged,
+    merged: pr.merged_at !== null,
   };
 }
 
