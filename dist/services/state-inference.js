@@ -4,6 +4,7 @@
  */
 import { createLogger } from "../utils/logger.js";
 import { getOpenHachikoPRs, getClosedHachikoPRs } from "./pr-detection.js";
+import { parseMigrationBranchName } from "../utils/git.js";
 /**
  * Get the inferred state of a migration based on PR activity and task completion
  *
@@ -31,6 +32,8 @@ export async function getMigrationState(context, migrationId, migrationDocConten
             totalTasks = taskInfo.totalTasks;
             completedTasks = taskInfo.completedTasks;
         }
+        // Calculate current step from PR activity
+        const currentStep = calculateCurrentStep(openPRs, closedPRs, log);
         // Apply state inference rules
         let state;
         if (allTasksComplete && totalTasks > 0) {
@@ -64,6 +67,7 @@ export async function getMigrationState(context, migrationId, migrationDocConten
             allTasksComplete,
             totalTasks,
             completedTasks,
+            currentStep,
             lastUpdated: new Date().toISOString(),
         };
         log.info({
@@ -75,6 +79,7 @@ export async function getMigrationState(context, migrationId, migrationDocConten
             nonMergedClosedPRs: closedPRs.filter((pr) => !pr.merged).length,
             completedTasks,
             totalTasks,
+            currentStep,
         }, "Inferred migration state");
         return stateInfo;
     }
@@ -82,6 +87,76 @@ export async function getMigrationState(context, migrationId, migrationDocConten
         log.error({ error, migrationId }, "Failed to get migration state");
         throw error;
     }
+}
+/**
+ * Calculate current migration step from PR activity
+ *
+ * Rules:
+ * - If there's an open PR, current step is the step number from that PR's branch
+ * - If no open PRs but there are merged PRs, current step is the highest merged step + 1
+ * - If no PRs at all, current step is 1 (ready to start)
+ * - If only closed (non-merged) PRs, current step is the step of the most recent failed attempt
+ */
+function calculateCurrentStep(openPRs, closedPRs, logger) {
+    const log = logger || createLogger("step-calculation");
+    // Helper to extract step number from branch name
+    function getStepNumber(pr) {
+        // Handle hachiko/{migration-id}-step-{N} format
+        const stepMatch = pr.branch.match(/-step-(\d+)(?:-|$)/);
+        if (stepMatch && stepMatch[1]) {
+            return parseInt(stepMatch[1], 10);
+        }
+        // Fallback to old hachi/{migration-id}/{step-id} format
+        const parsed = parseMigrationBranchName(pr.branch);
+        if (parsed?.stepId) {
+            const legacyStepMatch = parsed.stepId.match(/(\d+)/);
+            return legacyStepMatch?.[1] ? parseInt(legacyStepMatch[1], 10) : null;
+        }
+        return null;
+    }
+    // If there are open PRs, find the step being worked on
+    if (openPRs.length > 0) {
+        const openSteps = openPRs
+            .map(getStepNumber)
+            .filter((step) => step !== null)
+            .sort((a, b) => a - b);
+        if (openSteps.length > 0) {
+            const currentStep = openSteps[0]; // Lowest step number being worked on
+            log.debug({ currentStep, openSteps }, "Current step from open PRs");
+            return currentStep;
+        }
+    }
+    // No open PRs - check merged PRs to see what's been completed
+    const mergedPRs = closedPRs.filter((pr) => pr.merged);
+    if (mergedPRs.length > 0) {
+        const mergedSteps = mergedPRs
+            .map(getStepNumber)
+            .filter((step) => step !== null)
+            .sort((a, b) => b - a); // Highest first
+        if (mergedSteps.length > 0) {
+            const highestMergedStep = mergedSteps[0];
+            const nextStep = highestMergedStep + 1;
+            log.debug({ highestMergedStep, nextStep, mergedSteps }, "Next step after merged PRs");
+            return nextStep;
+        }
+    }
+    // Check for failed attempts (closed but not merged)
+    const failedPRs = closedPRs.filter((pr) => !pr.merged);
+    if (failedPRs.length > 0) {
+        // Sort by PR number to get most recent attempt
+        const sortedFailedPRs = [...failedPRs].sort((a, b) => b.number - a.number);
+        const mostRecentFailedPR = sortedFailedPRs[0];
+        if (mostRecentFailedPR) {
+            const failedStep = getStepNumber(mostRecentFailedPR);
+            if (failedStep) {
+                log.debug({ failedStep, prNumber: mostRecentFailedPR.number }, "Current step from most recent failed attempt");
+                return failedStep; // Retry the failed step
+            }
+        }
+    }
+    // No PRs or unable to determine step - default to step 1
+    log.debug({}, "Defaulting to step 1 (no PR activity or step info)");
+    return 1;
 }
 /**
  * Get task completion information from migration document content
@@ -173,6 +248,7 @@ export async function getMultipleMigrationStates(context, migrationIds, ref = "m
                         allTasksComplete: false,
                         totalTasks: 0,
                         completedTasks: 0,
+                        currentStep: 1,
                         lastUpdated: new Date().toISOString(),
                     },
                 ];

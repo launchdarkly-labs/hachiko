@@ -251,6 +251,7 @@ Some regular content here.`;
         allTasksComplete: false,
         totalTasks: 5,
         completedTasks: 0,
+        currentStep: 1,
         lastUpdated: "2024-01-01T00:00:00Z",
       };
 
@@ -266,6 +267,7 @@ Some regular content here.`;
         allTasksComplete: false,
         totalTasks: 0,
         completedTasks: 0,
+        currentStep: 1,
         lastUpdated: "2024-01-01T00:00:00Z",
       };
 
@@ -292,6 +294,7 @@ Some regular content here.`;
         allTasksComplete: false,
         totalTasks: 5,
         completedTasks: 2,
+        currentStep: 2,
         lastUpdated: "2024-01-01T00:00:00Z",
       };
 
@@ -328,6 +331,7 @@ Some regular content here.`;
         allTasksComplete: false,
         totalTasks: 0,
         completedTasks: 0,
+        currentStep: 1,
         lastUpdated: "2024-01-01T00:00:00Z",
       };
 
@@ -354,6 +358,7 @@ Some regular content here.`;
         allTasksComplete: false,
         totalTasks: 5,
         completedTasks: 3,
+        currentStep: 1,
         lastUpdated: "2024-01-01T00:00:00Z",
       };
 
@@ -369,11 +374,216 @@ Some regular content here.`;
         allTasksComplete: true,
         totalTasks: 5,
         completedTasks: 5,
+        currentStep: 5,
         lastUpdated: "2024-01-01T00:00:00Z",
       };
 
       const summary = getMigrationStateSummary(stateInfo);
       expect(summary).toBe("Completed (all 5 tasks finished)");
+    });
+  });
+
+  describe("calculateCurrentStep", () => {
+    const mockContext = {
+      octokit: {},
+      payload: {
+        repository: {
+          owner: { login: "test-owner" },
+          name: "test-repo",
+        },
+      },
+    } as any;
+
+    it("should return lowest open step when open PRs exist", async () => {
+      const openPRs = [
+        {
+          number: 124,
+          title: "Step 2",
+          state: "open" as const,
+          migrationId: "test-migration",
+          branch: "hachiko/test-migration-step-2",
+          labels: [],
+          url: "https://github.com/test/124",
+          merged: false,
+        },
+        {
+          number: 123,
+          title: "Step 1",
+          state: "open" as const,
+          migrationId: "test-migration",
+          branch: "hachiko/test-migration-step-1",
+          labels: [],
+          url: "https://github.com/test/123",
+          merged: false,
+        },
+      ];
+
+      mockGetOpenHachikoPRs.mockResolvedValue(openPRs);
+      mockGetClosedHachikoPRs.mockResolvedValue([]);
+
+      const result = await getMigrationState(mockContext, "test-migration");
+
+      expect(result.currentStep).toBe(1); // Should return lowest step
+    });
+
+    it("should return next step after highest merged step", async () => {
+      const closedPRs = [
+        {
+          number: 123,
+          title: "Step 1",
+          state: "closed" as const,
+          migrationId: "test-migration",
+          branch: "hachiko/test-migration-step-1",
+          labels: [],
+          url: "https://github.com/test/123",
+          merged: true,
+        },
+        {
+          number: 124,
+          title: "Step 2",
+          state: "closed" as const,
+          migrationId: "test-migration",
+          branch: "hachiko/test-migration-step-2",
+          labels: [],
+          url: "https://github.com/test/124",
+          merged: true,
+        },
+      ];
+
+      mockGetOpenHachikoPRs.mockResolvedValue([]);
+      mockGetClosedHachikoPRs.mockResolvedValue(closedPRs);
+
+      const result = await getMigrationState(mockContext, "test-migration");
+
+      expect(result.currentStep).toBe(3); // Next step after highest merged (2)
+    });
+
+    it("should return failed step when only non-merged closed PRs exist", async () => {
+      const closedPRs = [
+        {
+          number: 125,
+          title: "Step 3 (most recent failure)",
+          state: "closed" as const,
+          migrationId: "test-migration",
+          branch: "hachiko/test-migration-step-3",
+          labels: [],
+          url: "https://github.com/test/125",
+          merged: false,
+        },
+        {
+          number: 123,
+          title: "Step 1 (older failure)",
+          state: "closed" as const,
+          migrationId: "test-migration",
+          branch: "hachiko/test-migration-step-1",
+          labels: [],
+          url: "https://github.com/test/123",
+          merged: false,
+        },
+      ];
+
+      mockGetOpenHachikoPRs.mockResolvedValue([]);
+      mockGetClosedHachikoPRs.mockResolvedValue(closedPRs);
+
+      const result = await getMigrationState(mockContext, "test-migration");
+
+      expect(result.currentStep).toBe(3); // Most recent failed attempt
+    });
+
+    it("should default to step 1 when no PRs exist", async () => {
+      mockGetOpenHachikoPRs.mockResolvedValue([]);
+      mockGetClosedHachikoPRs.mockResolvedValue([]);
+
+      const result = await getMigrationState(mockContext, "test-migration");
+
+      expect(result.currentStep).toBe(1); // Default to step 1
+    });
+
+    it("should handle PRs with non-numeric step identifiers", async () => {
+      const openPRs = [
+        {
+          number: 123,
+          title: "Setup PR",
+          state: "open" as const,
+          migrationId: "test-migration",
+          branch: "hachiko/test-migration-setup",
+          labels: [],
+          url: "https://github.com/test/123",
+          merged: false,
+        },
+      ];
+
+      mockGetOpenHachikoPRs.mockResolvedValue(openPRs);
+      mockGetClosedHachikoPRs.mockResolvedValue([]);
+
+      const result = await getMigrationState(mockContext, "test-migration");
+
+      expect(result.currentStep).toBe(1); // Should default to 1 when no numeric steps found
+    });
+
+    it("should handle PRs without step identifiers in branch names", async () => {
+      const openPRs = [
+        {
+          number: 123,
+          title: "Migration PR",
+          state: "open" as const,
+          migrationId: "test-migration",
+          branch: "hachiko/test-migration",
+          labels: [],
+          url: "https://github.com/test/123",
+          merged: false,
+        },
+      ];
+
+      mockGetOpenHachikoPRs.mockResolvedValue([]);
+      mockGetClosedHachikoPRs.mockResolvedValue([]);
+
+      const result = await getMigrationState(mockContext, "test-migration");
+
+      expect(result.currentStep).toBe(1); // Should default to 1
+    });
+
+    it("should handle mixed merged and non-merged PRs correctly", async () => {
+      const closedPRs = [
+        {
+          number: 123,
+          title: "Step 1 (merged)",
+          state: "closed" as const,
+          migrationId: "test-migration",
+          branch: "hachiko/test-migration-step-1",
+          labels: [],
+          url: "https://github.com/test/123",
+          merged: true,
+        },
+        {
+          number: 124,
+          title: "Step 2 (failed)",
+          state: "closed" as const,
+          migrationId: "test-migration",
+          branch: "hachiko/test-migration-step-2",
+          labels: [],
+          url: "https://github.com/test/124",
+          merged: false,
+        },
+        {
+          number: 125,
+          title: "Step 3 (merged)",
+          state: "closed" as const,
+          migrationId: "test-migration",
+          branch: "hachiko/test-migration-step-3",
+          labels: [],
+          url: "https://github.com/test/125",
+          merged: true,
+        },
+      ];
+
+      mockGetOpenHachikoPRs.mockResolvedValue([]);
+      mockGetClosedHachikoPRs.mockResolvedValue(closedPRs);
+
+      const result = await getMigrationState(mockContext, "test-migration");
+
+      // Should return next step after highest merged (step 3), so step 4
+      expect(result.currentStep).toBe(4);
     });
   });
 

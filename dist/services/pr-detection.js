@@ -129,34 +129,29 @@ export async function getHachikoPRs(context, migrationId, state, logger) {
     const log = logger || createLogger("pr-detection");
     try {
         // Search using multiple methods to ensure we catch all PRs
-        const allPRs = new Map();
-        // Method 1: Search by branch prefix
-        const branchPRs = await context.octokit.pulls.list({
+        const foundPRs = new Map();
+        // Method 1: Search by branch prefix - GitHub API doesn't support prefix search,
+        // so we need to get all PRs and filter by branch name pattern
+        const allPRsResponse = await context.octokit.pulls.list({
             owner: context.payload.repository.owner.login,
             repo: context.payload.repository.name,
             state: state === "all" ? "all" : state,
-            head: `${context.payload.repository.owner.login}:hachiko/${migrationId}`,
             per_page: 100,
         });
-        for (const pr of branchPRs.data) {
+        const branchPRs = allPRsResponse.data.filter((pr) => pr.head.ref.startsWith(`hachiko/${migrationId}`));
+        for (const pr of branchPRs) {
             const hachikoPR = detectHachikoPR(pr);
             if (hachikoPR && hachikoPR.migrationId === migrationId) {
-                allPRs.set(pr.number, hachikoPR);
+                foundPRs.set(pr.number, hachikoPR);
             }
         }
-        // Method 2: Search by label
-        const labelPRs = await context.octokit.pulls.list({
-            owner: context.payload.repository.owner.login,
-            repo: context.payload.repository.name,
-            state: state === "all" ? "all" : state,
-            per_page: 100,
-        });
-        for (const pr of labelPRs.data) {
+        // Method 2: Search by label - we can reuse the same PR list we fetched
+        for (const pr of allPRsResponse.data) {
             const hasHachikoLabel = pr.labels.some((l) => typeof l === "object" && l.name === "hachiko:migration");
             if (hasHachikoLabel) {
                 const hachikoPR = detectHachikoPR(pr);
                 if (hachikoPR && hachikoPR.migrationId === migrationId) {
-                    allPRs.set(pr.number, hachikoPR);
+                    foundPRs.set(pr.number, hachikoPR);
                 }
             }
         }
@@ -164,7 +159,7 @@ export async function getHachikoPRs(context, migrationId, state, logger) {
         // Note: GitHub API doesn't support searching PR titles directly, so we
         // filter the results we already have. In a real implementation, we might
         // use GitHub's search API for more comprehensive results.
-        const results = Array.from(allPRs.values());
+        const results = Array.from(foundPRs.values());
         log.info({ migrationId, state, foundPRs: results.length }, "Found Hachiko PRs for migration");
         return results;
     }

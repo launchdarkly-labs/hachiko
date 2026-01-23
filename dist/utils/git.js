@@ -100,7 +100,7 @@ export function generateMigrationBranchName(planId, stepId, chunk) {
  * ```
  */
 export function parseMigrationBranchName(branchName) {
-    const match = branchName.match(/^hachi\/([^/]+)\/([^/]+)(?:\/(.+))?$/);
+    const match = branchName.match(/^(?:hachi|hachiko)\/([^/]+)\/([^/]+)(?:\/(.+))?$/);
     if (!match || !match[1] || !match[2]) {
         return null;
     }
