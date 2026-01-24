@@ -572,6 +572,101 @@ Some regular content here.`;
       // Should return next step after highest merged (step 3), so step 4
       expect(result.currentStep).toBe(4);
     });
+
+    it("should return correct step for retry after partial completion", async () => {
+      // This reproduces the bug scenario:
+      // - 2 steps have been merged (completed)  
+      // - No open PRs (migration is in-progress but paused state)
+      // - When user clicks retry checkbox, should work on step 3
+      // - Bug: system incorrectly calculates step 4 instead of step 3
+      
+      const closedPRs = [
+        {
+          number: 85,
+          title: "Step 1 (merged)",
+          state: "closed" as const,
+          migrationId: "add-jsdoc-comments",
+          branch: "hachiko/add-jsdoc-comments-step-1",
+          labels: [],
+          url: "https://github.com/test/85",
+          merged: true,
+        },
+        {
+          number: 91,
+          title: "Step 2 (merged)",
+          state: "closed" as const,
+          migrationId: "add-jsdoc-comments",
+          branch: "hachiko/add-jsdoc-comments-step-2",
+          labels: [],
+          url: "https://github.com/test/91",
+          merged: true,
+        },
+      ];
+
+      // No open PRs - this is the state when user clicks retry checkbox
+      mockGetOpenHachikoPRs.mockResolvedValue([]);
+      mockGetClosedHachikoPRs.mockResolvedValue(closedPRs);
+
+      const result = await getMigrationState(mockContext, "add-jsdoc-comments");
+
+      // Should return 3 (next step after highest merged step 2)
+      // This will fail with current implementation due to the bug
+      expect(result.currentStep).toBe(3);
+    });
+
+    it("should prioritize merged PRs over open PRs when both exist (actual bug scenario)", async () => {
+      // This reproduces the ACTUAL bug scenario that occurred:
+      // - 2 steps have been merged (completed)  
+      // - There's an open PR for step 4 (created by the bug)
+      // - The system should ignore the open PR and work on step 3
+      // - Bug: system returns step 4 from open PR instead of step 3
+      
+      const openPRs = [
+        {
+          number: 98,
+          title: "Migration: Add JSDoc comments to utility functions (Step 4/4)",
+          state: "open" as const,
+          migrationId: "add-jsdoc-comments",
+          branch: "hachiko/add-jsdoc-comments-step-4",
+          labels: [],
+          url: "https://github.com/launchdarkly-labs/hachiko/pull/98",
+          merged: false,
+        },
+      ];
+
+      const closedPRs = [
+        {
+          number: 85,
+          title: "Step 1 (merged)",
+          state: "closed" as const,
+          migrationId: "add-jsdoc-comments",
+          branch: "hachiko/add-jsdoc-comments-step-1",
+          labels: [],
+          url: "https://github.com/test/85",
+          merged: true,
+        },
+        {
+          number: 91,
+          title: "Step 2 (merged)",
+          state: "closed" as const,
+          migrationId: "add-jsdoc-comments",
+          branch: "hachiko/add-jsdoc-comments-step-2",
+          labels: [],
+          url: "https://github.com/test/91",
+          merged: true,
+        },
+      ];
+
+      mockGetOpenHachikoPRs.mockResolvedValue(openPRs);
+      mockGetClosedHachikoPRs.mockResolvedValue(closedPRs);
+
+      const result = await getMigrationState(mockContext, "add-jsdoc-comments");
+
+      // BUG: Current implementation returns 4 (from open PR)
+      // SHOULD return 3 (next step after highest merged step 2)
+      // When merged PRs exist, they should take priority over open PRs for step calculation
+      expect(result.currentStep).toBe(3);
+    });
   });
 
   describe("edge cases", () => {
