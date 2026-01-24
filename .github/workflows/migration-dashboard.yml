@@ -112,6 +112,9 @@ jobs:
           # Extract checked migrations from Pending section
           CHECKED_PENDING=$(echo "$ISSUE_BODY" | awk '/## 🟡 Pending Migrations/,/## 🔄 In-Progress Migrations/ { if (/^- \[x\]/) print }' | sed 's/^- \[x\] `//' | sed 's/`.*$//')
 
+          # Extract checked migrations from In-Progress section (for triggering next step)
+          CHECKED_IN_PROGRESS=$(echo "$ISSUE_BODY" | awk '/## 🔄 In-Progress Migrations/,/## ⏸️ Paused Migrations/ { if (/^- \[x\]/) print }' | sed 's/^- \[x\] `//' | sed 's/`.*$//')
+
           # Extract checked migrations from Paused section  
           CHECKED_PAUSED=$(echo "$ISSUE_BODY" | awk '/## ⏸️ Paused Migrations/,/---/ { if (/^- \[x\]/) print }' | sed 's/^- \[x\] `//' | sed 's/`.*$//')
 
@@ -138,11 +141,29 @@ jobs:
             }
           ')
 
-          # Process checked migrations
+          # Process checked migrations from Pending section (restart from current step)
           MIGRATIONS_TRIGGERED=false
-          for MIGRATION_ID in $CHECKED_PENDING $CHECKED_PAUSED; do
+          for MIGRATION_ID in $CHECKED_PENDING; do
             if [ -n "$MIGRATION_ID" ] && [ "$MIGRATION_ID" != "✨" ]; then
-              echo "Starting migration: $MIGRATION_ID"
+              echo "Starting pending migration: $MIGRATION_ID"
+              
+              # For pending migrations, start from step 1
+              CURRENT_STEP=1
+              echo "Migration $MIGRATION_ID starting at step: $CURRENT_STEP"
+              
+              # Trigger migration execution
+              gh workflow run execute-migration.yml \
+                -f migration_id="$MIGRATION_ID" \
+                -f step_id="$CURRENT_STEP"
+              
+              MIGRATIONS_TRIGGERED=true
+            fi
+          done
+
+          # Process checked migrations from Paused section (resume from current step)
+          for MIGRATION_ID in $CHECKED_PAUSED; do
+            if [ -n "$MIGRATION_ID" ] && [ "$MIGRATION_ID" != "✨" ]; then
+              echo "Resuming paused migration: $MIGRATION_ID"
               
               # Get current step from calculated state (preferred) or fallback to migration file
               echo "🔍 Calculating current step for $MIGRATION_ID from PR activity..."
@@ -150,7 +171,7 @@ jobs:
               
               if [ -n "$STATE_OUTPUT" ]; then
                 CURRENT_STEP=$(echo "$STATE_OUTPUT" | grep "^current_step=" | cut -d'=' -f2)
-                echo "Migration $MIGRATION_ID at step: $CURRENT_STEP (calculated from PR activity)"
+                echo "Migration $MIGRATION_ID resuming at step: $CURRENT_STEP (calculated from PR activity)"
               else
                 echo "⚠️ Could not calculate step from PR activity, falling back to migration file"
                 MIGRATION_FILE="migrations/${MIGRATION_ID}.md"
@@ -160,17 +181,56 @@ jobs:
                   if ! [[ "$CURRENT_STEP" =~ ^[0-9]+$ ]] || [ "$CURRENT_STEP" -lt 1 ]; then
                     CURRENT_STEP=1
                   fi
-                  echo "Migration $MIGRATION_ID at step: $CURRENT_STEP (from frontmatter)"
+                  echo "Migration $MIGRATION_ID resuming at step: $CURRENT_STEP (from frontmatter)"
                 else
                   echo "Warning: Migration file not found, defaulting to step 1"
                   CURRENT_STEP=1
                 fi
               fi
               
-              # Trigger migration execution with correct step
+              # Trigger migration execution
               gh workflow run execute-migration.yml \
                 -f migration_id="$MIGRATION_ID" \
                 -f step_id="$CURRENT_STEP"
+              
+              MIGRATIONS_TRIGGERED=true
+            fi
+          done
+
+          # Process checked migrations from In-Progress section (advance to next step)
+          for MIGRATION_ID in $CHECKED_IN_PROGRESS; do
+            if [ -n "$MIGRATION_ID" ] && [ "$MIGRATION_ID" != "✨" ]; then
+              echo "Advancing in-progress migration: $MIGRATION_ID"
+              
+              # Get current step from calculated state (preferred) or fallback to migration file
+              echo "🔍 Calculating current step for $MIGRATION_ID from PR activity..."
+              STATE_OUTPUT=$(GITHUB_TOKEN="${GITHUB_TOKEN}" GITHUB_REPOSITORY="${GITHUB_REPOSITORY}" node dist/scripts/get-migration-state.js "$MIGRATION_ID" 2>/dev/null || echo "")
+              
+              if [ -n "$STATE_OUTPUT" ]; then
+                CURRENT_STEP=$(echo "$STATE_OUTPUT" | grep "^current_step=" | cut -d'=' -f2)
+                NEXT_STEP=$((CURRENT_STEP + 1))
+                echo "Migration $MIGRATION_ID advancing from step $CURRENT_STEP to step $NEXT_STEP (calculated from PR activity)"
+              else
+                echo "⚠️ Could not calculate step from PR activity, falling back to migration file"
+                MIGRATION_FILE="migrations/${MIGRATION_ID}.md"
+                if [ -f "$MIGRATION_FILE" ]; then
+                  CURRENT_STEP=$(awk '/^---$/{if(f==1) exit; f=1; next} f' "$MIGRATION_FILE" | grep "^current_step:" | sed 's/current_step: *//')
+                  # Default to step 1 if not found or invalid
+                  if ! [[ "$CURRENT_STEP" =~ ^[0-9]+$ ]] || [ "$CURRENT_STEP" -lt 1 ]; then
+                    CURRENT_STEP=1
+                  fi
+                  NEXT_STEP=$((CURRENT_STEP + 1))
+                  echo "Migration $MIGRATION_ID advancing from step $CURRENT_STEP to step $NEXT_STEP (from frontmatter)"
+                else
+                  echo "Warning: Migration file not found, defaulting to next step as step 2"
+                  NEXT_STEP=2
+                fi
+              fi
+              
+              # Trigger migration execution with next step
+              gh workflow run execute-migration.yml \
+                -f migration_id="$MIGRATION_ID" \
+                -f step_id="$NEXT_STEP"
               
               MIGRATIONS_TRIGGERED=true
             fi
@@ -262,12 +322,18 @@ jobs:
         if: |
           (github.event_name == 'pull_request' && steps.handle-pr.outputs.is_hachiko_pr == 'true') || 
           github.event_name == 'workflow_dispatch' ||
-          (github.event_name == 'issues' && github.event.issue.number == fromJson(steps.find-issue.outputs.migration_dashboard_issue) && steps.handle-edit.outputs.migrations_triggered != 'true')
+          (github.event_name == 'issues' && github.event.issue.number == fromJson(steps.find-issue.outputs.migration_dashboard_issue))
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           ISSUE_NUMBER: ${{ steps.find-issue.outputs.migration_dashboard_issue }}
         run: |
           echo "Updating migration-dashboard issue #$ISSUE_NUMBER"
+
+          # If migrations were triggered, wait a moment for them to start
+          if [ "${{ github.event_name }}" = "issues" ] && [ "${{ steps.handle-edit.outputs.migrations_triggered }}" = "true" ]; then
+            echo "Migrations were triggered, waiting 30 seconds for workflows to start before updating dashboard..."
+            sleep 30
+          fi
 
           # Use the migration CLI script to generate the dashboard content
           ISSUE_BODY=$(pnpm migration generate-migration-dashboard)
