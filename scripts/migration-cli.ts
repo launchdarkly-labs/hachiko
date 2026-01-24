@@ -294,7 +294,7 @@ program
               const totalSteps = frontmatter.total_steps || 1;
               
               // Start with migration title
-              inProgressMigrations += `- \`${frontmatter.id}\` - ${frontmatter.title}\n`;
+              inProgressMigrations += `- [ ] \`${frontmatter.id}\` - ${frontmatter.title}\n`;
               
               // Add progress summary as sub-bullet
               const completedSteps = mergedPRs.length;
@@ -310,7 +310,7 @@ program
               // If no open PRs but has merged PRs, show manual trigger option
               if (openPRs.length === 0 && mergedPRs.length > 0) {
                 const nextStep = completedSteps + 1;
-                inProgressMigrations += `  - [ ] Manually kick off step ${nextStep} (this should happen automatically)\n`;
+                inProgressMigrations += `  - Step ${nextStep} should automatically kick off soon\n`;
               }
               
               // If no PRs at all (shouldn't happen for active state)
@@ -344,11 +344,17 @@ This issue tracks all active migrations in the repository. Use the checkboxes be
 
 ## 🟡 Pending Migrations
 
+The following migrations haven't been started yet. To kick off the first step in a migration, click on a checkbox below.
+
 ${pendingMigrations}
 ## 🔄 In-Progress Migrations
 
+These migrations are currently active with work in progress. Click a checkbox to force the last unmerged step to be retried.
+
 ${inProgressMigrations}
 ## ⏸️ Paused Migrations
+
+These migrations have been paused because the last pull request was closed without merging. Click a checkbox to resume the migration.
 
 ${pausedMigrations}
 ---
