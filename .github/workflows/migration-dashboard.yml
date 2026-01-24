@@ -289,6 +289,7 @@ jobs:
 
       - name: Handle PR closure
         if: github.event_name == 'pull_request' && github.event.pull_request.state == 'closed'
+        id: handle-pr-closure
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PR_BRANCH: ${{ github.event.pull_request.head.ref }}
@@ -298,8 +299,11 @@ jobs:
           echo "PR closed: $PR_TITLE"
           echo "Branch: $PR_BRANCH"
 
+          IS_HACHIKO_PR=false
+          
           # Check if this is a Hachiko migration branch
           if [[ "$PR_BRANCH" == hachiko/* ]]; then
+            IS_HACHIKO_PR=true
             # Extract migration ID from branch name
             MIGRATION_ID=$(echo "$PR_BRANCH" | sed 's/hachiko\///' | sed 's/-step-[0-9]*//')
             
@@ -317,10 +321,12 @@ jobs:
               fi
             fi
           fi
+          
+          echo "is_hachiko_pr=$IS_HACHIKO_PR" >> $GITHUB_OUTPUT
 
       - name: Update migration-dashboard issue
         if: |
-          (github.event_name == 'pull_request' && steps.handle-pr.outputs.is_hachiko_pr == 'true') || 
+          (github.event_name == 'pull_request' && (steps.handle-pr.outputs.is_hachiko_pr == 'true' || steps.handle-pr-closure.outputs.is_hachiko_pr == 'true')) || 
           github.event_name == 'workflow_dispatch' ||
           (github.event_name == 'issues' && github.event.issue.number == fromJson(steps.find-issue.outputs.migration_dashboard_issue))
         env:
