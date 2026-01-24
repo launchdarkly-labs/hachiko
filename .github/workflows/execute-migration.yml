@@ -332,107 +332,40 @@ jobs:
               PAYLOAD_FILE=$(mktemp)
               echo "$REQUEST_PAYLOAD" > "$PAYLOAD_FILE"
               
-              # Create temporary files for detailed curl logging
-              CURL_HEADERS_FILE=$(mktemp)
-              CURL_TRACE_FILE=$(mktemp)
-              
               # Temporarily disable exit-on-error to capture curl's exit code
               set +e
-              HTTP_RESPONSE=$(curl -w "HTTP_STATUS:%{http_code}\nHTTP_SIZE:%{size_download}\n" \
-                -s -X POST "https://api.cursor.com/v0/agents" \
+              
+              # Use simpler curl command without problematic write-out format
+              HTTP_RESPONSE=$(curl -s -w '\nSTATUS_CODE:%{http_code}' \
+                -X POST "https://api.cursor.com/v0/agents" \
                 -H "Authorization: Basic $CURSOR_AUTH" \
                 -H "Content-Type: application/json" \
                 -H "User-Agent: Hachiko/1.0" \
-                -D "$CURL_HEADERS_FILE" \
-                --trace-ascii "$CURL_TRACE_FILE" \
                 -d "@$PAYLOAD_FILE" 2>&1)
               
               CURL_EXIT_CODE=$?
               set -e  # Re-enable exit-on-error
               
-              # Clean up temporary files (save traces for debugging on failure)
-              if [ $CURL_EXIT_CODE -eq 0 ]; then
-                rm -f "$PAYLOAD_FILE" "$CURL_HEADERS_FILE" "$CURL_TRACE_FILE"
-              else
-                rm -f "$PAYLOAD_FILE"  # Only remove payload, keep debug files for analysis
-              fi
+              # Clean up payload file
+              rm -f "$PAYLOAD_FILE"
               
               echo "🔍 Curl exit code: $CURL_EXIT_CODE"
               
               if [ $CURL_EXIT_CODE -ne 0 ]; then
                 echo "❌ Curl command failed with exit code $CURL_EXIT_CODE"
-                echo "Raw curl output:"
-                echo "=================="
-                echo "$HTTP_RESPONSE"
-                echo "=================="
+                echo "Response: $HTTP_RESPONSE"
                 
-                # Show detailed debugging information
-                echo ""
-                echo "🔍 Detailed Debug Information:"
-                echo "------------------------------"
-                
-                if [ -f "$CURL_HEADERS_FILE" ]; then
-                  echo "📋 Response Headers:"
-                  cat "$CURL_HEADERS_FILE"
-                  echo ""
-                else
-                  echo "📋 No response headers captured (connection may have failed early)"
-                fi
-                
-                if [ -f "$CURL_TRACE_FILE" ]; then
-                  echo "🔍 Connection Trace (last 50 lines):"
-                  tail -50 "$CURL_TRACE_FILE"
-                  echo ""
-                else
-                  echo "🔍 No connection trace available"
-                fi
-                
-                echo "🌐 Network Diagnostics:"
-                echo "DNS Resolution Test:"
-                nslookup api.cursor.com || echo "DNS lookup failed"
-                echo ""
-                echo "Connectivity Test:"
-                ping -c 3 api.cursor.com || echo "Ping failed"
-                echo ""
-                
-                echo "📦 Request Details:"
-                echo "Endpoint: https://api.cursor.com/v0/agents"
-                echo "Method: POST"
-                echo "Content-Type: application/json"
-                echo "Authorization: Basic [REDACTED:${#CURSOR_AUTH} chars]"
-                echo "User-Agent: Hachiko/1.0"
-                echo "Payload size: ${#REQUEST_PAYLOAD} bytes"
-                echo "Payload structure check: $(echo "$REQUEST_PAYLOAD" | jq -r 'keys | join(", ")' 2>/dev/null || echo "Invalid JSON or parsing failed")"
-                echo ""
-                
-                echo "🔧 Environment Info:"
-                echo "Curl version: $(curl --version | head -1)"
-                echo "Available CA certificates: $(ls -la /etc/ssl/certs/ | wc -l) files"
-                echo "System time: $(date)"
-                echo "Timezone: $TZ"
-                echo ""
-                
+                # Show only essential debugging info
                 case $CURL_EXIT_CODE in
-                  6) echo "❌ Error Analysis: Couldn't resolve host. DNS resolution failed." 
-                     echo "   This usually means api.cursor.com cannot be resolved to an IP address." ;;
-                  7) echo "❌ Error Analysis: Failed to connect to host." 
-                     echo "   DNS resolved but connection to the server failed (network/firewall issue)." ;;
-                  28) echo "❌ Error Analysis: Operation timeout. The specified time-out period was reached." 
-                      echo "   The server is reachable but not responding within the timeout period." ;;
-                  35) echo "❌ Error Analysis: SSL connect error. A TLS/SSL handshake problem occurred." 
-                      echo "   SSL/TLS certificate or handshake issue. May be certificate validation problem." ;;
-                  43) echo "❌ Error Analysis: Internal curl error - bad function parameter." 
-                      echo "   Invalid curl command syntax. Check format strings, headers, or options." ;;
-                  56) echo "❌ Error Analysis: Failure in receiving network data." 
-                      echo "   Connection established but data transfer failed (network interruption)." ;;
-                  60) echo "❌ Error Analysis: SSL certificate problem: unable to get local issuer certificate." 
-                      echo "   Certificate validation failed. CA bundle may be missing or outdated." ;;
-                  *) echo "❌ Error Analysis: Unknown curl error ($CURL_EXIT_CODE)." 
-                     echo "   Check curl manual for error code details: https://curl.se/libcurl/c/libcurl-errors.html" ;;
+                  6) echo "🔍 DNS resolution failed for api.cursor.com" ;;
+                  7) echo "🔍 Connection failed - DNS resolved but couldn't connect" ;;
+                  28) echo "🔍 Request timeout - server not responding" ;;
+                  35) echo "🔍 SSL/TLS handshake failed" ;;
+                  43) echo "🔍 Bad curl parameter - command syntax error" ;;
+                  56) echo "🔍 Network data transfer failed" ;;
+                  60) echo "🔍 SSL certificate validation failed" ;;
+                  *) echo "🔍 Unknown curl error - see https://curl.se/libcurl/c/libcurl-errors.html" ;;
                 esac
-                
-                # Clean up debug files
-                rm -f "$CURL_HEADERS_FILE" "$CURL_TRACE_FILE"
                 
                 echo "success=false" >> $GITHUB_OUTPUT
                 echo "error=Cursor API request failed - curl exit code $CURL_EXIT_CODE" >> $GITHUB_OUTPUT
@@ -440,13 +373,11 @@ jobs:
               fi
               
               # Extract HTTP status and response body
-              CURSOR_RESPONSE=$(echo "$HTTP_RESPONSE" | sed '/^HTTP_STATUS:/,$d')
-              HTTP_STATUS=$(echo "$HTTP_RESPONSE" | grep "^HTTP_STATUS:" | cut -d: -f2)
-              RESPONSE_SIZE=$(echo "$HTTP_RESPONSE" | grep "^HTTP_SIZE:" | cut -d: -f2)
+              CURSOR_RESPONSE=$(echo "$HTTP_RESPONSE" | sed '/^STATUS_CODE:/,$d')
+              HTTP_STATUS=$(echo "$HTTP_RESPONSE" | grep "^STATUS_CODE:" | cut -d: -f2)
               
               echo "📊 API Response Details:"
               echo "  HTTP Status: $HTTP_STATUS"
-              echo "  Response Size: $RESPONSE_SIZE bytes"
               echo "  Response Body: $CURSOR_RESPONSE"
               
               # Handle different HTTP status codes
