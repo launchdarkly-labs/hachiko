@@ -307,11 +307,10 @@ program
                 inProgressMigrations += `  - [${pr.title}](${pr.url})\n`;
               }
               
-              // If no open PRs but has merged PRs, show waiting for next step with re-kick option
+              // If no open PRs but has merged PRs, show manual trigger option
               if (openPRs.length === 0 && mergedPRs.length > 0) {
                 const nextStep = completedSteps + 1;
-                inProgressMigrations += `  - Ready for next step (should have kicked off automatically, might have failed)\n`;
-                inProgressMigrations += `    - [ ] Manually kick off step ${nextStep}\n`;
+                inProgressMigrations += `  - [ ] Manually kick off step ${nextStep} (this should happen automatically)\n`;
               }
               
               // If no PRs at all (shouldn't happen for active state)
