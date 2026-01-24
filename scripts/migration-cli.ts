@@ -333,30 +333,47 @@ program
         }
       }
       
-      // Use default messages if no migrations
-      if (!pendingMigrations) pendingMigrations = "✨ *No pending migrations*\n";
-      if (!inProgressMigrations) inProgressMigrations = "✨ *No active migrations*\n";
-      if (!pausedMigrations) pausedMigrations = "✨ *No paused migrations*\n";
+      // Build sections with conditional descriptions
+      const pendingSection = pendingMigrations 
+        ? `## 🟡 Pending Migrations
+
+The following migrations haven't been started yet. To kick off the first step in a migration, click on a checkbox below.
+
+${pendingMigrations}`
+        : `## 🟡 Pending Migrations
+
+✨ *No pending migrations*
+`;
+      
+      const inProgressSection = inProgressMigrations 
+        ? `## 🔄 In-Progress Migrations
+
+These migrations are currently active with work in progress. Click a checkbox to force the last unmerged step to be retried.
+
+${inProgressMigrations}`
+        : `## 🔄 In-Progress Migrations
+
+✨ *No active migrations*
+`;
+      
+      const pausedSection = pausedMigrations 
+        ? `## ⏸️ Paused Migrations
+
+These migrations have been paused because the last pull request was closed without merging. Click a checkbox to resume the migration.
+
+${pausedMigrations}`
+        : `## ⏸️ Paused Migrations
+
+✨ *No paused migrations*
+`;
       
       const issueBody = `# 📊 Hachiko Migration Dashboard
 
 This issue tracks all active migrations in the repository. Use the checkboxes below to control migration execution.
 
-## 🟡 Pending Migrations
-
-The following migrations haven't been started yet. To kick off the first step in a migration, click on a checkbox below.
-
-${pendingMigrations}
-## 🔄 In-Progress Migrations
-
-These migrations are currently active with work in progress. Click a checkbox to force the last unmerged step to be retried.
-
-${inProgressMigrations}
-## ⏸️ Paused Migrations
-
-These migrations have been paused because the last pull request was closed without merging. Click a checkbox to resume the migration.
-
-${pausedMigrations}
+${pendingSection}
+${inProgressSection}
+${pausedSection}
 ---
 
 **How to use:**
