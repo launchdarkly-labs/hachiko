@@ -1,6 +1,7 @@
 {
   "name": "hachiko",
   "version": "0.1.0",
+  "//": "Test migration comment - added by Hachiko agent",
   "private": true,
   "_comment": "Test migration comment - added by Hachiko migration task",
   "description": "GitHub App for orchestrating technical migrations in large legacy codebases",
