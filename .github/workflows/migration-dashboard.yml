@@ -337,7 +337,7 @@ jobs:
           echo "Branch: $PR_BRANCH"
 
           IS_HACHIKO_PR=false
-          
+
           # Check if this is a Hachiko migration branch
           if [[ "$PR_BRANCH" == hachiko/* ]]; then
             IS_HACHIKO_PR=true
@@ -358,7 +358,7 @@ jobs:
               fi
             fi
           fi
-          
+
           echo "is_hachiko_pr=$IS_HACHIKO_PR" >> $GITHUB_OUTPUT
 
       - name: Update migration-dashboard issue

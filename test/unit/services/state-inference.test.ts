@@ -575,11 +575,11 @@ Some regular content here.`;
 
     it("should return correct step for retry after partial completion", async () => {
       // This reproduces the bug scenario:
-      // - 2 steps have been merged (completed)  
+      // - 2 steps have been merged (completed)
       // - No open PRs (migration is in-progress but paused state)
       // - When user clicks retry checkbox, should work on step 3
       // - Bug: system incorrectly calculates step 4 instead of step 3
-      
+
       const closedPRs = [
         {
           number: 85,
@@ -616,11 +616,11 @@ Some regular content here.`;
 
     it("should prioritize merged PRs over open PRs when both exist (actual bug scenario)", async () => {
       // This reproduces the ACTUAL bug scenario that occurred:
-      // - 2 steps have been merged (completed)  
+      // - 2 steps have been merged (completed)
       // - There's an open PR for step 4 (created by the bug)
       // - The system should ignore the open PR and work on step 3
       // - Bug: system returns step 4 from open PR instead of step 3
-      
+
       const openPRs = [
         {
           number: 98,

@@ -79,7 +79,7 @@ jobs:
           # Get calculated state from PR activity
           echo "🔍 Calculating migration state from PR activity..."
           STATE_OUTPUT=$(GITHUB_TOKEN="${GITHUB_TOKEN}" GITHUB_REPOSITORY="${{ github.repository }}" node dist/scripts/get-migration-state.js "$MIGRATION_ID" 2>/dev/null || echo "")
-          
+
           if [ -z "$STATE_OUTPUT" ]; then
             echo "⚠️ Could not calculate state from PR activity, falling back to frontmatter"
             STATUS=$(echo "$FRONTMATTER" | grep "^status:" | sed 's/status: *//' | tr -d "'" | tr -d '"')
@@ -202,7 +202,7 @@ jobs:
           echo "Step ID: $STEP_ID"
           echo "Agent: $AGENT"
           echo "Repository: ${{ github.repository }}"
-          
+
           # Check if migration file exists
           MIGRATION_FILE="migrations/${MIGRATION_ID}.md"
           if [ ! -f "$MIGRATION_FILE" ]; then
@@ -214,7 +214,7 @@ jobs:
             exit 1
           fi
           echo "✅ Migration file found: $MIGRATION_FILE"
-          
+
           # Check if CLI is working
           echo "🔍 Testing migration CLI..."
           if ! pnpm migration --help > /dev/null 2>&1; then
@@ -224,10 +224,10 @@ jobs:
             exit 1
           fi
           echo "✅ Migration CLI is accessible"
-          
+
           # Generate agent instructions with detailed error capture
           echo "🚀 Running: pnpm migration get-agent-instructions \"$MIGRATION_ID\" \"$STEP_ID\" \"$AGENT\" --repository \"${{ github.repository }}\""
-          
+
           # Capture both stdout and stderr
           if ! AGENT_INSTRUCTIONS=$(pnpm migration get-agent-instructions "$MIGRATION_ID" "$STEP_ID" "$AGENT" --repository "${{ github.repository }}" 2>&1); then
             echo "❌ Failed to generate agent instructions"
@@ -242,7 +242,7 @@ jobs:
             echo "error=Failed to generate agent instructions" >> $GITHUB_OUTPUT
             exit 1
           fi
-          
+
           echo "✅ Agent instructions generated successfully"
           echo "Instructions length: ${#AGENT_INSTRUCTIONS} characters"
 

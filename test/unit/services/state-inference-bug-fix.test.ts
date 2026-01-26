@@ -1,11 +1,14 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { getMigrationState, getMultipleMigrationStates } from "../../../src/services/state-inference.js";
+import {
+  getMigrationState,
+  getMultipleMigrationStates,
+} from "../../../src/services/state-inference.js";
 import * as prDetection from "../../../src/services/pr-detection.js";
 import type { HachikoPR } from "../../../src/services/pr-detection.js";
 
 // Mock only the API-calling functions, not the pure functions
 vi.mock("../../../src/services/pr-detection.js", async () => {
-  const actual = await vi.importActual("../../../src/services/pr-detection.js") as any;
+  const actual = (await vi.importActual("../../../src/services/pr-detection.js")) as any;
   return {
     ...actual,
     getOpenHachikoPRs: vi.fn(),
@@ -20,8 +23,8 @@ describe("State Inference Bug Fix - Migration State Tracking", () => {
     repo: { owner: "test-org", repo: "test-repo" },
     octokit: {
       repos: {
-        getContent: vi.fn().mockRejectedValue({ status: 404 }) // Migration document not found
-      }
+        getContent: vi.fn().mockRejectedValue({ status: 404 }), // Migration document not found
+      },
     } as any,
     payload: { repository: { name: "test-repo", owner: { login: "test-org" } } },
   };
@@ -66,31 +69,30 @@ describe("State Inference Bug Fix - Migration State Tracking", () => {
         repo: { owner: "test-org", repo: "test-repo" },
         octokit: {
           repos: {
-            getContent: vi.fn().mockRejectedValue(new Error("Network error"))
-          }
+            getContent: vi.fn().mockRejectedValue(new Error("Network error")),
+          },
         } as any,
         payload: { repository: { name: "test-repo", owner: { login: "test-org" } } },
       };
 
       // Mock PR detection to return open PRs for add-jsdoc-comments
-      vi.mocked(prDetection.getOpenHachikoPRs)
-        .mockImplementation(async (context, migrationId) => {
-          if (migrationId === "add-jsdoc-comments") {
-            return [
-              {
-                number: 123,
-                title: "[add-jsdoc-comments] Add JSDoc comments to utility functions", 
-                state: "open",
-                migrationId: "add-jsdoc-comments", 
-                branch: "hachiko/add-jsdoc-comments-step-1",
-                labels: ["hachiko:migration"],
-                url: "https://github.com/test-org/test-repo/pull/123",
-                merged: false,
-              },
-            ];
-          }
-          return [];
-        });
+      vi.mocked(prDetection.getOpenHachikoPRs).mockImplementation(async (context, migrationId) => {
+        if (migrationId === "add-jsdoc-comments") {
+          return [
+            {
+              number: 123,
+              title: "[add-jsdoc-comments] Add JSDoc comments to utility functions",
+              state: "open",
+              migrationId: "add-jsdoc-comments",
+              branch: "hachiko/add-jsdoc-comments-step-1",
+              labels: ["hachiko:migration"],
+              url: "https://github.com/test-org/test-repo/pull/123",
+              merged: false,
+            },
+          ];
+        }
+        return [];
+      });
 
       vi.mocked(prDetection.getClosedHachikoPRs).mockResolvedValue([]);
 
@@ -111,29 +113,29 @@ describe("State Inference Bug Fix - Migration State Tracking", () => {
 
     it("should handle multiple migrations correctly when one has open PRs", async () => {
       // Mock responses for add-jsdoc-comments (has open PR)
-      vi.mocked(prDetection.getOpenHachikoPRs)
-        .mockImplementation(async (context, migrationId) => {
-          if (migrationId === "add-jsdoc-comments") {
-            return [
-              {
-                number: 123,
-                title: "[add-jsdoc-comments] Add JSDoc comments to utility functions", 
-                state: "open",
-                migrationId: "add-jsdoc-comments",
-                branch: "hachiko/add-jsdoc-comments-step-1",
-                labels: ["hachiko:migration"],
-                url: "https://github.com/test-org/test-repo/pull/123",
-                merged: false,
-              },
-            ];
-          }
-          return [];
-        });
+      vi.mocked(prDetection.getOpenHachikoPRs).mockImplementation(async (context, migrationId) => {
+        if (migrationId === "add-jsdoc-comments") {
+          return [
+            {
+              number: 123,
+              title: "[add-jsdoc-comments] Add JSDoc comments to utility functions",
+              state: "open",
+              migrationId: "add-jsdoc-comments",
+              branch: "hachiko/add-jsdoc-comments-step-1",
+              labels: ["hachiko:migration"],
+              url: "https://github.com/test-org/test-repo/pull/123",
+              merged: false,
+            },
+          ];
+        }
+        return [];
+      });
 
-      vi.mocked(prDetection.getClosedHachikoPRs)
-        .mockImplementation(async (_context, _migrationId) => {
+      vi.mocked(prDetection.getClosedHachikoPRs).mockImplementation(
+        async (_context, _migrationId) => {
           return []; // No closed PRs for any migration
-        });
+        }
+      );
 
       const results = await getMultipleMigrationStates(
         mockContext,
@@ -156,7 +158,7 @@ describe("State Inference Bug Fix - Migration State Tracking", () => {
           title: "[add-jsdoc-comments] Step 2 implementation",
           state: "open",
           migrationId: "add-jsdoc-comments",
-          branch: "hachiko/add-jsdoc-comments-step-2", 
+          branch: "hachiko/add-jsdoc-comments-step-2",
           labels: ["hachiko:migration"],
           url: "https://github.com/test-org/test-repo/pull/125",
           merged: false,
@@ -203,7 +205,7 @@ describe("State Inference Bug Fix - Migration State Tracking", () => {
         {
           number: 124, // Lower number = older
           title: "[add-jsdoc-comments] Step 1 successful",
-          state: "closed", 
+          state: "closed",
           migrationId: "add-jsdoc-comments",
           branch: "hachiko/add-jsdoc-comments-step-1",
           labels: ["hachiko:migration"],
