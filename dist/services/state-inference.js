@@ -134,7 +134,7 @@ function calculateCurrentStep(openPRs, closedPRs, logger) {
                 nextStep,
                 mergedSteps,
                 mergedPRCount: mergedPRs.length,
-                branches: mergedPRs.map(pr => pr.branch)
+                branches: mergedPRs.map((pr) => pr.branch),
             }, "Calculated current step from merged PRs");
             return nextStep;
         }
