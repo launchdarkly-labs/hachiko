@@ -118,14 +118,34 @@ jobs:
             exit 1
           fi
 
+          # Validate CURRENT_STEP is a valid number
+          if ! [[ "$CURRENT_STEP" =~ ^[0-9]+$ ]] || [ "$CURRENT_STEP" -lt 1 ]; then
+            echo "⚠️ Invalid current step '$CURRENT_STEP', defaulting to 1"
+            CURRENT_STEP=1
+          fi
+
+          # Validate REQUESTED_STEP is a valid number
+          if ! [[ "$REQUESTED_STEP" =~ ^[0-9]+$ ]] || [ "$REQUESTED_STEP" -lt 1 ]; then
+            echo "❌ Invalid requested step '$REQUESTED_STEP'"
+            exit 1
+          fi
+
           # Calculate next step for validation
           NEXT_STEP=$((CURRENT_STEP + 1))
+
+          echo "🔍 Validation state:"
+          echo "  Migration Status: $MIGRATION_STATUS"
+          echo "  Current Step: $CURRENT_STEP"
+          echo "  Requested Step: $REQUESTED_STEP"
+          echo "  Next Step: $NEXT_STEP"
+          echo "  Force: $FORCE"
 
           # For active/paused status, only allow if re-executing current step or advancing to next step
           if [ "$MIGRATION_STATUS" = "active" ] || [ "$MIGRATION_STATUS" = "paused" ]; then
             if [ "$FORCE" != "true" ]; then
               if [ "$REQUESTED_STEP" != "$CURRENT_STEP" ] && [ "$REQUESTED_STEP" != "$NEXT_STEP" ]; then
                 echo "❌ Migration $MIGRATION_STATUS. Can only re-execute current step ($CURRENT_STEP) or advance to next step ($NEXT_STEP). Use force=true to override."
+                echo "🐛 Debug info: REQUESTED_STEP='$REQUESTED_STEP', CURRENT_STEP='$CURRENT_STEP', NEXT_STEP='$NEXT_STEP'"
                 exit 1
               fi
             fi
