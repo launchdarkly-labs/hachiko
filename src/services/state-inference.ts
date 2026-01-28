@@ -138,16 +138,30 @@ function calculateCurrentStep(
     // Handle hachiko/{migration-id}-step-{N} format
     const stepMatch = pr.branch.match(/-step-(\d+)(?:-|$)/);
     if (stepMatch && stepMatch[1]) {
-      return parseInt(stepMatch[1], 10);
+      const stepNumber = parseInt(stepMatch[1], 10);
+      log.debug(
+        { branch: pr.branch, stepNumber, prNumber: pr.number },
+        "Parsed step from branch name"
+      );
+      return stepNumber;
     }
-    
+
     // Fallback to old hachi/{migration-id}/{step-id} format
     const parsed = parseMigrationBranchName(pr.branch);
     if (parsed?.stepId) {
       const legacyStepMatch = parsed.stepId.match(/(\d+)/);
-      return legacyStepMatch?.[1] ? parseInt(legacyStepMatch[1], 10) : null;
+      const stepNumber = legacyStepMatch?.[1] ? parseInt(legacyStepMatch[1], 10) : null;
+      log.debug(
+        { branch: pr.branch, stepNumber, prNumber: pr.number, parsed },
+        "Parsed step from legacy branch format"
+      );
+      return stepNumber;
     }
 
+    log.warn(
+      { branch: pr.branch, prNumber: pr.number },
+      "Could not parse step number from branch name"
+    );
     return null;
   }
 
@@ -162,7 +176,16 @@ function calculateCurrentStep(
     if (mergedSteps.length > 0) {
       const highestMergedStep = mergedSteps[0]!;
       const nextStep = highestMergedStep + 1;
-      log.debug({ highestMergedStep, nextStep, mergedSteps }, "Next step after merged PRs (priority)");
+      log.info(
+        {
+          highestMergedStep,
+          nextStep,
+          mergedSteps,
+          mergedPRCount: mergedPRs.length,
+          branches: mergedPRs.map((pr) => pr.branch),
+        },
+        "Calculated current step from merged PRs"
+      );
       return nextStep;
     }
   }
@@ -318,7 +341,7 @@ export async function getMultipleMigrationStates(
           { error, migrationId },
           "Failed to get migration state with document, falling back to PR-only inference"
         );
-        
+
         // Instead of returning pending, try to infer state from PR activity only
         try {
           const state = await getMigrationState(context, migrationId, undefined, log);
