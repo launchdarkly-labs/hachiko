@@ -170,18 +170,21 @@ describe("CursorCloudAdapter", () => {
       expect(result.output).toContain("https://github.com/test/repo/pull/123");
       expect(result.exitCode).toBe(0);
 
-      // Verify agent creation call
+      // Verify agent creation call uses OFFICIAL Cursor API format
       expect(mockHttpClient.post).toHaveBeenCalledWith(
         "https://api.cursor.com/v0/agents",
         expect.objectContaining({
-          task: expect.stringContaining("Convert class component to hooks"),
-          repository_url: "https://github.com/test/repo",
-          branch: "main",
-          files: ["src/component.tsx"],
-          metadata: {
-            plan_id: "cursor-plan",
-            step_id: "cursor-step",
-          },
+          prompt: expect.objectContaining({
+            text: expect.stringContaining("Convert class component to hooks")
+          }),
+          source: expect.objectContaining({
+            repository: "https://github.com/test/repo",
+            ref: "main"
+          }),
+          target: expect.objectContaining({
+            autoCreatePr: true,
+            autoBranch: true
+          })
         }),
         expect.any(Object)
       );
@@ -361,6 +364,25 @@ describe("CursorCloudAdapter", () => {
 
       expect(task).toContain("components-1");
     });
+    
+    it("should handle empty files list", () => {
+      const taskMethod = (adapter as any).buildTask.bind(adapter);
+      const inputWithNoFiles = { ...mockInput, files: [] };
+      const task = taskMethod(inputWithNoFiles);
+
+      expect(task).toContain("# Code Migration Task: cursor-plan");
+      expect(task).not.toContain("## Target Files");
+      expect(task).toContain("Convert class component to hooks");
+    });
+    
+    it("should handle chunk information without files", () => {
+      const taskMethod = (adapter as any).buildTask.bind(adapter);
+      const inputWithChunkNoFiles = { ...mockInput, chunk: "batch-1", files: [] };
+      const task = taskMethod(inputWithChunkNoFiles);
+
+      expect(task).toContain("batch-1");
+      expect(task).not.toContain("## Target Files");
+    });
   });
 
   describe("output formatting", () => {
@@ -412,6 +434,136 @@ describe("CursorCloudAdapter", () => {
         "https://github.com/example/another-repo"
       );
       expect(inferMethod("/")).toBe("https://github.com/example/unknown");
+    });
+  });
+  
+  describe("Official API Format Compliance", () => {
+    it("should detect when TypeScript adapter uses incorrect format", async () => {
+      // This test will fail if the TypeScript adapter is using the wrong format
+      const createCall = vi.fn();
+      mockHttpClient.post = createCall.mockResolvedValue({
+        ok: true,
+        json: () => Promise.resolve({
+          agent: {
+            id: "test-agent",
+            status: "completed",
+            created_at: "2024-01-01T00:00:00Z",
+            updated_at: "2024-01-01T00:00:00Z",
+            output: {
+              files_modified: ["test.ts"],
+              summary: "Test completed"
+            }
+          }
+        }),
+        headers: { get: () => "application/json" },
+      });
+      
+      mockHttpClient.get.mockResolvedValue({
+        ok: true,
+        json: () => Promise.resolve({
+          id: "test-agent",
+          status: "completed",
+          output: { files_modified: ["test.ts"], summary: "Test completed" }
+        }),
+        headers: { get: () => "application/json" },
+      });
+      
+      await adapter.execute(mockInput);
+      
+      const [url, payload] = createCall.mock.calls[0];
+      
+      // These assertions will fail if the adapter uses the old format
+      expect(payload).not.toHaveProperty("task");
+      expect(payload).not.toHaveProperty("repository_url");  
+      expect(payload).not.toHaveProperty("files");
+      expect(payload).not.toHaveProperty("metadata");
+      
+      // Must use official format
+      expect(payload).toHaveProperty("prompt");
+      expect(payload.prompt).toHaveProperty("text");
+      expect(payload).toHaveProperty("source");
+      expect(payload.source).toHaveProperty("repository");
+      expect(payload.source).toHaveProperty("ref");
+      expect(payload).toHaveProperty("target");
+      expect(payload.target).toHaveProperty("autoCreatePr");
+      expect(payload.target).toHaveProperty("autoBranch");
+    });
+    
+    it("should use official API structure with enhanced task description", async () => {
+      const createCall = vi.fn();
+      mockHttpClient.post = createCall.mockResolvedValue({
+        ok: true,
+        json: () => Promise.resolve({
+          agent: { id: "test", status: "completed", output: {} }
+        }),
+        headers: { get: () => "application/json" },
+      });
+      
+      mockHttpClient.get.mockResolvedValue({
+        ok: true,
+        json: () => Promise.resolve({
+          id: "test",
+          status: "completed",
+          output: { files_modified: [] }
+        }),
+        headers: { get: () => "application/json" },
+      });
+      
+      await adapter.execute(mockInput);
+      
+      const [url, actualPayload] = createCall.mock.calls[0];
+      
+      // Verify structure uses official API format
+      expect(actualPayload.source.repository).toBe(cursorConfig.repositoryUrl!);
+      expect(actualPayload.source.ref).toBe("main");
+      expect(actualPayload.target.autoCreatePr).toBe(true);
+      expect(actualPayload.target.autoBranch).toBe(true);
+      
+      // Verify adapter enhances the prompt with context (different from raw GitHub Actions)
+      expect(actualPayload.prompt.text).toContain(mockInput.prompt);
+      expect(actualPayload.prompt.text).toContain("Code Migration Task");
+      expect(actualPayload.prompt.text).toContain(mockInput.planId);
+      expect(actualPayload.prompt.text).toContain(mockInput.stepId);
+      expect(actualPayload.prompt.text).toContain("src/component.tsx");
+      
+      // Verify no webhook when not configured
+      expect(actualPayload.webhook).toBeUndefined();
+    });
+    
+    it("should include webhook when configured", async () => {
+      const webhookAdapter = new CursorCloudAdapter(policyConfig, {
+        ...cursorConfig,
+        webhookUrl: "https://webhook.example.com/cursor"
+      });
+      (webhookAdapter as any).httpClient = mockHttpClient;
+      
+      const createCall = vi.fn();
+      mockHttpClient.post = createCall.mockResolvedValue({
+        ok: true,
+        json: () => Promise.resolve({
+          agent: { id: "test", status: "completed", output: {} }
+        }),
+        headers: { get: () => "application/json" },
+      });
+      
+      mockHttpClient.get.mockResolvedValue({
+        ok: true,
+        json: () => Promise.resolve({
+          id: "test",
+          status: "completed",
+          output: { files_modified: [] }
+        }),
+        headers: { get: () => "application/json" },
+      });
+      
+      await webhookAdapter.execute(mockInput);
+      
+      const [url, actualPayload] = createCall.mock.calls[0];
+      
+      // Verify webhook is included when configured
+      expect(actualPayload.webhook).toEqual({
+        url: "https://webhook.example.com/cursor"
+      });
     });
   });
 });

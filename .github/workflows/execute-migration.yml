@@ -320,16 +320,26 @@ jobs:
               
               # Prepare webhook field if provided
               if [ -n "$CURSOR_WEBHOOK_URL" ]; then
-                WEBHOOK_FIELD=",\"webhook_url\": $(echo "$CURSOR_WEBHOOK_URL" | jq -Rs .)"
+                WEBHOOK_FIELD=",\"webhook\": {\"url\": $(echo "$CURSOR_WEBHOOK_URL" | jq -Rs .)}"
                 echo "🔗 Webhook URL configured"
               else
                 WEBHOOK_FIELD=""
                 echo "🔗 No webhook URL configured"
               fi
               
-              # Create request payload using actual Cursor API format (based on API error response)
+              # Create request payload using official Cursor API format
               REQUEST_PAYLOAD="{
-                \"prompt\": $(echo "$AGENT_INSTRUCTIONS" | jq -Rs .)${WEBHOOK_FIELD}
+                \"prompt\": {
+                  \"text\": $(echo "$AGENT_INSTRUCTIONS" | jq -Rs .)
+                },
+                \"source\": {
+                  \"repository\": \"https://github.com/${{ github.repository }}\",
+                  \"ref\": \"main\"
+                },
+                \"target\": {
+                  \"autoCreatePr\": true,
+                  \"autoBranch\": true
+                }${WEBHOOK_FIELD}
               }"
               
               echo "🚀 Making Cursor API request..."
