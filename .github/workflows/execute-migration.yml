@@ -422,11 +422,11 @@ jobs:
                 exit 1
               fi
               
-              # All tests passed, try the real API call
-              echo "✅ All curl parameter tests passed, making real API call..."
+              # Use curl --user flag instead of Authorization header to avoid exit code 43
+              echo "🔧 Making Cursor API request with --user authentication..."
               HTTP_RESPONSE=$(curl -s \
                 -X POST "https://api.cursor.com/v0/agents" \
-                -H "Authorization: Basic $CURSOR_AUTH" \
+                --user "$CURSOR_API_KEY:" \
                 -H "Content-Type: application/json" \
                 -H "User-Agent: Hachiko/1.0" \
                 -d "@$PAYLOAD_FILE" 2>&1)
