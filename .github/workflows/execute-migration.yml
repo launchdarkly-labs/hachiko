@@ -362,8 +362,68 @@ jobs:
               echo "  - Write-out format test:"
               echo 'Testing: curl -w "\nSTATUS_CODE:%{http_code}"'
               
-              # Use completely different approach - no write-out format to avoid curl exit 43
-              echo "🔧 Making curl request without write-out format..."
+              # Test each curl parameter individually to isolate the exact issue
+              echo "🔍 Testing curl parameters systematically to find exit code 43 root cause..."
+              
+              # Test 1: Minimal curl test
+              echo "Test 1: Basic curl version check"
+              curl -s --version > /dev/null && echo "  ✅ curl works" || echo "  ❌ curl broken"
+              
+              # Test 2: Test auth header separately  
+              echo "Test 2: Auth header validation"
+              echo "  - Auth length: ${#CURSOR_AUTH} chars"
+              echo "  - Auth preview: ${CURSOR_AUTH:0:20}..."
+              
+              # Test 3: Test payload file
+              echo "Test 3: Payload file validation"
+              echo "  - File: $PAYLOAD_FILE"
+              echo "  - Exists: $([ -f "$PAYLOAD_FILE" ] && echo 'YES' || echo 'NO')"
+              echo "  - Size: $(wc -c < "$PAYLOAD_FILE") bytes"
+              
+              # Test 4: Progressive curl complexity
+              echo "Test 4: Progressive curl test"
+              set +e
+              
+              # 4a: Most basic curl  
+              BASIC_RESPONSE=$(curl -s "https://httpbin.org/get" 2>&1)
+              BASIC_EXIT=$?
+              echo "  - Basic GET exit: $BASIC_EXIT"
+              
+              # 4b: POST with headers but no auth
+              HEADERS_RESPONSE=$(curl -s -X POST -H "Content-Type: application/json" "https://httpbin.org/post" 2>&1)
+              HEADERS_EXIT=$?  
+              echo "  - POST + headers exit: $HEADERS_EXIT"
+              
+              # 4c: Add auth header (this might be the problem)
+              AUTH_RESPONSE=$(curl -s -X POST -H "Authorization: Basic $CURSOR_AUTH" "https://httpbin.org/post" 2>&1)
+              AUTH_EXIT=$?
+              echo "  - POST + auth header exit: $AUTH_EXIT"
+              
+              # 4d: Add payload file (this might be the problem)  
+              PAYLOAD_RESPONSE=$(curl -s -X POST -H "Content-Type: application/json" -d "@$PAYLOAD_FILE" "https://httpbin.org/post" 2>&1)
+              PAYLOAD_EXIT=$?
+              echo "  - POST + payload file exit: $PAYLOAD_EXIT"
+              
+              set -e
+              
+              # If any test fails, report which one
+              if [ $BASIC_EXIT -ne 0 ]; then
+                echo "❌ ISSUE: Basic curl failing (curl installation problem)"
+                exit 1
+              elif [ $HEADERS_EXIT -ne 0 ]; then
+                echo "❌ ISSUE: Headers causing curl exit code 43"
+                exit 1  
+              elif [ $AUTH_EXIT -ne 0 ]; then
+                echo "❌ ISSUE: Authorization header causing curl exit code 43"
+                echo "  Auth header content: Authorization: Basic $CURSOR_AUTH"
+                exit 1
+              elif [ $PAYLOAD_EXIT -ne 0 ]; then
+                echo "❌ ISSUE: Payload file causing curl exit code 43"
+                exit 1
+              fi
+              
+              # All tests passed, try the real API call
+              echo "✅ All curl parameter tests passed, making real API call..."
               HTTP_RESPONSE=$(curl -s \
                 -X POST "https://api.cursor.com/v0/agents" \
                 -H "Authorization: Basic $CURSOR_AUTH" \
