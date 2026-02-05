@@ -364,6 +364,25 @@ describe("CursorCloudAdapter", () => {
 
       expect(task).toContain("components-1");
     });
+    
+    it("should handle empty files list", () => {
+      const taskMethod = (adapter as any).buildTask.bind(adapter);
+      const inputWithNoFiles = { ...mockInput, files: [] };
+      const task = taskMethod(inputWithNoFiles);
+
+      expect(task).toContain("# Code Migration Task: cursor-plan");
+      expect(task).not.toContain("## Target Files");
+      expect(task).toContain("Convert class component to hooks");
+    });
+    
+    it("should handle chunk information without files", () => {
+      const taskMethod = (adapter as any).buildTask.bind(adapter);
+      const inputWithChunkNoFiles = { ...mockInput, chunk: "batch-1", files: [] };
+      const task = taskMethod(inputWithChunkNoFiles);
+
+      expect(task).toContain("batch-1");
+      expect(task).not.toContain("## Target Files");
+    });
   });
 
   describe("output formatting", () => {
@@ -506,6 +525,45 @@ describe("CursorCloudAdapter", () => {
       expect(actualPayload.prompt.text).toContain(mockInput.planId);
       expect(actualPayload.prompt.text).toContain(mockInput.stepId);
       expect(actualPayload.prompt.text).toContain("src/component.tsx");
+      
+      // Verify no webhook when not configured
+      expect(actualPayload.webhook).toBeUndefined();
+    });
+    
+    it("should include webhook when configured", async () => {
+      const webhookAdapter = new CursorCloudAdapter(policyConfig, {
+        ...cursorConfig,
+        webhookUrl: "https://webhook.example.com/cursor"
+      });
+      (webhookAdapter as any).httpClient = mockHttpClient;
+      
+      const createCall = vi.fn();
+      mockHttpClient.post = createCall.mockResolvedValue({
+        ok: true,
+        json: () => Promise.resolve({
+          agent: { id: "test", status: "completed", output: {} }
+        }),
+        headers: { get: () => "application/json" },
+      });
+      
+      mockHttpClient.get.mockResolvedValue({
+        ok: true,
+        json: () => Promise.resolve({
+          id: "test",
+          status: "completed",
+          output: { files_modified: [] }
+        }),
+        headers: { get: () => "application/json" },
+      });
+      
+      await webhookAdapter.execute(mockInput);
+      
+      const [url, actualPayload] = createCall.mock.calls[0];
+      
+      // Verify webhook is included when configured
+      expect(actualPayload.webhook).toEqual({
+        url: "https://webhook.example.com/cursor"
+      });
     });
   });
 });
