@@ -327,16 +327,9 @@ jobs:
                 echo "🔗 No webhook URL configured"
               fi
               
-              # Create request payload using correct Cursor API format (aligned with TypeScript adapter)
+              # Create request payload using actual Cursor API format (based on API error response)
               REQUEST_PAYLOAD="{
-                \"task\": $(echo "$AGENT_INSTRUCTIONS" | jq -Rs .),
-                \"repository_url\": \"https://github.com/${{ github.repository }}\",
-                \"branch\": \"main\",
-                \"files\": [],
-                \"metadata\": {
-                  \"plan_id\": \"$MIGRATION_ID\",
-                  \"step_id\": \"$STEP_ID\"
-                }${WEBHOOK_FIELD}
+                \"prompt\": $(echo "$AGENT_INSTRUCTIONS" | jq -Rs .)${WEBHOOK_FIELD}
               }"
               
               echo "🚀 Making Cursor API request..."
