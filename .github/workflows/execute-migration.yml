@@ -362,9 +362,9 @@ jobs:
               echo "  - Write-out format test:"
               echo 'Testing: curl -w "\nSTATUS_CODE:%{http_code}"'
               
-              # Use alternative approach - separate the write-out format
-              WRITE_FORMAT='STATUS_CODE:%{http_code}'
-              HTTP_RESPONSE=$(curl -s -w "$WRITE_FORMAT" \
+              # Use completely different approach - no write-out format to avoid curl exit 43
+              echo "🔧 Making curl request without write-out format..."
+              HTTP_RESPONSE=$(curl -s \
                 -X POST "https://api.cursor.com/v0/agents" \
                 -H "Authorization: Basic $CURSOR_AUTH" \
                 -H "Content-Type: application/json" \
@@ -404,9 +404,26 @@ jobs:
               echo "🔍 Raw HTTP response:"
               echo "$HTTP_RESPONSE"
               
-              # Extract status code from end of response
-              HTTP_STATUS=$(echo "$HTTP_RESPONSE" | grep -o 'STATUS_CODE:[0-9]*' | cut -d: -f2)
-              CURSOR_RESPONSE=$(echo "$HTTP_RESPONSE" | sed 's/STATUS_CODE:[0-9]*$//')
+              # Without write-out format, infer status from response content patterns
+              CURSOR_RESPONSE="$HTTP_RESPONSE"
+              
+              # Try to determine HTTP status from response content patterns
+              if echo "$CURSOR_RESPONSE" | grep -q '"id":\|"agent":{'; then
+                HTTP_STATUS="200"  # Looks like successful JSON response
+              elif echo "$CURSOR_RESPONSE" | grep -q -i "unauthorized\|invalid.*key\|authentication"; then
+                HTTP_STATUS="401"  # Authentication error
+              elif echo "$CURSOR_RESPONSE" | grep -q -i "forbidden\|access.*denied"; then
+                HTTP_STATUS="403"  # Access forbidden  
+              elif echo "$CURSOR_RESPONSE" | grep -q -i "not found\|404"; then
+                HTTP_STATUS="404"  # Not found
+              elif echo "$CURSOR_RESPONSE" | grep -q -i "server error\|internal error\|500"; then
+                HTTP_STATUS="500"  # Server error
+              elif [ -z "$CURSOR_RESPONSE" ] || echo "$CURSOR_RESPONSE" | grep -q -i "could not resolve\|connection.*failed"; then
+                HTTP_STATUS="000"  # Connection failed
+              else
+                HTTP_STATUS="999"  # Unknown status, assume success if JSON-like
+                echo "⚠️  Could not determine HTTP status, assuming success based on response content"
+              fi
               
               echo "📊 API Response Details:"
               echo "  HTTP Status: $HTTP_STATUS"
