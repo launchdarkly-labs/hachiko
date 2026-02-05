@@ -41,15 +41,32 @@ interface CursorAgent {
 }
 
 interface CreateAgentRequest {
-  task: string;
-  repository_url: string;
-  branch?: string;
-  files?: string[];
-  webhook_url?: string | undefined;
-  metadata?: {
-    plan_id: string;
-    step_id: string;
-    chunk?: string;
+  prompt: {
+    text: string;
+    images?: Array<{
+      data: string;
+      dimension: {
+        width: number;
+        height: number;
+      };
+    }>;
+  };
+  source: {
+    repository: string;
+    ref?: string;
+    prUrl?: string;
+  };
+  target?: {
+    autoCreatePr?: boolean;
+    openAsCursorGithubApp?: boolean;
+    skipReviewerRequest?: boolean;
+    branchName?: string;
+    autoBranch?: boolean;
+  };
+  model?: string;
+  webhook?: {
+    url: string;
+    secret?: string;
   };
 }
 
@@ -105,18 +122,24 @@ export class CursorCloudAdapter extends BaseAgentAdapter {
         );
       }
 
-      // Create Cursor agent
+      // Create Cursor agent using official API format
       const agentRequest: CreateAgentRequest = {
-        task: this.buildTask(input),
-        repository_url: this.cursorConfig.repositoryUrl || this.inferRepositoryUrl(input.repoPath),
-        branch: this.cursorConfig.branch || "main",
-        files: input.files.map((f) => this.getRelativePath(f, input.repoPath)),
-        webhook_url: this.cursorConfig.webhookUrl,
-        metadata: {
-          plan_id: input.planId,
-          step_id: input.stepId,
-          ...(input.chunk && { chunk: input.chunk }),
+        prompt: {
+          text: this.buildTask(input),
         },
+        source: {
+          repository: this.cursorConfig.repositoryUrl || this.inferRepositoryUrl(input.repoPath),
+          ref: this.cursorConfig.branch || "main",
+        },
+        target: {
+          autoCreatePr: true,
+          autoBranch: true,
+        },
+        ...(this.cursorConfig.webhookUrl && {
+          webhook: {
+            url: this.cursorConfig.webhookUrl,
+          },
+        }),
       };
 
       const createResponse = await this.makeAuthenticatedRequest<CreateAgentResponse>(
@@ -252,19 +275,22 @@ export class CursorCloudAdapter extends BaseAgentAdapter {
    * Build comprehensive task description for Cursor
    */
   private buildTask(input: AgentInput): string {
+    const targetFiles = input.files.length > 0 
+      ? `\n\n## Target Files\n${input.files.map((f) => `- ${this.getRelativePath(f, input.repoPath)}`).join("\n")}`
+      : "";
+
+    const chunkInfo = input.chunk ? `\n**Chunk**: ${input.chunk}` : "";
+
     return `# Code Migration Task: ${input.planId}
 
-**Step**: ${input.stepId}
-${input.chunk ? `**Chunk**: ${input.chunk}` : ""}
-
-## Target Files
-${input.files.map((f) => `- ${this.getRelativePath(f, input.repoPath)}`).join("\n")}
+**Step**: ${input.stepId}${chunkInfo}
+**Plan ID**: ${input.planId}
+**Step ID**: ${input.stepId}${targetFiles}
 
 ## Instructions
 ${input.prompt}
 
 ## Guidelines
-- Only modify the specified files above
 - Preserve existing functionality while applying the requested changes
 - Follow the project's existing code patterns and style
 - Ensure changes are atomic and safe
