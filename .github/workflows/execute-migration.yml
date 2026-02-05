@@ -304,27 +304,19 @@ jobs:
                 exit 1
               fi
 
-              # Validate API key format and length
-              echo "🔍 Validating Cursor API key..."
+              # Validate API key format
               if [ ${#CURSOR_API_KEY} -lt 10 ]; then
-                echo "❌ Cursor API key appears invalid (length: ${#CURSOR_API_KEY})"
+                echo "❌ Cursor API key appears invalid"
                 echo "success=false" >> $GITHUB_OUTPUT
                 echo "error=Invalid Cursor API key format" >> $GITHUB_OUTPUT
                 exit 1
               fi
-              echo "✅ API key format validation passed (length: ${#CURSOR_API_KEY})"
-
-              # Create Cursor agent task
-              CURSOR_AUTH=$(echo -n "$CURSOR_API_KEY:" | base64)
-              echo "🔐 Authorization header prepared"
               
               # Prepare webhook field if provided
               if [ -n "$CURSOR_WEBHOOK_URL" ]; then
                 WEBHOOK_FIELD=",\"webhook\": {\"url\": $(echo "$CURSOR_WEBHOOK_URL" | jq -Rs .)}"
-                echo "🔗 Webhook URL configured"
               else
                 WEBHOOK_FIELD=""
-                echo "🔗 No webhook URL configured"
               fi
               
               # Create request payload using official Cursor API format
@@ -342,215 +334,82 @@ jobs:
                 }${WEBHOOK_FIELD}
               }"
               
-              echo "🚀 Making Cursor API request..."
-              echo "Endpoint: https://api.cursor.com/v0/agents"
-              echo "Payload size: ${#REQUEST_PAYLOAD} bytes"
-              
-              # Make API call with error handling
-              echo "🔧 Making Cursor API request..."
-              
-              # Write payload to temporary file to avoid shell escaping issues
+              # Write payload to temporary file
               PAYLOAD_FILE=$(mktemp)
               echo "$REQUEST_PAYLOAD" > "$PAYLOAD_FILE"
               
-              # Temporarily disable exit-on-error to capture curl's exit code
+              echo "🚀 Making Cursor API request..."
+              
+              # Make API call with error handling
               set +e
-              
-              # Debug: Show exact command being executed
-              echo "🔍 Debugging curl command construction:"
-              echo "  - PAYLOAD_FILE: $PAYLOAD_FILE"
-              echo "  - CURSOR_AUTH length: ${#CURSOR_AUTH}"
-              echo "  - Payload file contents:"
-              cat "$PAYLOAD_FILE" | head -5
-              echo "  - Write-out format test:"
-              echo 'Testing: curl -w "\nSTATUS_CODE:%{http_code}"'
-              
-              # Test each curl parameter individually to isolate the exact issue
-              echo "🔍 Testing curl parameters systematically to find exit code 43 root cause..."
-              
-              # Test 1: Minimal curl test
-              echo "Test 1: Basic curl version check"
-              curl -s --version > /dev/null && echo "  ✅ curl works" || echo "  ❌ curl broken"
-              
-              # Test 2: Test auth header separately  
-              echo "Test 2: Auth header validation"
-              echo "  - Auth length: ${#CURSOR_AUTH} chars"
-              echo "  - Auth preview: ${CURSOR_AUTH:0:20}..."
-              
-              # Test 3: Test payload file
-              echo "Test 3: Payload file validation"
-              echo "  - File: $PAYLOAD_FILE"
-              echo "  - Exists: $([ -f "$PAYLOAD_FILE" ] && echo 'YES' || echo 'NO')"
-              echo "  - Size: $(wc -c < "$PAYLOAD_FILE") bytes"
-              
-              # Test 4: Progressive curl complexity
-              echo "Test 4: Progressive curl test"
-              set +e
-              
-              # 4a: Most basic curl  
-              BASIC_RESPONSE=$(curl -s "https://httpbin.org/get" 2>&1)
-              BASIC_EXIT=$?
-              echo "  - Basic GET exit: $BASIC_EXIT"
-              
-              # 4b: POST with headers but no auth
-              HEADERS_RESPONSE=$(curl -s -X POST -H "Content-Type: application/json" "https://httpbin.org/post" 2>&1)
-              HEADERS_EXIT=$?  
-              echo "  - POST + headers exit: $HEADERS_EXIT"
-              
-              # 4c: Add auth header (this might be the problem)
-              AUTH_RESPONSE=$(curl -s -X POST -H "Authorization: Basic $CURSOR_AUTH" "https://httpbin.org/post" 2>&1)
-              AUTH_EXIT=$?
-              echo "  - POST + auth header exit: $AUTH_EXIT"
-              
-              # 4d: Add payload file (this might be the problem)  
-              PAYLOAD_RESPONSE=$(curl -s -X POST -H "Content-Type: application/json" -d "@$PAYLOAD_FILE" "https://httpbin.org/post" 2>&1)
-              PAYLOAD_EXIT=$?
-              echo "  - POST + payload file exit: $PAYLOAD_EXIT"
-              
-              set -e
-              
-              # Report test results but continue to use --user flag fix
-              if [ $BASIC_EXIT -ne 0 ]; then
-                echo "❌ ISSUE: Basic curl failing (curl installation problem)"
-                exit 1
-              elif [ $HEADERS_EXIT -ne 0 ]; then
-                echo "❌ ISSUE: Headers causing curl exit code 43"
-                exit 1  
-              elif [ $AUTH_EXIT -ne 0 ]; then
-                echo "ℹ️  EXPECTED: Authorization header causing curl exit code 43 (will use --user flag instead)"
-              elif [ $PAYLOAD_EXIT -ne 0 ]; then
-                echo "❌ ISSUE: Payload file causing curl exit code 43"
-                exit 1
-              else
-                echo "✅ All curl parameter tests passed"
-              fi
-              
-              # Use curl --user flag instead of Authorization header to avoid exit code 43
-              echo "🔧 Making Cursor API request with --user authentication..."
               HTTP_RESPONSE=$(curl -s \
                 -X POST "https://api.cursor.com/v0/agents" \
                 --user "$CURSOR_API_KEY:" \
                 -H "Content-Type: application/json" \
                 -H "User-Agent: Hachiko/1.0" \
-                -d "@$PAYLOAD_FILE" 2>&1)
+                -d "@$PAYLOAD_FILE" \
+                -w "\nSTATUS_CODE:%{http_code}" 2>&1)
               
               CURL_EXIT_CODE=$?
-              set -e  # Re-enable exit-on-error
+              set -e
               
               # Clean up payload file
               rm -f "$PAYLOAD_FILE"
               
-              echo "🔍 Curl exit code: $CURL_EXIT_CODE"
-              
               if [ $CURL_EXIT_CODE -ne 0 ]; then
                 echo "❌ Curl command failed with exit code $CURL_EXIT_CODE"
-                echo "Response: $HTTP_RESPONSE"
-                
-                # Show only essential debugging info
-                case $CURL_EXIT_CODE in
-                  6) echo "🔍 DNS resolution failed for api.cursor.com" ;;
-                  7) echo "🔍 Connection failed - DNS resolved but couldn't connect" ;;
-                  28) echo "🔍 Request timeout - server not responding" ;;
-                  35) echo "🔍 SSL/TLS handshake failed" ;;
-                  43) echo "🔍 Bad curl parameter - command syntax error" ;;
-                  56) echo "🔍 Network data transfer failed" ;;
-                  60) echo "🔍 SSL certificate validation failed" ;;
-                  *) echo "🔍 Unknown curl error - see https://curl.se/libcurl/c/libcurl-errors.html" ;;
-                esac
-                
                 echo "success=false" >> $GITHUB_OUTPUT
-                echo "error=Cursor API request failed - curl exit code $CURL_EXIT_CODE" >> $GITHUB_OUTPUT
+                echo "error=Cursor API request failed" >> $GITHUB_OUTPUT
                 exit 1
               fi
               
               # Extract HTTP status and response body
-              echo "🔍 Raw HTTP response:"
-              echo "$HTTP_RESPONSE"
-              
-              # Without write-out format, infer status from response content patterns
-              CURSOR_RESPONSE="$HTTP_RESPONSE"
-              
-              # Try to determine HTTP status from response content patterns
-              if echo "$CURSOR_RESPONSE" | grep -q '"id":\|"agent":{'; then
-                HTTP_STATUS="200"  # Looks like successful JSON response
-              elif echo "$CURSOR_RESPONSE" | grep -q -i "unauthorized\|invalid.*key\|authentication"; then
-                HTTP_STATUS="401"  # Authentication error
-              elif echo "$CURSOR_RESPONSE" | grep -q -i "forbidden\|access.*denied"; then
-                HTTP_STATUS="403"  # Access forbidden  
-              elif echo "$CURSOR_RESPONSE" | grep -q -i "not found\|404"; then
-                HTTP_STATUS="404"  # Not found
-              elif echo "$CURSOR_RESPONSE" | grep -q -i "server error\|internal error\|500"; then
-                HTTP_STATUS="500"  # Server error
-              elif [ -z "$CURSOR_RESPONSE" ] || echo "$CURSOR_RESPONSE" | grep -q -i "could not resolve\|connection.*failed"; then
-                HTTP_STATUS="000"  # Connection failed
-              else
-                HTTP_STATUS="999"  # Unknown status, assume success if JSON-like
-                echo "⚠️  Could not determine HTTP status, assuming success based on response content"
-              fi
-              
-              echo "📊 API Response Details:"
-              echo "  HTTP Status: $HTTP_STATUS"
-              echo "  Response Body: $CURSOR_RESPONSE"
+              HTTP_STATUS=$(echo "$HTTP_RESPONSE" | tail -1 | sed 's/.*STATUS_CODE://')
+              CURSOR_RESPONSE=$(echo "$HTTP_RESPONSE" | sed '$d')
               
               # Handle different HTTP status codes
               case "$HTTP_STATUS" in
                 "200"|"201")
-                  echo "✅ API request successful (HTTP $HTTP_STATUS)"
+                  echo "✅ API request successful"
                   ;;
                 "401")
-                  echo "❌ Authentication failed (HTTP 401 Unauthorized)"
-                  echo "This indicates the CURSOR_API_KEY is invalid, expired, or malformed"
+                  echo "❌ Authentication failed"
                   echo "success=false" >> $GITHUB_OUTPUT
-                  echo "error=Cursor API authentication failed - invalid API key" >> $GITHUB_OUTPUT
+                  echo "error=Cursor API authentication failed" >> $GITHUB_OUTPUT
                   exit 1
                   ;;
                 "403")
-                  echo "❌ Access forbidden (HTTP 403 Forbidden)"
-                  echo "The API key may not have permission to create agents"
+                  echo "❌ Access forbidden"
                   echo "success=false" >> $GITHUB_OUTPUT
-                  echo "error=Cursor API access forbidden - insufficient permissions" >> $GITHUB_OUTPUT
+                  echo "error=Cursor API access forbidden" >> $GITHUB_OUTPUT
                   exit 1
                   ;;
                 "429")
-                  echo "❌ Rate limit exceeded (HTTP 429 Too Many Requests)"
+                  echo "❌ Rate limit exceeded"
                   echo "success=false" >> $GITHUB_OUTPUT
                   echo "error=Cursor API rate limit exceeded" >> $GITHUB_OUTPUT
                   exit 1
                   ;;
                 "500"|"502"|"503"|"504")
-                  echo "❌ Server error (HTTP $HTTP_STATUS)"
-                  echo "Cursor API is experiencing server issues"
+                  echo "❌ Server error"
                   echo "success=false" >> $GITHUB_OUTPUT
-                  echo "error=Cursor API server error (HTTP $HTTP_STATUS)" >> $GITHUB_OUTPUT
+                  echo "error=Cursor API server error" >> $GITHUB_OUTPUT
                   exit 1
                   ;;
                 *)
                   echo "❌ Unexpected HTTP status: $HTTP_STATUS"
                   echo "success=false" >> $GITHUB_OUTPUT
-                  echo "error=Cursor API unexpected response (HTTP $HTTP_STATUS)" >> $GITHUB_OUTPUT
+                  echo "error=Cursor API unexpected response" >> $GITHUB_OUTPUT
                   exit 1
                   ;;
               esac
               
-              # Parse agent ID from response (aligned with TypeScript adapter format)
+              # Parse agent ID from response
               AGENT_ID=$(echo "$CURSOR_RESPONSE" | jq -r '.agent.id // .id // empty' 2>/dev/null)
               if [ -z "$AGENT_ID" ]; then
                 echo "❌ Failed to extract agent ID from response"
-                echo "Response may be malformed or missing 'agent.id' or 'id' field"
-                echo "Raw response: $CURSOR_RESPONSE"
-                
-                # Check if response contains error information
-                ERROR_CODE=$(echo "$CURSOR_RESPONSE" | jq -r '.code // empty' 2>/dev/null)
-                ERROR_MESSAGE=$(echo "$CURSOR_RESPONSE" | jq -r '.message // empty' 2>/dev/null)
-                
-                if [ -n "$ERROR_CODE" ] && [ -n "$ERROR_MESSAGE" ]; then
-                  echo "API Error Details: code='$ERROR_CODE', message='$ERROR_MESSAGE'"
-                  echo "success=false" >> $GITHUB_OUTPUT
-                  echo "error=Cursor API error: $ERROR_CODE - $ERROR_MESSAGE" >> $GITHUB_OUTPUT
-                else
-                  echo "success=false" >> $GITHUB_OUTPUT
-                  echo "error=Failed to create Cursor agent - malformed response" >> $GITHUB_OUTPUT
-                fi
+                echo "success=false" >> $GITHUB_OUTPUT
+                echo "error=Failed to create Cursor agent" >> $GITHUB_OUTPUT
                 exit 1
               fi
 
