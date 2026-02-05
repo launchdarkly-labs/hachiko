@@ -406,7 +406,7 @@ jobs:
               
               set -e
               
-              # If any test fails, report which one
+              # Report test results but continue to use --user flag fix
               if [ $BASIC_EXIT -ne 0 ]; then
                 echo "❌ ISSUE: Basic curl failing (curl installation problem)"
                 exit 1
@@ -414,12 +414,12 @@ jobs:
                 echo "❌ ISSUE: Headers causing curl exit code 43"
                 exit 1  
               elif [ $AUTH_EXIT -ne 0 ]; then
-                echo "❌ ISSUE: Authorization header causing curl exit code 43"
-                echo "  Auth header content: Authorization: Basic $CURSOR_AUTH"
-                exit 1
+                echo "ℹ️  EXPECTED: Authorization header causing curl exit code 43 (will use --user flag instead)"
               elif [ $PAYLOAD_EXIT -ne 0 ]; then
                 echo "❌ ISSUE: Payload file causing curl exit code 43"
                 exit 1
+              else
+                echo "✅ All curl parameter tests passed"
               fi
               
               # Use curl --user flag instead of Authorization header to avoid exit code 43
