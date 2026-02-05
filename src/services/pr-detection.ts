@@ -51,68 +51,124 @@ export function detectHachikoPR(pr: PullRequest): HachikoPR | null {
 }
 
 /**
- * Extract migration ID from branch name only
+ * Extract migration ID from branch name with support for multiple agent prefixes
  */
 function extractMigrationIdFromBranch(branchRef: string): string | null {
-  // Pattern: hachiko/{migration-id} or hachiko/{migration-id}-description
-  const branchMatch = branchRef.match(/^hachiko\/(.+)$/);
-  if (branchMatch && branchMatch[1]) {
-    const fullId = branchMatch[1];
+  // Pattern 1: hachiko/{migration-id} or hachiko/{migration-id}-description (preferred)
+  const hachikoMatch = branchRef.match(/^hachiko\/(.+)$/);
+  if (hachikoMatch && hachikoMatch[1]) {
+    return extractMigrationIdFromBranchSuffix(hachikoMatch[1]);
+  }
 
-    // For branches like "hachiko/add-jsdoc-comments-utility-functions"
-    // we want to extract "add-jsdoc-comments"
-    // But for "hachiko/react-v16-to-v18-hooks-migration" we want the full thing
-
-    // Strategy: check if parts at the end look like description words
-    const parts = fullId.split("-");
-    if (parts.length > 1) {
-      const descriptionWords = [
-        "impl",
-        "implementation",
-        "fix",
-        "update",
-        "refactor",
-        "feature",
-        "utility",
-        "functions",
-        "components",
-        "hooks",
-        "tests",
-        "simple",
-        "complex",
-        "basic",
-        "advanced",
-        "step",
-        "1",
-        "2",
-        "3",
-        "4",
-        "5",
-        "6",
-        "7",
-        "8",
-        "9",
-      ];
-
-      // Find how many parts at the end are description words
-      let descriptivePartsCount = 0;
-      for (let i = parts.length - 1; i >= 0; i--) {
-        if (descriptionWords.includes(parts[i]!.toLowerCase())) {
-          descriptivePartsCount++;
-        } else {
-          break; // Stop at first non-descriptive word
-        }
-      }
-
-      if (descriptivePartsCount > 0) {
-        return parts.slice(0, -descriptivePartsCount).join("-");
+  // Pattern 2: {agent}/{migration-id}-step-{number} (agent-created branches)
+  const agentMatch = branchRef.match(/^(?:cursor|devin|codex|claude)\/(.+)$/);
+  if (agentMatch && agentMatch[1]) {
+    // Look for migration-id patterns in agent branches
+    const suffix = agentMatch[1];
+    
+    // Handle patterns like "improve-test-coverage-step-1" or "coverage-improvement-step-1"
+    if (suffix.includes('-step-')) {
+      const beforeStep = suffix.split('-step-')[0];
+      if (beforeStep) {
+        // Try to map variations back to known migration IDs
+        return normalizeMigrationId(beforeStep);
       }
     }
-
-    return fullId;
+    
+    // Fallback to general suffix extraction
+    return extractMigrationIdFromBranchSuffix(suffix);
   }
 
   return null;
+}
+
+/**
+ * Extract migration ID from branch suffix by removing descriptive words
+ */
+function extractMigrationIdFromBranchSuffix(suffix: string): string {
+  // For branches like "add-jsdoc-comments-utility-functions"
+  // we want to extract "add-jsdoc-comments"
+  // But for "react-v16-to-v18-hooks-migration" we want the full thing
+
+  // Strategy: check if parts at the end look like description words
+  const parts = suffix.split("-");
+  if (parts.length > 1) {
+    const descriptionWords = [
+      "impl",
+      "implementation",
+      "fix",
+      "update",
+      "refactor",
+      "feature",
+      "utility",
+      "functions",
+      "components",
+      "hooks",
+      "tests",
+      "simple",
+      "complex",
+      "basic",
+      "advanced",
+      "step",
+      "1",
+      "2",
+      "3",
+      "4",
+      "5",
+      "6",
+      "7",
+      "8",
+      "9",
+    ];
+
+    // Find how many parts at the end are description words
+    let descriptivePartsCount = 0;
+    for (let i = parts.length - 1; i >= 0; i--) {
+      if (descriptionWords.includes(parts[i]!.toLowerCase())) {
+        descriptivePartsCount++;
+      } else {
+        break; // Stop at first non-descriptive word
+      }
+    }
+
+    if (descriptivePartsCount > 0) {
+      return parts.slice(0, -descriptivePartsCount).join("-");
+    }
+  }
+
+  return suffix;
+}
+
+/**
+ * Normalize migration ID variations that agents might create
+ * Maps common agent variations back to canonical migration IDs
+ */
+function normalizeMigrationId(branchId: string): string {
+  // Handle common variations agents might use
+  const normalizations: Record<string, string> = {
+    "coverage-improvement": "improve-test-coverage",
+    "test-coverage-improvement": "improve-test-coverage", 
+    "jsdoc-comments": "add-jsdoc-comments",
+    "jsdoc-documentation": "add-jsdoc-comments",
+    "react-hooks": "react-class-to-hooks",
+    "class-to-hooks": "react-class-to-hooks",
+  };
+
+  // Direct match
+  if (normalizations[branchId]) {
+    return normalizations[branchId];
+  }
+
+  // Fuzzy matching for partial words
+  for (const [variation, canonical] of Object.entries(normalizations)) {
+    const parts = variation.split('-');
+    if (parts[0] && parts[1] && branchId.includes(parts[0]) && branchId.includes(parts[1])) {
+      return canonical;
+    }
+  }
+
+  // Return as-is if no normalization found
+  return branchId;
 }
 
 /**
@@ -297,7 +353,7 @@ export function validateHachikoPR(pr: PullRequest): PRValidationResult {
     identificationMethods.push("branch");
   } else {
     recommendations.push(
-      `Branch should be named 'hachiko/{migration-id}' or 'hachiko/{migration-id}-description'`
+      `Branch should include migration ID and step number (e.g., 'hachiko/{migration-id}-step-{n}' or '{agent}/{migration-id}-step-{n}')`
     );
   }
 

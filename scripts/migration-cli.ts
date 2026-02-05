@@ -429,28 +429,26 @@ program
       
       const instructions = `You are executing step ${stepId} of migration "${migrationId}" using the Hachiko migration system.
 
-CRITICAL REQUIREMENTS FOR DASHBOARD TRACKING:
-- Branch: MUST start with "hachiko/${migrationId}"
-- PR Title: MUST include "Migration: ${migrationTitle} (Step ${stepId}/${actualTotalSteps})"
-- PR Label: MUST include "hachiko:migration"
+REQUIREMENTS FOR DASHBOARD TRACKING:
+- Branch: Should include "${migrationId}" and "step-${stepId}" for identification
+- PR Title: Should include "Migration:" and "(Step ${stepId}/${actualTotalSteps})" 
+- PR Label: MUST include "hachiko:migration" (critical for tracking)
 
-FAILURE TO FOLLOW THESE WILL CAUSE TRACKING FAILURES IN THE MIGRATION DASHBOARD.
-
-Example of CORRECT format:
-✅ Branch: hachiko/${migrationId}-step-${stepId}
+Preferred formats (but flexible):
+✅ Branch: hachiko/${migrationId}-step-${stepId} OR ${agent}/${migrationId}-step-${stepId}
 ✅ Title: Migration: ${migrationTitle} (Step ${stepId}/${actualTotalSteps})
-✅ Label: hachiko:migration
+✅ Label: hachiko:migration (REQUIRED)
 
-Example of INCORRECT format (DO NOT USE):
-❌ Branch: ${agent}/${migrationId}-step-${stepId}
-❌ Title: ${migrationTitle.toLowerCase().replace(/\s+/g, ' ')} step ${stepId}
-❌ Label: (none)
+Examples that work:
+- hachiko/improve-test-coverage-step-1
+- cursor/improve-test-coverage-step-1  
+- devin/improve-test-coverage-step-1
 
 Instructions:
 1. Read and understand the migration document at: migrations/${migrationId}.md
 2. Focus on completing step ${stepId} of the migration as described in the document
 3. Make the necessary code changes following the migration requirements
-4. Create a new branch with the EXACT pattern "hachiko/${migrationId}-step-${stepId}"
+4. Create a branch that includes "${migrationId}" and "step-${stepId}" for identification
 5. Commit your changes with clear, descriptive commit messages (no emojis)
 6. Create a pull request with these EXACT specifications:
    - Title: "Migration: ${migrationTitle} (Step ${stepId}/${actualTotalSteps})"
