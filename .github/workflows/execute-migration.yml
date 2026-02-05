@@ -353,8 +353,18 @@ jobs:
               # Temporarily disable exit-on-error to capture curl's exit code
               set +e
               
-              # Use corrected curl command with proper write-out format
-              HTTP_RESPONSE=$(curl -s -w "\nSTATUS_CODE:%{http_code}" \
+              # Debug: Show exact command being executed
+              echo "🔍 Debugging curl command construction:"
+              echo "  - PAYLOAD_FILE: $PAYLOAD_FILE"
+              echo "  - CURSOR_AUTH length: ${#CURSOR_AUTH}"
+              echo "  - Payload file contents:"
+              cat "$PAYLOAD_FILE" | head -5
+              echo "  - Write-out format test:"
+              echo 'Testing: curl -w "\nSTATUS_CODE:%{http_code}"'
+              
+              # Use alternative approach - separate the write-out format
+              WRITE_FORMAT='STATUS_CODE:%{http_code}'
+              HTTP_RESPONSE=$(curl -s -w "$WRITE_FORMAT" \
                 -X POST "https://api.cursor.com/v0/agents" \
                 -H "Authorization: Basic $CURSOR_AUTH" \
                 -H "Content-Type: application/json" \
@@ -391,8 +401,12 @@ jobs:
               fi
               
               # Extract HTTP status and response body
-              CURSOR_RESPONSE=$(echo "$HTTP_RESPONSE" | sed '/^STATUS_CODE:/,$d')
-              HTTP_STATUS=$(echo "$HTTP_RESPONSE" | grep "^STATUS_CODE:" | cut -d: -f2)
+              echo "🔍 Raw HTTP response:"
+              echo "$HTTP_RESPONSE"
+              
+              # Extract status code from end of response
+              HTTP_STATUS=$(echo "$HTTP_RESPONSE" | grep -o 'STATUS_CODE:[0-9]*' | cut -d: -f2)
+              CURSOR_RESPONSE=$(echo "$HTTP_RESPONSE" | sed 's/STATUS_CODE:[0-9]*$//')
               
               echo "📊 API Response Details:"
               echo "  HTTP Status: $HTTP_STATUS"
