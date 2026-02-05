@@ -320,22 +320,25 @@ jobs:
               
               # Prepare webhook field if provided
               if [ -n "$CURSOR_WEBHOOK_URL" ]; then
-                WEBHOOK_FIELD=",\"webhook_url\": $(echo "$CURSOR_WEBHOOK_URL" | jq -Rs .)"
+                WEBHOOK_FIELD=",\"webhook\": {\"url\": $(echo "$CURSOR_WEBHOOK_URL" | jq -Rs .)}"
                 echo "🔗 Webhook URL configured"
               else
                 WEBHOOK_FIELD=""
                 echo "🔗 No webhook URL configured"
               fi
               
-              # Create request payload using Cursor API format (aligned with TypeScript adapter)
+              # Create request payload using official Cursor API format
               REQUEST_PAYLOAD="{
-                \"task\": $(echo "$AGENT_INSTRUCTIONS" | jq -Rs .),
-                \"repository_url\": \"https://github.com/${{ github.repository }}\",
-                \"branch\": \"main\",
-                \"files\": [],
-                \"metadata\": {
-                  \"plan_id\": \"$MIGRATION_ID\",
-                  \"step_id\": \"$STEP_ID\"
+                \"prompt\": {
+                  \"text\": $(echo "$AGENT_INSTRUCTIONS" | jq -Rs .)
+                },
+                \"source\": {
+                  \"repository\": \"https://github.com/${{ github.repository }}\",
+                  \"ref\": \"main\"
+                },
+                \"target\": {
+                  \"autoCreatePr\": true,
+                  \"autoBranch\": true
                 }${WEBHOOK_FIELD}
               }"
               
