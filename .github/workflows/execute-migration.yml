@@ -320,25 +320,22 @@ jobs:
               
               # Prepare webhook field if provided
               if [ -n "$CURSOR_WEBHOOK_URL" ]; then
-                WEBHOOK_FIELD=",\"webhook\": {\"url\": $(echo "$CURSOR_WEBHOOK_URL" | jq -Rs .)}"
+                WEBHOOK_FIELD=",\"webhook_url\": $(echo "$CURSOR_WEBHOOK_URL" | jq -Rs .)"
                 echo "🔗 Webhook URL configured"
               else
                 WEBHOOK_FIELD=""
                 echo "🔗 No webhook URL configured"
               fi
               
-              # Create request payload using correct Cursor API format
+              # Create request payload using correct Cursor API format (aligned with TypeScript adapter)
               REQUEST_PAYLOAD="{
-                \"prompt\": {
-                  \"text\": $(echo "$AGENT_INSTRUCTIONS" | jq -Rs .)
-                },
-                \"source\": {
-                  \"repository\": \"https://github.com/${{ github.repository }}\",
-                  \"ref\": \"main\"
-                },
-                \"target\": {
-                  \"autoCreatePr\": true,
-                  \"branchName\": \"hachiko/${MIGRATION_ID}-step-${STEP_ID}\"
+                \"task\": $(echo "$AGENT_INSTRUCTIONS" | jq -Rs .),
+                \"repository_url\": \"https://github.com/${{ github.repository }}\",
+                \"branch\": \"main\",
+                \"files\": [],
+                \"metadata\": {
+                  \"plan_id\": \"$MIGRATION_ID\",
+                  \"step_id\": \"$STEP_ID\"
                 }${WEBHOOK_FIELD}
               }"
               
@@ -356,8 +353,8 @@ jobs:
               # Temporarily disable exit-on-error to capture curl's exit code
               set +e
               
-              # Use simpler curl command without problematic write-out format
-              HTTP_RESPONSE=$(curl -s -w '\nSTATUS_CODE:%{http_code}' \
+              # Use corrected curl command with proper write-out format
+              HTTP_RESPONSE=$(curl -s -w "\nSTATUS_CODE:%{http_code}" \
                 -X POST "https://api.cursor.com/v0/agents" \
                 -H "Authorization: Basic $CURSOR_AUTH" \
                 -H "Content-Type: application/json" \
@@ -441,11 +438,11 @@ jobs:
                   ;;
               esac
               
-              # Parse agent ID from response (Cursor API returns .id not .agent.id)
-              AGENT_ID=$(echo "$CURSOR_RESPONSE" | jq -r '.id // empty' 2>/dev/null)
+              # Parse agent ID from response (aligned with TypeScript adapter format)
+              AGENT_ID=$(echo "$CURSOR_RESPONSE" | jq -r '.agent.id // .id // empty' 2>/dev/null)
               if [ -z "$AGENT_ID" ]; then
                 echo "❌ Failed to extract agent ID from response"
-                echo "Response may be malformed or missing 'agent.id' field"
+                echo "Response may be malformed or missing 'agent.id' or 'id' field"
                 echo "Raw response: $CURSOR_RESPONSE"
                 
                 # Check if response contains error information
