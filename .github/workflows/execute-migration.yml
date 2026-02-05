@@ -43,6 +43,7 @@ jobs:
         with:
           node-version: 22
           cache: "pnpm"
+          cache-dependency-path: 'pnpm-lock.yaml'
 
       - name: Install dependencies
         run: |
@@ -79,7 +80,7 @@ jobs:
           # Get calculated state from PR activity
           echo "🔍 Calculating migration state from PR activity..."
           STATE_OUTPUT=$(GITHUB_TOKEN="${GITHUB_TOKEN}" GITHUB_REPOSITORY="${{ github.repository }}" node dist/scripts/get-migration-state.js "$MIGRATION_ID" 2>/dev/null || echo "")
-          
+
           if [ -z "$STATE_OUTPUT" ]; then
             echo "⚠️ Could not calculate state from PR activity, falling back to frontmatter"
             STATUS=$(echo "$FRONTMATTER" | grep "^status:" | sed 's/status: *//' | tr -d "'" | tr -d '"')
@@ -118,14 +119,34 @@ jobs:
             exit 1
           fi
 
+          # Validate CURRENT_STEP is a valid number
+          if ! [[ "$CURRENT_STEP" =~ ^[0-9]+$ ]] || [ "$CURRENT_STEP" -lt 1 ]; then
+            echo "⚠️ Invalid current step '$CURRENT_STEP', defaulting to 1"
+            CURRENT_STEP=1
+          fi
+
+          # Validate REQUESTED_STEP is a valid number
+          if ! [[ "$REQUESTED_STEP" =~ ^[0-9]+$ ]] || [ "$REQUESTED_STEP" -lt 1 ]; then
+            echo "❌ Invalid requested step '$REQUESTED_STEP'"
+            exit 1
+          fi
+
           # Calculate next step for validation
           NEXT_STEP=$((CURRENT_STEP + 1))
+
+          echo "🔍 Validation state:"
+          echo "  Migration Status: $MIGRATION_STATUS"
+          echo "  Current Step: $CURRENT_STEP"
+          echo "  Requested Step: $REQUESTED_STEP"
+          echo "  Next Step: $NEXT_STEP"
+          echo "  Force: $FORCE"
 
           # For active/paused status, only allow if re-executing current step or advancing to next step
           if [ "$MIGRATION_STATUS" = "active" ] || [ "$MIGRATION_STATUS" = "paused" ]; then
             if [ "$FORCE" != "true" ]; then
               if [ "$REQUESTED_STEP" != "$CURRENT_STEP" ] && [ "$REQUESTED_STEP" != "$NEXT_STEP" ]; then
                 echo "❌ Migration $MIGRATION_STATUS. Can only re-execute current step ($CURRENT_STEP) or advance to next step ($NEXT_STEP). Use force=true to override."
+                echo "🐛 Debug info: REQUESTED_STEP='$REQUESTED_STEP', CURRENT_STEP='$CURRENT_STEP', NEXT_STEP='$NEXT_STEP'"
                 exit 1
               fi
             fi
@@ -182,7 +203,7 @@ jobs:
           echo "Step ID: $STEP_ID"
           echo "Agent: $AGENT"
           echo "Repository: ${{ github.repository }}"
-          
+
           # Check if migration file exists
           MIGRATION_FILE="migrations/${MIGRATION_ID}.md"
           if [ ! -f "$MIGRATION_FILE" ]; then
@@ -194,7 +215,7 @@ jobs:
             exit 1
           fi
           echo "✅ Migration file found: $MIGRATION_FILE"
-          
+
           # Check if CLI is working
           echo "🔍 Testing migration CLI..."
           if ! pnpm migration --help > /dev/null 2>&1; then
@@ -204,10 +225,10 @@ jobs:
             exit 1
           fi
           echo "✅ Migration CLI is accessible"
-          
+
           # Generate agent instructions with detailed error capture
           echo "🚀 Running: pnpm migration get-agent-instructions \"$MIGRATION_ID\" \"$STEP_ID\" \"$AGENT\" --repository \"${{ github.repository }}\""
-          
+
           # Capture both stdout and stderr
           if ! AGENT_INSTRUCTIONS=$(pnpm migration get-agent-instructions "$MIGRATION_ID" "$STEP_ID" "$AGENT" --repository "${{ github.repository }}" 2>&1); then
             echo "❌ Failed to generate agent instructions"
@@ -222,7 +243,7 @@ jobs:
             echo "error=Failed to generate agent instructions" >> $GITHUB_OUTPUT
             exit 1
           fi
-          
+
           echo "✅ Agent instructions generated successfully"
           echo "Instructions length: ${#AGENT_INSTRUCTIONS} characters"
 
@@ -334,8 +355,10 @@ jobs:
               
               # Temporarily disable exit-on-error to capture curl's exit code
               set +e
-              HTTP_RESPONSE=$(curl -w "\nHTTP_STATUS:%{http_code}\nHTTP_SIZE:%{size_download}" \
-                -s -X POST "https://api.cursor.com/v0/agents" \
+              
+              # Use simpler curl command without problematic write-out format
+              HTTP_RESPONSE=$(curl -s -w '\nSTATUS_CODE:%{http_code}' \
+                -X POST "https://api.cursor.com/v0/agents" \
                 -H "Authorization: Basic $CURSOR_AUTH" \
                 -H "Content-Type: application/json" \
                 -H "User-Agent: Hachiko/1.0" \
@@ -344,23 +367,25 @@ jobs:
               CURL_EXIT_CODE=$?
               set -e  # Re-enable exit-on-error
               
-              # Clean up temporary file
+              # Clean up payload file
               rm -f "$PAYLOAD_FILE"
               
               echo "🔍 Curl exit code: $CURL_EXIT_CODE"
               
               if [ $CURL_EXIT_CODE -ne 0 ]; then
                 echo "❌ Curl command failed with exit code $CURL_EXIT_CODE"
-                echo "Raw curl output: $HTTP_RESPONSE"
+                echo "Response: $HTTP_RESPONSE"
                 
+                # Show only essential debugging info
                 case $CURL_EXIT_CODE in
-                  6) echo "Couldn't resolve host. DNS resolution failed." ;;
-                  7) echo "Failed to connect to host." ;;
-                  28) echo "Operation timeout. The specified time-out period was reached." ;;
-                  35) echo "SSL connect error. A TLS/SSL handshake problem occurred." ;;
-                  43) echo "Internal curl error - bad function parameter. Check curl command syntax." ;;
-                  56) echo "Failure in receiving network data." ;;
-                  *) echo "Unknown curl error. Check network connectivity and API endpoint." ;;
+                  6) echo "🔍 DNS resolution failed for api.cursor.com" ;;
+                  7) echo "🔍 Connection failed - DNS resolved but couldn't connect" ;;
+                  28) echo "🔍 Request timeout - server not responding" ;;
+                  35) echo "🔍 SSL/TLS handshake failed" ;;
+                  43) echo "🔍 Bad curl parameter - command syntax error" ;;
+                  56) echo "🔍 Network data transfer failed" ;;
+                  60) echo "🔍 SSL certificate validation failed" ;;
+                  *) echo "🔍 Unknown curl error - see https://curl.se/libcurl/c/libcurl-errors.html" ;;
                 esac
                 
                 echo "success=false" >> $GITHUB_OUTPUT
@@ -369,13 +394,11 @@ jobs:
               fi
               
               # Extract HTTP status and response body
-              CURSOR_RESPONSE=$(echo "$HTTP_RESPONSE" | sed '/^HTTP_STATUS:/,$d')
-              HTTP_STATUS=$(echo "$HTTP_RESPONSE" | grep "^HTTP_STATUS:" | cut -d: -f2)
-              RESPONSE_SIZE=$(echo "$HTTP_RESPONSE" | grep "^HTTP_SIZE:" | cut -d: -f2)
+              CURSOR_RESPONSE=$(echo "$HTTP_RESPONSE" | sed '/^STATUS_CODE:/,$d')
+              HTTP_STATUS=$(echo "$HTTP_RESPONSE" | grep "^STATUS_CODE:" | cut -d: -f2)
               
               echo "📊 API Response Details:"
               echo "  HTTP Status: $HTTP_STATUS"
-              echo "  Response Size: $RESPONSE_SIZE bytes"
               echo "  Response Body: $CURSOR_RESPONSE"
               
               # Handle different HTTP status codes

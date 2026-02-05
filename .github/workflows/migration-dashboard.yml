@@ -25,6 +25,11 @@ permissions:
   pull-requests: write # To create and manage PRs
   actions: write # To trigger workflow dispatches
 
+# Prevent concurrent executions to avoid double-triggering migrations
+concurrency:
+  group: migration-dashboard-${{ github.repository }}
+  cancel-in-progress: false # Queue instead of cancelling to avoid losing checkbox changes
+
 jobs:
   handle-migration-dashboard:
     name: Handle Migration Dashboard Event
@@ -141,11 +146,28 @@ jobs:
             }
           ')
 
+          # Helper function to check if migration is already running
+          check_migration_running() {
+            local migration_id="$1"
+            # Check for running execute-migration workflows for this migration
+            RUNNING_COUNT=$(gh run list --workflow=execute-migration.yml --status=in_progress --json conclusion | jq 'length')
+            if [ "$RUNNING_COUNT" -gt 0 ]; then
+              echo "⚠️ Execution workflow already running - skipping trigger for $migration_id"
+              return 0
+            fi
+            return 1
+          }
+
           # Process checked migrations from Pending section (restart from current step)
           MIGRATIONS_TRIGGERED=false
           for MIGRATION_ID in $CHECKED_PENDING; do
             if [ -n "$MIGRATION_ID" ] && [ "$MIGRATION_ID" != "✨" ]; then
               echo "Starting pending migration: $MIGRATION_ID"
+              
+              # Check if migration is already running
+              if check_migration_running "$MIGRATION_ID"; then
+                continue
+              fi
               
               # For pending migrations, start from step 1
               CURRENT_STEP=1
@@ -164,6 +186,11 @@ jobs:
           for MIGRATION_ID in $CHECKED_PAUSED; do
             if [ -n "$MIGRATION_ID" ] && [ "$MIGRATION_ID" != "✨" ]; then
               echo "Resuming paused migration: $MIGRATION_ID"
+              
+              # Check if migration is already running
+              if check_migration_running "$MIGRATION_ID"; then
+                continue
+              fi
               
               # Get current step from calculated state (preferred) or fallback to migration file
               echo "🔍 Calculating current step for $MIGRATION_ID from PR activity..."
@@ -201,6 +228,11 @@ jobs:
           for MIGRATION_ID in $CHECKED_IN_PROGRESS; do
             if [ -n "$MIGRATION_ID" ] && [ "$MIGRATION_ID" != "✨" ]; then
               echo "Advancing in-progress migration: $MIGRATION_ID"
+              
+              # Check if migration is already running
+              if check_migration_running "$MIGRATION_ID"; then
+                continue
+              fi
               
               # Get current step from calculated state (preferred) or fallback to migration file
               echo "🔍 Calculating current step for $MIGRATION_ID from PR activity..."
@@ -241,6 +273,11 @@ jobs:
             echo "$RESTART_REQUESTS" | while IFS=':' read -r MIGRATION_ID STEP_ID; do
               if [ -n "$MIGRATION_ID" ] && [ -n "$STEP_ID" ]; then
                 echo "Manually restarting migration: $MIGRATION_ID at step $STEP_ID"
+                
+                # Check if migration is already running
+                if check_migration_running "$MIGRATION_ID"; then
+                  continue
+                fi
                 
                 # Trigger migration execution with specified step
                 gh workflow run execute-migration.yml \
@@ -289,6 +326,7 @@ jobs:
 
       - name: Handle PR closure
         if: github.event_name == 'pull_request' && github.event.pull_request.state == 'closed'
+        id: handle-pr-closure
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PR_BRANCH: ${{ github.event.pull_request.head.ref }}
@@ -298,8 +336,11 @@ jobs:
           echo "PR closed: $PR_TITLE"
           echo "Branch: $PR_BRANCH"
 
+          IS_HACHIKO_PR=false
+
           # Check if this is a Hachiko migration branch
           if [[ "$PR_BRANCH" == hachiko/* ]]; then
+            IS_HACHIKO_PR=true
             # Extract migration ID from branch name
             MIGRATION_ID=$(echo "$PR_BRANCH" | sed 's/hachiko\///' | sed 's/-step-[0-9]*//')
             
@@ -318,9 +359,11 @@ jobs:
             fi
           fi
 
+          echo "is_hachiko_pr=$IS_HACHIKO_PR" >> $GITHUB_OUTPUT
+
       - name: Update migration-dashboard issue
         if: |
-          (github.event_name == 'pull_request' && steps.handle-pr.outputs.is_hachiko_pr == 'true') || 
+          (github.event_name == 'pull_request' && (steps.handle-pr.outputs.is_hachiko_pr == 'true' || steps.handle-pr-closure.outputs.is_hachiko_pr == 'true')) || 
           github.event_name == 'workflow_dispatch' ||
           (github.event_name == 'issues' && github.event.issue.number == fromJson(steps.find-issue.outputs.migration_dashboard_issue))
         env:

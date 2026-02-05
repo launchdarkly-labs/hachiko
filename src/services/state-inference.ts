@@ -120,11 +120,11 @@ export async function getMigrationState(
 /**
  * Calculate current migration step from PR activity
  *
- * Rules:
- * - If there's an open PR, current step is the step number from that PR's branch
- * - If no open PRs but there are merged PRs, current step is the highest merged step + 1
- * - If no PRs at all, current step is 1 (ready to start)
+ * Rules (in priority order):
+ * - If there are merged PRs, current step is the highest merged step + 1 (takes priority)
+ * - If there are open PRs but no merged PRs, current step is the lowest open step number
  * - If only closed (non-merged) PRs, current step is the step of the most recent failed attempt
+ * - If no PRs at all, current step is 1 (ready to start)
  */
 function calculateCurrentStep(
   openPRs: HachikoPR[],
@@ -138,34 +138,34 @@ function calculateCurrentStep(
     // Handle hachiko/{migration-id}-step-{N} format
     const stepMatch = pr.branch.match(/-step-(\d+)(?:-|$)/);
     if (stepMatch && stepMatch[1]) {
-      return parseInt(stepMatch[1], 10);
+      const stepNumber = parseInt(stepMatch[1], 10);
+      log.debug(
+        { branch: pr.branch, stepNumber, prNumber: pr.number },
+        "Parsed step from branch name"
+      );
+      return stepNumber;
     }
-    
+
     // Fallback to old hachi/{migration-id}/{step-id} format
     const parsed = parseMigrationBranchName(pr.branch);
     if (parsed?.stepId) {
       const legacyStepMatch = parsed.stepId.match(/(\d+)/);
-      return legacyStepMatch?.[1] ? parseInt(legacyStepMatch[1], 10) : null;
+      const stepNumber = legacyStepMatch?.[1] ? parseInt(legacyStepMatch[1], 10) : null;
+      log.debug(
+        { branch: pr.branch, stepNumber, prNumber: pr.number, parsed },
+        "Parsed step from legacy branch format"
+      );
+      return stepNumber;
     }
 
+    log.warn(
+      { branch: pr.branch, prNumber: pr.number },
+      "Could not parse step number from branch name"
+    );
     return null;
   }
 
-  // If there are open PRs, find the step being worked on
-  if (openPRs.length > 0) {
-    const openSteps = openPRs
-      .map(getStepNumber)
-      .filter((step): step is number => step !== null)
-      .sort((a, b) => a - b);
-
-    if (openSteps.length > 0) {
-      const currentStep = openSteps[0]!; // Lowest step number being worked on
-      log.debug({ currentStep, openSteps }, "Current step from open PRs");
-      return currentStep;
-    }
-  }
-
-  // No open PRs - check merged PRs to see what's been completed
+  // First check merged PRs to see what's been completed - this takes priority
   const mergedPRs = closedPRs.filter((pr) => pr.merged);
   if (mergedPRs.length > 0) {
     const mergedSteps = mergedPRs
@@ -176,8 +176,31 @@ function calculateCurrentStep(
     if (mergedSteps.length > 0) {
       const highestMergedStep = mergedSteps[0]!;
       const nextStep = highestMergedStep + 1;
-      log.debug({ highestMergedStep, nextStep, mergedSteps }, "Next step after merged PRs");
+      log.info(
+        {
+          highestMergedStep,
+          nextStep,
+          mergedSteps,
+          mergedPRCount: mergedPRs.length,
+          branches: mergedPRs.map((pr) => pr.branch),
+        },
+        "Calculated current step from merged PRs"
+      );
       return nextStep;
+    }
+  }
+
+  // If there are open PRs but no merged PRs, use the lowest open step
+  if (openPRs.length > 0) {
+    const openSteps = openPRs
+      .map(getStepNumber)
+      .filter((step): step is number => step !== null)
+      .sort((a, b) => a - b);
+
+    if (openSteps.length > 0) {
+      const currentStep = openSteps[0]!; // Lowest step number being worked on
+      log.debug({ currentStep, openSteps }, "Current step from open PRs");
+      return currentStep;
     }
   }
 
@@ -318,7 +341,7 @@ export async function getMultipleMigrationStates(
           { error, migrationId },
           "Failed to get migration state with document, falling back to PR-only inference"
         );
-        
+
         // Instead of returning pending, try to infer state from PR activity only
         try {
           const state = await getMigrationState(context, migrationId, undefined, log);

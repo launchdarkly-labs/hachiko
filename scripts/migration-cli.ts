@@ -296,15 +296,15 @@ program
               // Start with migration title
               inProgressMigrations += `- [ ] \`${frontmatter.id}\` - ${frontmatter.title}\n`;
               
-              // Add progress summary as sub-bullet
+              // Add current open PRs first with "Current step:" prefix
+              for (const pr of openPRs) {
+                inProgressMigrations += `  - Current step: [${pr.title}](${pr.url})\n`;
+              }
+              
+              // Add progress summary as sub-bullet after PR links
               const completedSteps = mergedPRs.length;
               if (completedSteps > 0) {
                 inProgressMigrations += `  - ${completedSteps} of ${totalSteps} steps completed\n`;
-              }
-              
-              // Add current open PRs with just the link and title (title already includes step info)
-              for (const pr of openPRs) {
-                inProgressMigrations += `  - [${pr.title}](${pr.url})\n`;
               }
               
               // If no open PRs but has merged PRs, show manual trigger option
