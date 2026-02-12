@@ -95,10 +95,26 @@ describe("PR Detection Service", () => {
       expect(extractMigrationId(pr)).toBe("correct-migration-id");
     });
 
-    it("should extract migration ID from tracking token in title (method 2)", () => {
+    it("should extract migration ID from tracking token in PR body (method 2 - preferred)", () => {
+      const pr: PullRequest = {
+        number: 141,
+        title: "Test coverage step 1",
+        body: "<!-- hachiko-track:improve-test-coverage:1 -->\n## Migration Progress\nAdding tests...",
+        state: "open",
+        head: { ref: "cursor/test-coverage-step-1-f46a" },
+        labels: [{ name: "hachiko:migration" }],
+        html_url: "https://github.com/repo/pull/141",
+        merged_at: null,
+      };
+
+      expect(extractMigrationId(pr)).toBe("improve-test-coverage");
+    });
+
+    it("should extract migration ID from tracking token in title (method 3 - fallback)", () => {
       const pr: PullRequest = {
         number: 123,
         title: "hachiko-track:improve-test-coverage:1 feat: add tests",
+        body: null,
         state: "open",
         head: { ref: "cursor/coverage-improvement-step-1-9d93" },
         labels: [],
@@ -113,6 +129,7 @@ describe("PR Detection Service", () => {
       const pr: PullRequest = {
         number: 124,
         title: "hachiko-track:react-migration:cleanup chore: clean up",
+        body: null,
         state: "open",
         head: { ref: "devin/cleanup-branch-abc" },
         labels: [],
@@ -127,6 +144,7 @@ describe("PR Detection Service", () => {
       const pr: PullRequest = {
         number: 125,
         title: "hachiko-track:wrong-id:1 some changes",
+        body: "<!-- hachiko-track:another-wrong-id:2 -->",
         state: "open",
         head: { ref: "hachiko/correct-id-step-1" },
         labels: [],

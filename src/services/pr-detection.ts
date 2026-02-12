@@ -21,6 +21,7 @@ export interface HachikoPR {
 export interface PullRequest {
   number: number;
   title: string;
+  body: string | null;
   state: "open" | "closed";
   head: { ref: string };
   labels: Array<{ name: string }>;
@@ -124,7 +125,7 @@ function extractMigrationIdFromBranch(branchRef: string): string | null {
 /**
  * Extract migration ID from PR using multiple identification methods
  * Method 1: Branch naming - hachiko/{migration-id} or hachiko/{migration-id}-*
- * Method 2: PR labels - hachiko:migration-{migration-id}
+ * Method 2: Tracking token in PR body or title - hachiko-track:{migration-id}:{step-id}
  * Method 3: PR title - contains [{migration-id}] somewhere
  */
 export function extractMigrationId(pr: PullRequest): string | null {
@@ -134,22 +135,26 @@ export function extractMigrationId(pr: PullRequest): string | null {
     return branchId;
   }
 
-  // Method 2: Check for tracking token in title (injected by agent instructions)
-  const trackingMatch = pr.title.match(/hachiko-track:([^:\s]+)/);
-  if (trackingMatch && trackingMatch[1]) {
-    return trackingMatch[1];
+  // Method 2: Check for tracking token in PR body (preferred location)
+  if (pr.body) {
+    const bodyTrackingMatch = pr.body.match(/hachiko-track:([^:\s]+)/);
+    if (bodyTrackingMatch && bodyTrackingMatch[1]) {
+      return bodyTrackingMatch[1];
+    }
   }
 
-  // Method 3: Check title for migration ID patterns
+  // Method 3: Check for tracking token in title (fallback)
+  const titleTrackingMatch = pr.title.match(/hachiko-track:([^:\s]+)/);
+  if (titleTrackingMatch && titleTrackingMatch[1]) {
+    return titleTrackingMatch[1];
+  }
+
+  // Method 4: Check title for migration ID patterns
   // Pattern 1: [migration-id] in brackets
   const bracketMatch = pr.title.match(/\[([^\]]+)\]/);
   if (bracketMatch && bracketMatch[1]) {
     return bracketMatch[1];
   }
-
-  // Pattern 2: "Migration: Title (Step X/Y)" - extract from content
-  // This requires mapping back to migration ID from title, which is fragile
-  // For now, rely on branch name detection for agent PRs
 
   // Pattern 2: "Migration: Title (Step X/Y)" - extract from content
   // This requires mapping back to migration ID from title, which is fragile
@@ -216,12 +221,14 @@ export async function getHachikoPRs(
     }
 
     // Method 2: Search by label - we can reuse the same PR list we fetched
+    const labeledPRs: typeof allPRsResponse.data = [];
     for (const pr of allPRsResponse.data) {
       const hasHachikoLabel = pr.labels.some(
         (l) => typeof l === "object" && l.name === "hachiko:migration"
       );
 
       if (hasHachikoLabel) {
+        labeledPRs.push(pr);
         const hachikoPR = detectHachikoPR(pr as any);
         if (hachikoPR && hachikoPR.migrationId === migrationId) {
           foundPRs.set(pr.number, hachikoPR);
@@ -229,10 +236,53 @@ export async function getHachikoPRs(
       }
     }
 
-    // Method 3: Search by title pattern (fallback)
-    // Note: GitHub API doesn't support searching PR titles directly, so we
-    // filter the results we already have. In a real implementation, we might
-    // use GitHub's search API for more comprehensive results.
+    // Method 3: Check commit messages for labeled PRs that didn't match yet
+    // This handles cloud agents (Cursor, Devin) that put tracking tokens in commits
+    for (const pr of labeledPRs) {
+      if (foundPRs.has(pr.number)) {
+        continue; // Already found via other methods
+      }
+
+      try {
+        // Fetch commits for this PR to check for tracking tokens
+        const commitsResponse = await context.octokit.pulls.listCommits({
+          owner: context.payload.repository.owner.login,
+          repo: context.payload.repository.name,
+          pull_number: pr.number,
+          per_page: 10, // Only check first 10 commits
+        });
+
+        // Check commit messages for tracking tokens
+        for (const commit of commitsResponse.data) {
+          const commitMessage = commit.commit.message;
+          const trackingMatch = commitMessage.match(/hachiko-track:([^:\s]+)/);
+          if (trackingMatch && trackingMatch[1] === migrationId) {
+            // Found matching tracking token in commit
+            const hachikoPR: HachikoPR = {
+              number: pr.number,
+              title: pr.title,
+              state: pr.state as "open" | "closed",
+              migrationId,
+              branch: pr.head.ref,
+              labels: pr.labels.map((l) => (typeof l === "object" ? l.name : l)),
+              url: pr.html_url,
+              merged: pr.merged_at !== null,
+            };
+            foundPRs.set(pr.number, hachikoPR);
+            log.debug(
+              { prNumber: pr.number, migrationId, commit: commit.sha.substring(0, 7) },
+              "Found Hachiko PR via commit message tracking token"
+            );
+            break; // Found it, no need to check more commits
+          }
+        }
+      } catch (error) {
+        log.warn(
+          { error, prNumber: pr.number },
+          "Failed to fetch commits for PR, skipping commit-based detection"
+        );
+      }
+    }
 
     const results = Array.from(foundPRs.values());
 
