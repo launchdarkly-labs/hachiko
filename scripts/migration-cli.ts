@@ -307,10 +307,14 @@ program
                 inProgressMigrations += `  - ${completedSteps} of ${totalSteps} steps completed\n`;
               }
               
-              // If no open PRs but has merged PRs, show manual trigger option
+              // If no open PRs but has merged PRs, check if migration is complete
               if (openPRs.length === 0 && mergedPRs.length > 0) {
-                const nextStep = completedSteps + 1;
-                inProgressMigrations += `  - Step ${nextStep} should automatically kick off soon\n`;
+                if (completedSteps >= totalSteps) {
+                  inProgressMigrations += `  - Migration complete! Cleanup should kick off soon\n`;
+                } else {
+                  const nextStep = completedSteps + 1;
+                  inProgressMigrations += `  - Step ${nextStep} should automatically kick off soon\n`;
+                }
               }
               
               // If no PRs at all (shouldn't happen for active state)
