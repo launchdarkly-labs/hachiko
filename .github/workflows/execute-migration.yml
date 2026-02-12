@@ -125,8 +125,8 @@ jobs:
             CURRENT_STEP=1
           fi
 
-          # Validate REQUESTED_STEP is a valid number
-          if ! [[ "$REQUESTED_STEP" =~ ^[0-9]+$ ]] || [ "$REQUESTED_STEP" -lt 1 ]; then
+          # Validate REQUESTED_STEP is a valid number or 'cleanup'
+          if [ "$REQUESTED_STEP" != "cleanup" ] && (! [[ "$REQUESTED_STEP" =~ ^[0-9]+$ ]] || [ "$REQUESTED_STEP" -lt 1 ]); then
             echo "❌ Invalid requested step '$REQUESTED_STEP'"
             exit 1
           fi
@@ -141,19 +141,25 @@ jobs:
           echo "  Next Step: $NEXT_STEP"
           echo "  Force: $FORCE"
 
-          # For active/paused status, only allow if re-executing current step or advancing to next step
-          if [ "$MIGRATION_STATUS" = "active" ] || [ "$MIGRATION_STATUS" = "paused" ]; then
-            if [ "$FORCE" != "true" ]; then
-              if [ "$REQUESTED_STEP" != "$CURRENT_STEP" ] && [ "$REQUESTED_STEP" != "$NEXT_STEP" ]; then
-                echo "❌ Migration $MIGRATION_STATUS. Can only re-execute current step ($CURRENT_STEP) or advance to next step ($NEXT_STEP). Use force=true to override."
-                echo "🐛 Debug info: REQUESTED_STEP='$REQUESTED_STEP', CURRENT_STEP='$CURRENT_STEP', NEXT_STEP='$NEXT_STEP'"
-                exit 1
+          # Special handling for cleanup step
+          if [ "$REQUESTED_STEP" = "cleanup" ]; then
+            echo "🧹 Cleanup step requested - bypassing normal step validation"
+            # Cleanup is allowed for any status, but typically only triggered for completed migrations
+          else
+            # For active/paused status, only allow if re-executing current step or advancing to next step
+            if [ "$MIGRATION_STATUS" = "active" ] || [ "$MIGRATION_STATUS" = "paused" ]; then
+              if [ "$FORCE" != "true" ]; then
+                if [ "$REQUESTED_STEP" != "$CURRENT_STEP" ] && [ "$REQUESTED_STEP" != "$NEXT_STEP" ]; then
+                  echo "❌ Migration $MIGRATION_STATUS. Can only re-execute current step ($CURRENT_STEP) or advance to next step ($NEXT_STEP). Use force=true to override."
+                  echo "🐛 Debug info: REQUESTED_STEP='$REQUESTED_STEP', CURRENT_STEP='$CURRENT_STEP', NEXT_STEP='$NEXT_STEP'"
+                  exit 1
+                fi
               fi
             fi
           fi
 
-          # Validate step number - allow current step or next step (for automatic advancement)
-          if [ "$REQUESTED_STEP" != "$CURRENT_STEP" ] && [ "$REQUESTED_STEP" != "$NEXT_STEP" ] && [ "$FORCE" != "true" ]; then
+          # Validate step number - allow current step or next step (for automatic advancement), or cleanup
+          if [ "$REQUESTED_STEP" != "cleanup" ] && [ "$REQUESTED_STEP" != "$CURRENT_STEP" ] && [ "$REQUESTED_STEP" != "$NEXT_STEP" ] && [ "$FORCE" != "true" ]; then
             echo "❌ Requested step ($REQUESTED_STEP) doesn't match current step ($CURRENT_STEP) or next step ($NEXT_STEP)"
             exit 1
           fi

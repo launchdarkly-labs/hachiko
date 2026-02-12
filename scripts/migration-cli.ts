@@ -252,6 +252,7 @@ program
       let pendingMigrations = "";
       let inProgressMigrations = "";
       let pausedMigrations = "";
+      let migrationsNeedingCleanup: string[] = [];
       
       for (const file of migrationFiles) {
         const filePath = join("migrations", file);
@@ -311,6 +312,8 @@ program
               if (openPRs.length === 0 && mergedPRs.length > 0) {
                 if (completedSteps >= totalSteps) {
                   inProgressMigrations += `  - Migration complete! Cleanup should kick off soon\n`;
+                  // Track this migration for automatic cleanup triggering
+                  migrationsNeedingCleanup.push(frontmatter.id);
                 } else {
                   const nextStep = completedSteps + 1;
                   inProgressMigrations += `  - Step ${nextStep} should automatically kick off soon\n`;
@@ -389,6 +392,11 @@ ${pausedSection}
 🤖 *Managed by Hachiko - Do not edit the sections above manually*`;
 
       console.log(issueBody);
+      
+      // Output cleanup-needed migrations to stderr for workflow consumption
+      if (migrationsNeedingCleanup.length > 0 && process.env.GITHUB_ACTIONS) {
+        console.error(`CLEANUP_NEEDED=${migrationsNeedingCleanup.join(',')}`);
+      }
     } catch (error) {
       console.error("Failed to generate migration dashboard issue:", error);
       process.exit(1);
@@ -430,6 +438,54 @@ program
       const actualTotalSteps = frontmatter.schema_version === 1 ? 
         (frontmatter as any).total_steps || totalSteps : 
         totalSteps;
+      
+      // Special handling for cleanup step
+      if (stepId === 'cleanup') {
+        const cleanupInstructions = `You are executing the CLEANUP step for migration "${migrationId}" using the Hachiko migration system.
+
+CRITICAL REQUIREMENTS FOR DASHBOARD TRACKING:
+- Branch: MUST start with "hachiko/${migrationId}"
+- PR Title: MUST include either "Cleanup:" (if complete) or "Status Update:" (if incomplete)
+- PR Label: MUST include "hachiko:migration"
+
+CLEANUP TASK:
+You are reviewing a migration that appears to have completed all ${actualTotalSteps} steps. Your job is to verify the actual status and update accordingly:
+
+**STEP 1: VERIFY COMPLETION STATUS**
+- Review the migration document at migrations/${migrationId}.md
+- Check if ALL ${actualTotalSteps} steps are truly complete and marked with [x]
+- Look for any incomplete tasks, failed requirements, or unfinished work
+- Review the Success Criteria section to ensure all items are satisfied
+
+**STEP 2A: IF MIGRATION IS COMPLETE**
+- Remove the migration document: migrations/${migrationId}.md
+- Create PR with:
+  - Branch: hachiko/${migrationId}-cleanup
+  - Title: "Cleanup: ${migrationTitle} (Migration Complete)"
+  - Description: "Migration verified as complete - removing migration document after successful completion of all ${actualTotalSteps} steps"
+
+**STEP 2B: IF MIGRATION IS INCOMPLETE**
+- Update migration document frontmatter to:
+  - status: active (or paused if there are blockers)
+  - last_updated: ${new Date().toISOString()}
+- Document what remains incomplete in the migration document
+- Create PR with:
+  - Branch: hachiko/${migrationId}-status-update
+  - Title: "Status Update: ${migrationTitle} (Incomplete)"  
+  - Description: "Migration review found incomplete work - documented remaining tasks"
+
+Migration Details:
+- Migration ID: ${migrationId}
+- Migration File: migrations/${migrationId}.md
+- Total Steps Completed: ${actualTotalSteps}
+- Repository: https://github.com/${repository}
+- Agent Type: ${agent}
+
+**This is the final step that officially completes the migration lifecycle.**`;
+
+        console.log(cleanupInstructions);
+        return;
+      }
       
       const instructions = `You are executing step ${stepId} of migration "${migrationId}" using the Hachiko migration system.
 
