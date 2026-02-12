@@ -467,6 +467,14 @@ program
       if (stepId === 'cleanup') {
         const cleanupInstructions = `You are executing the CLEANUP step for migration "${migrationId}" using the Hachiko migration system.
 
+TRACKING REQUIREMENT:
+Your FIRST commit message MUST begin with this exact line:
+hachiko-track:${migrationId}:cleanup
+
+This is critical for automated tracking. Example first commit message:
+hachiko-track:${migrationId}:cleanup
+chore: clean up completed migration
+
 CRITICAL REQUIREMENTS FOR DASHBOARD TRACKING:
 - Branch: MUST start with "hachiko/${migrationId}"
 - PR Title: MUST include either "Cleanup:" (if complete) or "Status Update:" (if incomplete)
@@ -486,7 +494,7 @@ You are reviewing a migration that appears to have completed all ${actualTotalSt
 - Create PR with:
   - Branch: hachiko/${migrationId}-cleanup
   - Title: "Cleanup: ${migrationTitle} (Migration Complete)"
-  - Description: "Migration verified as complete - removing migration document after successful completion of all ${actualTotalSteps} steps"
+  - Description: Include "<!-- hachiko-track:${migrationId}:cleanup -->" at the top, then "Migration verified as complete - removing migration document after successful completion of all ${actualTotalSteps} steps"
 
 **STEP 2B: IF MIGRATION IS INCOMPLETE**
 - Update migration document frontmatter to:
@@ -496,7 +504,7 @@ You are reviewing a migration that appears to have completed all ${actualTotalSt
 - Create PR with:
   - Branch: hachiko/${migrationId}-status-update
   - Title: "Status Update: ${migrationTitle} (Incomplete)"  
-  - Description: "Migration review found incomplete work - documented remaining tasks"
+  - Description: Include "<!-- hachiko-track:${migrationId}:cleanup -->" at the top, then "Migration review found incomplete work - documented remaining tasks"
 
 Migration Details:
 - Migration ID: ${migrationId}
@@ -512,6 +520,14 @@ Migration Details:
       }
       
       const instructions = `You are executing step ${stepId} of migration "${migrationId}" using the Hachiko migration system.
+
+TRACKING REQUIREMENT:
+Your FIRST commit message MUST begin with this exact line:
+hachiko-track:${migrationId}:${stepId}
+
+This is critical for automated tracking. Example first commit message:
+hachiko-track:${migrationId}:${stepId}
+feat: implement step ${stepId} changes
 
 CRITICAL REQUIREMENTS FOR DASHBOARD TRACKING:
 - Branch: MUST start with "hachiko/${migrationId}"
@@ -557,6 +573,7 @@ Migration Details:
 - Reviewers: ${reviewersText}
 
 PR Description Template:
+<!-- hachiko-track:${migrationId}:${stepId} -->
 ## Migration Progress: Step ${stepId}/${actualTotalSteps}
 
 **Migration**: \`${migrationId}\`
