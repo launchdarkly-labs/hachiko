@@ -458,7 +458,7 @@ You are reviewing a migration that appears to have completed all ${actualTotalSt
 - Review the Success Criteria section to ensure all items are satisfied
 
 **STEP 2A: IF MIGRATION IS COMPLETE**
-- Remove the migration document: `migrations/${migrationId}.md`
+- Remove the migration document: migrations/${migrationId}.md
 - Create PR with:
   - Branch: hachiko/${migrationId}-cleanup
   - Title: "Cleanup: ${migrationTitle} (Migration Complete)"
