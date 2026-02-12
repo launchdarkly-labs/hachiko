@@ -475,11 +475,6 @@ This is critical for automated tracking. Example first commit message:
 hachiko-track:${migrationId}:cleanup
 chore: clean up completed migration
 
-CRITICAL REQUIREMENTS FOR DASHBOARD TRACKING:
-- Branch: MUST start with "hachiko/${migrationId}"
-- PR Title: MUST include either "Cleanup:" (if complete) or "Status Update:" (if incomplete)
-- PR Label: MUST include "hachiko:migration"
-
 CLEANUP TASK:
 You are reviewing a migration that appears to have completed all ${actualTotalSteps} steps. Your job is to verify the actual status and update accordingly:
 
@@ -529,32 +524,15 @@ This is critical for automated tracking. Example first commit message:
 hachiko-track:${migrationId}:${stepId}
 feat: implement step ${stepId} changes
 
-CRITICAL REQUIREMENTS FOR DASHBOARD TRACKING:
-- Branch: MUST start with "hachiko/${migrationId}"
-- PR Title: MUST include "Migration: ${migrationTitle} (Step ${stepId}/${actualTotalSteps})"
-- PR Label: MUST include "hachiko:migration"
-
-FAILURE TO FOLLOW THESE WILL CAUSE TRACKING FAILURES IN THE MIGRATION DASHBOARD.
-
-Example of CORRECT format:
-✅ Branch: hachiko/${migrationId}-step-${stepId}
-✅ Title: Migration: ${migrationTitle} (Step ${stepId}/${actualTotalSteps})
-✅ Label: hachiko:migration
-
-Example of INCORRECT format (DO NOT USE):
-❌ Branch: ${agent}/${migrationId}-step-${stepId}
-❌ Title: ${migrationTitle.toLowerCase().replace(/\s+/g, ' ')} step ${stepId}
-❌ Label: (none)
-
 Instructions:
 1. Read and understand the migration document at: migrations/${migrationId}.md
 2. Focus on completing step ${stepId} of the migration as described in the document
 3. Make the necessary code changes following the migration requirements
-4. Create a new branch with the EXACT pattern "hachiko/${migrationId}-step-${stepId}"
+4. Create a new branch following the pattern "hachiko/${migrationId}-step-${stepId}" or similar descriptive name
 5. Commit your changes with clear, descriptive commit messages (no emojis)
-6. Create a pull request with these EXACT specifications:
+6. Create a pull request with the following specifications:
    - Title: "Migration: ${migrationTitle} (Step ${stepId}/${actualTotalSteps})"
-   - Label: "hachiko:migration" (REQUIRED - add this label immediately after PR creation)
+   - Label: "hachiko:migration"
    - Reviewers: ${reviewersText}
    - Description: Use the standard migration PR template (see below)
 7. Update the migration document:
