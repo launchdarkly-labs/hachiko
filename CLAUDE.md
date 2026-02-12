@@ -69,6 +69,7 @@ pnpm --filter @hachiko/app test:coverage          # Tests with coverage
 - Push branches and create PRs: `git push -u origin your-branch-name`
 - Use descriptive branch names (fix/, feat/, docs/, etc.)
 
-## Commit Messages
+## Committing
 
-When creating commits, use standard commit messages without any "Generated with Claude Code" lines. Co-author attributions are acceptable. Keep commit messages concise and focused on the changes made.
+- When creating commits, use standard commit messages without any "Generated with Claude Code" lines. Co-author attributions are acceptable. Keep commit messages concise and focused on the changes made.
+- Never commit to main; check the current branch before committing
