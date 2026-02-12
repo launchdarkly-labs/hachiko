@@ -302,8 +302,27 @@ program
               if (openPRs.length === 0 && mergedPRs.length > 0) {
                 if (completedSteps >= totalSteps) {
                   inProgressMigrations += `  - Migration complete! Cleanup should kick off soon\n`;
-                  // Track this migration for automatic cleanup triggering
-                  migrationsNeedingCleanup.push(frontmatter.id);
+
+                  // Check if cleanup PR already exists before triggering cleanup
+                  const allOpenPRs = await context.octokit.pulls.list({
+                    owner: context.payload.repository.owner.login,
+                    repo: context.payload.repository.name,
+                    state: "open",
+                    per_page: 100,
+                  });
+
+                  const cleanupPRExists = allOpenPRs.data.some(pr =>
+                    pr.head.ref.includes(`${frontmatter.id}-cleanup`) ||
+                    pr.head.ref.includes(`${frontmatter.id}/cleanup`) ||
+                    (pr.title.toLowerCase().includes('cleanup') && pr.head.ref.includes(frontmatter.id))
+                  );
+
+                  // Only trigger cleanup if no cleanup PR exists
+                  if (!cleanupPRExists) {
+                    migrationsNeedingCleanup.push(frontmatter.id);
+                  } else {
+                    inProgressMigrations += `  - Cleanup PR already exists\n`;
+                  }
                 } else {
                   const nextStep = completedSteps + 1;
                   inProgressMigrations += `  - Step ${nextStep} should automatically kick off soon\n`;
