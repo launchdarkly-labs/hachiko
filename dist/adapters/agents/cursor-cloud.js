@@ -195,6 +195,8 @@ This is part of an automated migration orchestrated by Hachiko. Please work syst
      */
     formatOutput(agent) {
         const parts = [];
+        // Add Cursor session link
+        parts.push(`Cursor Session: https://cursor.com/agents/${agent.id}`);
         if (agent.output?.summary) {
             parts.push(`Summary: ${agent.output.summary}`);
         }
