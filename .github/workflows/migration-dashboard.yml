@@ -379,9 +379,31 @@ jobs:
           fi
 
           # Use the migration CLI script to generate the dashboard content
-          ISSUE_BODY=$(pnpm migration generate-migration-dashboard)
+          # Capture both stdout (dashboard) and stderr (cleanup info)
+          DASHBOARD_OUTPUT=$(pnpm migration generate-migration-dashboard 2>&1)
+          ISSUE_BODY=$(echo "$DASHBOARD_OUTPUT" | grep -v "CLEANUP_NEEDED=")
+          CLEANUP_NEEDED=$(echo "$DASHBOARD_OUTPUT" | grep "CLEANUP_NEEDED=" | sed 's/CLEANUP_NEEDED=//' || echo "")
 
           # Update the issue
           echo "$ISSUE_BODY" | gh issue edit "$ISSUE_NUMBER" --body-file -
 
           echo "Migration-dashboard issue updated successfully"
+          
+          # Output cleanup-needed migrations for next step
+          echo "cleanup_needed=$CLEANUP_NEEDED" >> $GITHUB_OUTPUT
+          
+          # Automatically trigger cleanup for completed migrations
+          if [ -n "$CLEANUP_NEEDED" ]; then
+            echo "🧹 Automatically triggering cleanup for completed migrations: $CLEANUP_NEEDED"
+            for migration_id in $(echo "$CLEANUP_NEEDED" | tr ',' ' '); do
+              if [ -n "$migration_id" ]; then
+                echo "Triggering cleanup for migration: $migration_id"
+                gh workflow run execute-migration.yml \
+                  -f migration_id="$migration_id" \
+                  -f step_id="cleanup" \
+                  -f force="false"
+              fi
+            done
+          else
+            echo "ℹ️ No migrations require cleanup at this time"
+          fi
