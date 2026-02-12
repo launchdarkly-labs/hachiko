@@ -186,40 +186,79 @@ jobs:
           for MIGRATION_ID in $CHECKED_PAUSED; do
             if [ -n "$MIGRATION_ID" ] && [ "$MIGRATION_ID" != "✨" ]; then
               echo "Resuming paused migration: $MIGRATION_ID"
-              
+
               # Check if migration is already running
               if check_migration_running "$MIGRATION_ID"; then
                 continue
               fi
-              
-              # Get current step from calculated state (preferred) or fallback to migration file
-              echo "🔍 Calculating current step for $MIGRATION_ID from PR activity..."
-              STATE_OUTPUT=$(GITHUB_TOKEN="${GITHUB_TOKEN}" GITHUB_REPOSITORY="${GITHUB_REPOSITORY}" node dist/scripts/get-migration-state.js "$MIGRATION_ID" 2>/dev/null || echo "")
-              
-              if [ -n "$STATE_OUTPUT" ]; then
-                CURRENT_STEP=$(echo "$STATE_OUTPUT" | grep "^current_step=" | cut -d'=' -f2)
-                echo "Migration $MIGRATION_ID resuming at step: $CURRENT_STEP (calculated from PR activity)"
-              else
-                echo "⚠️ Could not calculate step from PR activity, falling back to migration file"
-                MIGRATION_FILE="migrations/${MIGRATION_ID}.md"
-                if [ -f "$MIGRATION_FILE" ]; then
-                  CURRENT_STEP=$(awk '/^---$/{if(f==1) exit; f=1; next} f' "$MIGRATION_FILE" | grep "^current_step:" | sed 's/current_step: *//')
-                  # Default to step 1 if not found or invalid
-                  if ! [[ "$CURRENT_STEP" =~ ^[0-9]+$ ]] || [ "$CURRENT_STEP" -lt 1 ]; then
-                    CURRENT_STEP=1
+
+              # Get total steps from migration file
+              MIGRATION_FILE="migrations/${MIGRATION_ID}.md"
+              TOTAL_STEPS=0
+              if [ -f "$MIGRATION_FILE" ]; then
+                TOTAL_STEPS=$(awk '/^---$/{if(f==1) exit; f=1; next} f' "$MIGRATION_FILE" | grep "^total_steps:" | sed 's/total_steps: *//')
+              fi
+
+              # Get the most recent closed PR for this migration to check if it's a cleanup PR
+              MOST_RECENT_CLOSED_PR=$(gh pr list --repo "${{ github.repository }}" --state closed --search "head:hachiko/${MIGRATION_ID}" --limit 1 --json number,headRefName --jq '.[0]')
+
+              STEP_TO_RESUME=""
+              if [ -n "$MOST_RECENT_CLOSED_PR" ]; then
+                CLOSED_PR_BRANCH=$(echo "$MOST_RECENT_CLOSED_PR" | jq -r '.headRefName')
+                echo "Most recent closed PR branch: $CLOSED_PR_BRANCH"
+
+                # Check if it's a cleanup PR (branch contains "cleanup" or step number > total_steps)
+                if [[ "$CLOSED_PR_BRANCH" =~ cleanup|final ]]; then
+                  echo "Detected cleanup PR from branch name"
+                  STEP_TO_RESUME="cleanup"
+                elif [[ "$CLOSED_PR_BRANCH" =~ -step-([0-9]+) ]]; then
+                  STEP_NUM="${BASH_REMATCH[1]}"
+                  if [ "$TOTAL_STEPS" -gt 0 ] && [ "$STEP_NUM" -gt "$TOTAL_STEPS" ]; then
+                    echo "Detected cleanup PR: step $STEP_NUM exceeds total_steps $TOTAL_STEPS"
+                    STEP_TO_RESUME="cleanup"
                   fi
-                  echo "Migration $MIGRATION_ID resuming at step: $CURRENT_STEP (from frontmatter)"
-                else
-                  echo "Warning: Migration file not found, defaulting to step 1"
-                  CURRENT_STEP=1
                 fi
               fi
-              
+
+              # If not determined to be cleanup, calculate step from state
+              if [ -z "$STEP_TO_RESUME" ]; then
+                echo "🔍 Calculating current step for $MIGRATION_ID from PR activity..."
+                STATE_OUTPUT=$(GITHUB_TOKEN="${GITHUB_TOKEN}" GITHUB_REPOSITORY="${GITHUB_REPOSITORY}" node dist/scripts/get-migration-state.js "$MIGRATION_ID" 2>/dev/null || echo "")
+
+                if [ -n "$STATE_OUTPUT" ]; then
+                  CURRENT_STEP=$(echo "$STATE_OUTPUT" | grep "^current_step=" | cut -d'=' -f2)
+
+                  # Check if calculated step exceeds total_steps (indicates cleanup)
+                  if [ "$TOTAL_STEPS" -gt 0 ] && [ "$CURRENT_STEP" -gt "$TOTAL_STEPS" ]; then
+                    echo "Calculated step $CURRENT_STEP exceeds total_steps $TOTAL_STEPS - treating as cleanup"
+                    STEP_TO_RESUME="cleanup"
+                  else
+                    STEP_TO_RESUME="$CURRENT_STEP"
+                    echo "Migration $MIGRATION_ID resuming at step: $STEP_TO_RESUME (calculated from PR activity)"
+                  fi
+                else
+                  echo "⚠️ Could not calculate step from PR activity, falling back to migration file"
+                  if [ -f "$MIGRATION_FILE" ]; then
+                    CURRENT_STEP=$(awk '/^---$/{if(f==1) exit; f=1; next} f' "$MIGRATION_FILE" | grep "^current_step:" | sed 's/current_step: *//')
+                    # Default to step 1 if not found or invalid
+                    if ! [[ "$CURRENT_STEP" =~ ^[0-9]+$ ]] || [ "$CURRENT_STEP" -lt 1 ]; then
+                      CURRENT_STEP=1
+                    fi
+                    STEP_TO_RESUME="$CURRENT_STEP"
+                    echo "Migration $MIGRATION_ID resuming at step: $STEP_TO_RESUME (from frontmatter)"
+                  else
+                    echo "Warning: Migration file not found, defaulting to step 1"
+                    STEP_TO_RESUME=1
+                  fi
+                fi
+              fi
+
               # Trigger migration execution
+              echo "Triggering migration execution: migration_id=$MIGRATION_ID, step_id=$STEP_TO_RESUME"
               gh workflow run execute-migration.yml \
                 -f migration_id="$MIGRATION_ID" \
-                -f step_id="$CURRENT_STEP"
-              
+                -f step_id="$STEP_TO_RESUME"
+
               MIGRATIONS_TRIGGERED=true
             fi
           done

@@ -336,8 +336,23 @@ program
               
               break;
             case "paused":
-              const progressInfo = stateInfo.totalTasks > 0 ? ` (last attempt: step ${stateInfo.completedTasks}/${stateInfo.totalTasks})` : "";
-              pausedMigrations += `${checkboxLine}${progressInfo}\n`;
+              // Determine if the paused step is a cleanup step
+              let stepInfo = "";
+              if (stateInfo.currentStep > frontmatter.total_steps) {
+                stepInfo = " (paused on: cleanup)";
+              } else if (stateInfo.totalTasks > 0) {
+                stepInfo = ` (paused on: step ${stateInfo.currentStep}/${frontmatter.total_steps})`;
+              }
+
+              // Check if most recent closed PR was a cleanup PR by examining branch names
+              const closedPRsWithCleanup = stateInfo.closedPRs.filter(pr =>
+                pr.branch.includes('cleanup') || pr.branch.includes('final')
+              );
+              if (closedPRsWithCleanup.length > 0 && !stepInfo.includes("cleanup")) {
+                stepInfo = " (paused on: cleanup)";
+              }
+
+              pausedMigrations += `${checkboxLine}${stepInfo}\n`;
               break;
             case "completed":
               // Completed migrations don't appear in the dashboard checkboxes
