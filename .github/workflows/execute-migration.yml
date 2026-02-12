@@ -421,11 +421,12 @@ jobs:
               fi
 
               echo "✅ Created Cursor agent: $AGENT_ID"
-              
-              # Agent created successfully - Cursor will work independently and create PR  
+              echo "🔗 View session: https://cursor.com/agents/$AGENT_ID"
+
+              # Agent created successfully - Cursor will work independently and create PR
               echo "success=true" >> $GITHUB_OUTPUT
               echo "changes_made=false" >> $GITHUB_OUTPUT  # Changes will come via PR
-              echo "output=Cursor agent created successfully, working independently" >> $GITHUB_OUTPUT
+              echo "output=Cursor agent created successfully. View session: https://cursor.com/agents/$AGENT_ID" >> $GITHUB_OUTPUT
               echo "agent_id=$AGENT_ID" >> $GITHUB_OUTPUT
               ;;
 

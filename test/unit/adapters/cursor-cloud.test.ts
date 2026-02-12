@@ -341,7 +341,8 @@ describe("CursorCloudAdapter", () => {
       const result = await customAdapter.execute(mockInput);
 
       expect(result.success).toBe(true);
-      expect(result.output).toBe("Summary: Custom timeout migration completed");
+      expect(result.output).toContain("Summary: Custom timeout migration completed");
+      expect(result.output).toContain(`https://cursor.com/agents/${agentId}`);
     });
   });
 
@@ -389,6 +390,7 @@ describe("CursorCloudAdapter", () => {
     it("should format agent output with PR information", () => {
       const formatMethod = (adapter as any).formatOutput.bind(adapter);
       const agent = {
+        id: "bc-test-agent-123",
         output: {
           summary: "Migration completed",
           pull_request_url: "https://github.com/test/repo/pull/456",
@@ -398,6 +400,7 @@ describe("CursorCloudAdapter", () => {
 
       const output = formatMethod(agent);
 
+      expect(output).toContain("https://cursor.com/agents/bc-test-agent-123");
       expect(output).toContain("Migration completed");
       expect(output).toContain("https://github.com/test/repo/pull/456");
       expect(output).toContain("feature/migration");
@@ -405,10 +408,10 @@ describe("CursorCloudAdapter", () => {
 
     it("should handle minimal output", () => {
       const formatMethod = (adapter as any).formatOutput.bind(adapter);
-      const agent = { output: {} };
+      const agent = { id: "bc-minimal-agent", output: {} };
 
       const output = formatMethod(agent);
-      expect(output).toBe("Agent completed successfully");
+      expect(output).toContain("https://cursor.com/agents/bc-minimal-agent");
     });
   });
 
