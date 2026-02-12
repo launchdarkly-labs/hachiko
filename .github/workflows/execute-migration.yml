@@ -504,13 +504,6 @@ jobs:
 
           echo "✅ Agent execution completed"
 
-      - name: Agent execution completed
-        if: steps.execute.outputs.success == 'true'
-        run: |
-          echo "✅ Agent completed migration step successfully"
-          echo "The agent should have created a PR with the migration changes"
-          echo "Output: ${{ steps.execute.outputs.output }}"
-
       - name: Handle execution failure
         if: steps.execute.outputs.success != 'true'
         env:
