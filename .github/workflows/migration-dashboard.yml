@@ -341,8 +341,9 @@ jobs:
           # Check if this is a Hachiko migration branch
           if [[ "$PR_BRANCH" == hachiko/* ]]; then
             IS_HACHIKO_PR=true
-            # Extract migration ID from branch name
-            MIGRATION_ID=$(echo "$PR_BRANCH" | sed 's/hachiko\///' | sed 's/-step-[0-9]*//')
+            # Extract migration ID from branch name by stripping descriptive suffixes
+            # Strip: hachiko/, -step-N, -cleanup*, -final*, -devin*, -cursor*, -vN*
+            MIGRATION_ID=$(echo "$PR_BRANCH" | sed 's/hachiko\///' | sed 's/-step-[0-9]*//' | sed 's/-cleanup.*//' | sed 's/-final.*//' | sed 's/-devin.*//' | sed 's/-cursor.*//' | sed 's/-v[0-9].*//')
             
             if [ -n "$MIGRATION_ID" ]; then
               echo "Hachiko migration branch detected: $MIGRATION_ID"
