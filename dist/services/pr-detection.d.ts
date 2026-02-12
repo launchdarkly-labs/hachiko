@@ -17,6 +17,7 @@ export interface HachikoPR {
 export interface PullRequest {
     number: number;
     title: string;
+    body: string | null;
     state: "open" | "closed";
     head: {
         ref: string;
@@ -35,7 +36,7 @@ export declare function detectHachikoPR(pr: PullRequest): HachikoPR | null;
 /**
  * Extract migration ID from PR using multiple identification methods
  * Method 1: Branch naming - hachiko/{migration-id} or hachiko/{migration-id}-*
- * Method 2: PR labels - hachiko:migration-{migration-id}
+ * Method 2: Tracking token in PR body or title - hachiko-track:{migration-id}:{step-id}
  * Method 3: PR title - contains [{migration-id}] somewhere
  */
 export declare function extractMigrationId(pr: PullRequest): string | null;
