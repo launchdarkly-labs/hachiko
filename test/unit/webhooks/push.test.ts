@@ -68,6 +68,7 @@ describe("handlePush", () => {
         repos: {
           getContent: vi.fn().mockResolvedValue({
             data: {
+              type: "file",
               content: Buffer.from("# Test Plan\n\nThis is a test plan").toString("base64"),
               encoding: "base64",
             },
@@ -138,13 +139,12 @@ describe("handlePush", () => {
       await handlePush(mockContext as Context<"push">, logger);
 
       expect(vi.mocked(plans.parsePlanFile)).toHaveBeenCalledTimes(2);
+      // parsePlanFile is called with temp file paths, not the original paths
       expect(vi.mocked(plans.parsePlanFile)).toHaveBeenCalledWith(
-        mockContext,
-        "migrations/react-hooks.md"
+        expect.stringContaining("migrations_react_hooks_md")
       );
       expect(vi.mocked(plans.parsePlanFile)).toHaveBeenCalledWith(
-        mockContext,
-        "migrations/typescript-strict.md"
+        expect.stringContaining("migrations_typescript_strict_md")
       );
     });
   });
@@ -158,7 +158,11 @@ describe("handlePush", () => {
         title: "React Hooks Migration",
         description: "Convert class components to hooks",
       };
-      vi.mocked(plans.parsePlanFile).mockResolvedValue(mockPlan);
+      vi.mocked(plans.parsePlanFile).mockResolvedValue({
+        isValid: true,
+        plan: mockPlan,
+        errors: [],
+      });
       vi.mocked(issues.createMigrationIssue).mockResolvedValue(undefined);
 
       await handlePush(mockContext as Context<"push">, logger);
@@ -175,7 +179,11 @@ describe("handlePush", () => {
       vi.mocked(gitUtils.extractChangedFiles).mockReturnValue(["migrations/react-hooks.md"]);
 
       const mockPlan = { id: "react-hooks", title: "React Hooks Migration" };
-      vi.mocked(plans.parsePlanFile).mockResolvedValue(mockPlan);
+      vi.mocked(plans.parsePlanFile).mockResolvedValue({
+        isValid: true,
+        plan: mockPlan,
+        errors: [],
+      });
       vi.mocked(issues.createMigrationIssue).mockResolvedValue(undefined);
       vi.mocked(issues.createPlanReviewPR).mockResolvedValue(undefined);
 
@@ -199,8 +207,16 @@ describe("handlePush", () => {
       const mockPlan2 = { id: "typescript-strict", title: "TypeScript Strict" };
 
       vi.mocked(plans.parsePlanFile)
-        .mockResolvedValueOnce(mockPlan1)
-        .mockResolvedValueOnce(mockPlan2);
+        .mockResolvedValueOnce({
+          isValid: true,
+          plan: mockPlan1,
+          errors: [],
+        })
+        .mockResolvedValueOnce({
+          isValid: true,
+          plan: mockPlan2,
+          errors: [],
+        });
 
       vi.mocked(issues.createMigrationIssue)
         .mockResolvedValueOnce(undefined)
@@ -228,9 +244,8 @@ describe("handlePush", () => {
         new HachikoError("Invalid plan format", "PLAN_PARSE_ERROR")
       );
 
-      await expect(handlePush(mockContext as Context<"push">, logger)).rejects.toThrow(
-        "Invalid plan format"
-      );
+      // HachikoError should be caught and continue processing
+      await handlePush(mockContext as Context<"push">, logger);
 
       expect(vi.mocked(issues.createMigrationIssue)).not.toHaveBeenCalled();
     });
@@ -239,7 +254,11 @@ describe("handlePush", () => {
       vi.mocked(gitUtils.extractChangedFiles).mockReturnValue(["migrations/react-hooks.md"]);
 
       const mockPlan = { id: "react-hooks", title: "React Hooks" };
-      vi.mocked(plans.parsePlanFile).mockResolvedValue(mockPlan);
+      vi.mocked(plans.parsePlanFile).mockResolvedValue({
+        isValid: true,
+        plan: mockPlan,
+        errors: [],
+      });
       vi.mocked(issues.createMigrationIssue).mockRejectedValue(new Error("GitHub API error"));
 
       await expect(handlePush(mockContext as Context<"push">, logger)).rejects.toThrow(
@@ -258,8 +277,12 @@ describe("handlePush", () => {
       const validPlan = { id: "valid", title: "Valid Plan" };
 
       vi.mocked(plans.parsePlanFile)
-        .mockResolvedValueOnce(validPlan)
-        .mockRejectedValueOnce(new Error("Invalid plan"));
+        .mockResolvedValueOnce({
+          isValid: true,
+          plan: validPlan,
+          errors: [],
+        })
+        .mockRejectedValueOnce(new HachikoError("Invalid plan", "PARSE_ERROR"));
 
       vi.mocked(issues.createMigrationIssue).mockResolvedValue(undefined);
 
@@ -284,15 +307,19 @@ describe("handlePush", () => {
       ]);
 
       const mockPlan = { id: "custom", title: "Custom Plan" };
-      vi.mocked(plans.parsePlanFile).mockResolvedValue(mockPlan);
+      vi.mocked(plans.parsePlanFile).mockResolvedValue({
+        isValid: true,
+        plan: mockPlan,
+        errors: [],
+      });
       vi.mocked(issues.createMigrationIssue).mockResolvedValue(undefined);
 
       await handlePush(mockContext as Context<"push">, logger);
 
       expect(vi.mocked(plans.parsePlanFile)).toHaveBeenCalledTimes(1);
+      // parsePlanFile is called with temp file paths
       expect(vi.mocked(plans.parsePlanFile)).toHaveBeenCalledWith(
-        mockContext,
-        "custom-migrations/plan.md"
+        expect.stringContaining("custom_migrations_plan_md")
       );
     });
   });
