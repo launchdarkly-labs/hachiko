@@ -110,6 +110,21 @@ describe("PR Detection Service", () => {
       expect(extractMigrationId(pr)).toBe("improve-test-coverage");
     });
 
+    it("should NOT match tracking tokens in plain text (only HTML comments)", () => {
+      const pr: PullRequest = {
+        number: 142,
+        title: "Fix PR detection",
+        body: "The tracking token `hachiko-track:improve-test-coverage:1` is mentioned as an example.",
+        state: "open",
+        head: { ref: "fix/some-fix" },
+        labels: [],
+        html_url: "https://github.com/repo/pull/142",
+        merged_at: null,
+      };
+
+      expect(extractMigrationId(pr)).toBeNull();
+    });
+
     it("should extract migration ID from tracking token in title (method 3 - fallback)", () => {
       const pr: PullRequest = {
         number: 123,

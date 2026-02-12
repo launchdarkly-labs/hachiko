@@ -135,9 +135,9 @@ export function extractMigrationId(pr: PullRequest): string | null {
     return branchId;
   }
 
-  // Method 2: Check for tracking token in PR body (preferred location)
+  // Method 2: Check for tracking token in PR body (must be in HTML comment to avoid false positives)
   if (pr.body) {
-    const bodyTrackingMatch = pr.body.match(/hachiko-track:([^:\s]+)/);
+    const bodyTrackingMatch = pr.body.match(/<!--\s*hachiko-track:([^:\s]+)/);
     if (bodyTrackingMatch && bodyTrackingMatch[1]) {
       return bodyTrackingMatch[1];
     }
