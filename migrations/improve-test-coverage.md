@@ -19,8 +19,8 @@ This migration aims to increase test coverage from the current 55.53% to at leas
 
 ## Current State
 
-- Test coverage: 55.53%
-- Missing tests for several critical services
+- Test coverage: 55.53% -> 66.58% (after Step 1)
+- Services layer coverage improved to 83.43%
 - Integration tests excluded from coverage
 
 ## Migration Steps
