@@ -380,7 +380,7 @@ jobs:
 
           # Use the migration CLI script to generate the dashboard content
           # Capture both stdout (dashboard) and stderr (cleanup info)
-          DASHBOARD_OUTPUT=$(pnpm migration generate-migration-dashboard 2>&1)
+          DASHBOARD_OUTPUT=$(pnpm --silent migration generate-migration-dashboard 2>&1)
           ISSUE_BODY=$(echo "$DASHBOARD_OUTPUT" | grep -v "CLEANUP_NEEDED=")
           CLEANUP_NEEDED=$(echo "$DASHBOARD_OUTPUT" | grep "CLEANUP_NEEDED=" | sed 's/CLEANUP_NEEDED=//' || echo "")
 
