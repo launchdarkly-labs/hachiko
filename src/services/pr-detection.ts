@@ -134,8 +134,11 @@ export function extractMigrationId(pr: PullRequest): string | null {
     return branchId;
   }
 
-  // Method 2: Check labels - we don't extract migration ID from labels anymore
-  // Labels are just used for identification, not for storing the migration ID
+  // Method 2: Check for tracking token in title (injected by agent instructions)
+  const trackingMatch = pr.title.match(/hachiko-track:([^:\s]+)/);
+  if (trackingMatch && trackingMatch[1]) {
+    return trackingMatch[1];
+  }
 
   // Method 3: Check title for migration ID patterns
   // Pattern 1: [migration-id] in brackets

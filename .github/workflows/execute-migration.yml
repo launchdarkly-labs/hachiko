@@ -1,4 +1,5 @@
 name: Execute Migration Step
+run-name: "Execute: ${{ inputs.migration_id }} step ${{ inputs.step_id }}"
 
 # Triggered by migration-dashboard workflow or manually
 on:

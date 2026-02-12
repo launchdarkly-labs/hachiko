@@ -95,6 +95,48 @@ describe("PR Detection Service", () => {
       expect(extractMigrationId(pr)).toBe("correct-migration-id");
     });
 
+    it("should extract migration ID from tracking token in title (method 2)", () => {
+      const pr: PullRequest = {
+        number: 123,
+        title: "hachiko-track:improve-test-coverage:1 feat: add tests",
+        state: "open",
+        head: { ref: "cursor/coverage-improvement-step-1-9d93" },
+        labels: [],
+        html_url: "https://github.com/repo/pull/123",
+        merged_at: null,
+      };
+
+      expect(extractMigrationId(pr)).toBe("improve-test-coverage");
+    });
+
+    it("should extract migration ID from tracking token with cleanup step", () => {
+      const pr: PullRequest = {
+        number: 124,
+        title: "hachiko-track:react-migration:cleanup chore: clean up",
+        state: "open",
+        head: { ref: "devin/cleanup-branch-abc" },
+        labels: [],
+        html_url: "https://github.com/repo/pull/124",
+        merged_at: null,
+      };
+
+      expect(extractMigrationId(pr)).toBe("react-migration");
+    });
+
+    it("should prioritize branch name over tracking token", () => {
+      const pr: PullRequest = {
+        number: 125,
+        title: "hachiko-track:wrong-id:1 some changes",
+        state: "open",
+        head: { ref: "hachiko/correct-id-step-1" },
+        labels: [],
+        html_url: "https://github.com/repo/pull/125",
+        merged_at: null,
+      };
+
+      expect(extractMigrationId(pr)).toBe("correct-id");
+    });
+
     it("should return null for non-hachiko PRs", () => {
       const pr: PullRequest = {
         number: 123,
