@@ -34,9 +34,9 @@ This migration aims to increase test coverage from the current 55.53% to at leas
 
 ### Step 2: Add tests for webhooks
 
-- Add tests for `src/webhooks/issue_comment.ts`
-- Add tests for `src/webhooks/workflow_run.ts`
-- Mock GitHub API responses properly
+- [x] Add tests for `src/webhooks/issue_comment.ts`
+- [x] Add tests for `src/webhooks/workflow_run.ts`
+- [x] Mock GitHub API responses properly
 - Target: Bring webhooks coverage to 85%
 
 ### Step 3: Add tests for utilities
