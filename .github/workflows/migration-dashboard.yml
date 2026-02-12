@@ -382,18 +382,32 @@ jobs:
             echo "✅ Hachiko migration PR detected by label"
           fi
 
+          # Validate detected migration ID corresponds to a real migration file
+          if [ "$IS_HACHIKO_PR" = "true" ] && [ -n "$DETECTED_MIGRATION_ID" ] && [[ "$PR_BRANCH" != hachiko/* ]]; then
+            if [ ! -f "migrations/${DETECTED_MIGRATION_ID}.md" ]; then
+              echo "⚠️ Detected migration ID '${DETECTED_MIGRATION_ID}' has no migration file - ignoring"
+              IS_HACHIKO_PR=false
+              DETECTED_MIGRATION_ID=""
+            fi
+          fi
+
           if [ "$IS_HACHIKO_PR" = "false" ]; then
             echo "ℹ️ Not a Hachiko migration PR - no dashboard update needed"
           fi
 
           # Normalize agent PRs that don't use hachiko/* branch naming
           if [ "$IS_HACHIKO_PR" = "true" ] && [[ "$PR_BRANCH" != hachiko/* ]] && [ -n "$DETECTED_MIGRATION_ID" ]; then
-            echo "🔄 Normalizing agent PR #$PR_NUMBER for migration: $DETECTED_MIGRATION_ID"
-            gh pr edit "$PR_NUMBER" --add-label "hachiko:migration" 2>/dev/null || true
-            gh pr comment "$PR_NUMBER" --body "<!-- hachiko-track:${DETECTED_MIGRATION_ID} -->
+            # Skip if already normalized (check for existing tracking comment)
+            if gh pr view "$PR_NUMBER" --json comments --jq '.comments[].body' 2>/dev/null | grep -q "hachiko-track:${DETECTED_MIGRATION_ID}"; then
+              echo "ℹ️ PR #$PR_NUMBER already normalized for migration: $DETECTED_MIGRATION_ID"
+            else
+              echo "🔄 Normalizing agent PR #$PR_NUMBER for migration: $DETECTED_MIGRATION_ID"
+              gh pr edit "$PR_NUMBER" --add-label "hachiko:migration" 2>/dev/null || true
+              gh pr comment "$PR_NUMBER" --body "<!-- hachiko-track:${DETECTED_MIGRATION_ID} -->
           🤖 **Hachiko Migration Tracking**
           This PR has been linked to migration \`${DETECTED_MIGRATION_ID}\`.
           Branch naming was auto-detected from agent output." 2>/dev/null || true
+            fi
           fi
 
           echo "is_hachiko_pr=$IS_HACHIKO_PR" >> $GITHUB_OUTPUT
@@ -448,6 +462,15 @@ jobs:
           # Path 4: Label-based detection
           elif gh pr view "${{ github.event.pull_request.number }}" --json labels --jq '.labels[].name' 2>/dev/null | grep -q "hachiko:migration"; then
             IS_HACHIKO_PR=true
+          fi
+
+          # Validate detected migration ID corresponds to a real migration file
+          if [ "$IS_HACHIKO_PR" = "true" ] && [ -n "$MIGRATION_ID" ] && [[ "$PR_BRANCH" != hachiko/* ]]; then
+            if [ ! -f "migrations/${MIGRATION_ID}.md" ]; then
+              echo "⚠️ Detected migration ID '${MIGRATION_ID}' has no migration file - ignoring"
+              IS_HACHIKO_PR=false
+              MIGRATION_ID=""
+            fi
           fi
 
           if [ "$IS_HACHIKO_PR" = "true" ] && [ -n "$MIGRATION_ID" ]; then
