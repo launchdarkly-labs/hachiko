@@ -34,10 +34,11 @@ This migration aims to increase test coverage from the current 55.53% to at leas
 
 ### Step 2: Add tests for webhooks
 
-- Add tests for `src/webhooks/issue_comment.ts`
-- Add tests for `src/webhooks/workflow_run.ts`
-- Mock GitHub API responses properly
-- Target: Bring webhooks coverage to 85%
+- [x] Add tests for `src/webhooks/issue_comment.ts` (already had 100% coverage)
+- [x] Add tests for `src/webhooks/workflow_run.ts` (30 comprehensive tests added)
+- [x] Add tests for `src/webhooks/push.ts` (33 comprehensive tests added)
+- [x] Mock GitHub API responses properly
+- [x] Target: Bring webhooks coverage to 85% (achieved 97.75%)
 
 ### Step 3: Add tests for utilities
 
@@ -60,7 +61,20 @@ Priority files with low/missing coverage:
 - `src/services/agents.ts`
 - `src/services/policy-engine.ts`
 - `src/services/state.ts`
-- `src/webhooks/issue_comment.ts`
-- `src/webhooks/workflow_run.ts`
+- ~~`src/webhooks/issue_comment.ts`~~ ✅ Complete (100%)
+- ~~`src/webhooks/workflow_run.ts`~~ ✅ Complete (100%)
+- ~~`src/webhooks/push.ts`~~ ✅ Complete (100%)
 - `src/utils/git.ts`
 - `src/utils/pr.ts`
+
+## Critical Learnings
+
+### Step 2: Webhook Testing
+
+- **push.test.ts exclusion**: Found that push.test.ts was explicitly excluded in vitest.config.ts. Re-enabled and created comprehensive tests.
+- **Error handling patterns**: Webhook handlers use different error handling strategies:
+  - `push.ts`: HachikoErrors are caught and logged to allow processing of other plans
+  - `workflow_run.ts`: Errors propagate through try-catch to ensure failures are visible
+  - `issue_comment.ts`: All errors caught and reported as comments to users
+- **Mock reset importance**: Needed to explicitly reset mocks to default successful behavior in beforeEach to prevent test interference
+- **Coverage exceeded target**: Achieved 97.75% webhooks coverage (target was 85%), demonstrating thorough edge case coverage
