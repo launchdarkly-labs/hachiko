@@ -609,6 +609,13 @@ jobs:
             sleep 30
           fi
 
+          # If triggered by PR event, wait for GitHub API to catch up (eventual consistency)
+          # The webhook fires instantly but API list endpoints lag behind
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            echo "PR event detected, waiting 15 seconds for GitHub API eventual consistency..."
+            sleep 15
+          fi
+
           # Check for concurrent runs
           if [ "$VERBOSE" = "true" ]; then
             echo "🔍 [VERBOSE] Checking for concurrent workflow runs..."
