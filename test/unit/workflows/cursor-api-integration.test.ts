@@ -71,18 +71,20 @@ exit $CURL_EXIT_CODE
 
       await fs.writeFile(testScript, improvedScript, { mode: 0o755 });
 
-      const result = await new Promise<{ code: number; stdout: string; stderr: string }>((resolve) => {
-        const child = spawn("bash", [testScript], { timeout: 10000 });
-        let stdout = "";
-        let stderr = "";
+      const result = await new Promise<{ code: number; stdout: string; stderr: string }>(
+        (resolve) => {
+          const child = spawn("bash", [testScript], { timeout: 10000 });
+          let stdout = "";
+          let stderr = "";
 
-        child.stdout?.on("data", (data) => (stdout += data.toString()));
-        child.stderr?.on("data", (data) => (stderr += data.toString()));
+          child.stdout?.on("data", (data) => (stdout += data.toString()));
+          child.stderr?.on("data", (data) => (stderr += data.toString()));
 
-        child.on("close", (code) => {
-          resolve({ code: code ?? -1, stdout, stderr });
-        });
-      });
+          child.on("close", (code) => {
+            resolve({ code: code ?? -1, stdout, stderr });
+          });
+        }
+      );
 
       // Should succeed and extract HTTP status properly
       expect(result.code).toBe(0);
@@ -118,18 +120,20 @@ exit $CURL_EXIT_CODE
 
       await fs.writeFile(testScript, fixedScript, { mode: 0o755 });
 
-      const result = await new Promise<{ code: number; stdout: string; stderr: string }>((resolve) => {
-        const child = spawn("bash", [testScript], { timeout: 10000 });
-        let stdout = "";
-        let stderr = "";
+      const result = await new Promise<{ code: number; stdout: string; stderr: string }>(
+        (resolve) => {
+          const child = spawn("bash", [testScript], { timeout: 10000 });
+          let stdout = "";
+          let stderr = "";
 
-        child.stdout?.on("data", (data) => (stdout += data.toString()));
-        child.stderr?.on("data", (data) => (stderr += data.toString()));
+          child.stdout?.on("data", (data) => (stdout += data.toString()));
+          child.stderr?.on("data", (data) => (stderr += data.toString()));
 
-        child.on("close", (code) => {
-          resolve({ code: code ?? -1, stdout, stderr });
-        });
-      });
+          child.on("close", (code) => {
+            resolve({ code: code ?? -1, stdout, stderr });
+          });
+        }
+      );
 
       // Should exit with code 0 (success)
       expect(result.code).toBe(0);
@@ -147,8 +151,8 @@ exit $CURL_EXIT_CODE
         files: [],
         metadata: {
           plan_id: "test-plan",
-          step_id: "test-step"
-        }
+          step_id: "test-step",
+        },
       };
 
       // TypeScript adapter uses this format:
@@ -159,8 +163,8 @@ exit $CURL_EXIT_CODE
         files: ["src/file.ts"],
         metadata: {
           plan_id: "test-plan",
-          step_id: "test-step"
-        }
+          step_id: "test-step",
+        },
       };
 
       // Now they have the same structure (except files array)
@@ -169,7 +173,7 @@ exit $CURL_EXIT_CODE
       expect(workflowPayload).toHaveProperty("branch");
       expect(workflowPayload).toHaveProperty("files");
       expect(workflowPayload).toHaveProperty("metadata");
-      
+
       // Essential fields match
       expect(typeof workflowPayload.task).toBe("string");
       expect(typeof workflowPayload.repository_url).toBe("string");
@@ -182,17 +186,17 @@ exit $CURL_EXIT_CODE
   describe("authentication format", () => {
     it("should use consistent Basic Auth encoding", () => {
       const apiKey = "test-cursor-key";
-      
+
       // Both should use the same Basic Auth format
       const typeScriptAuth = Buffer.from(`${apiKey}:`).toString("base64");
-      
+
       // This is what the shell script does:
       // CURSOR_AUTH=$(echo -n "$CURSOR_API_KEY:" | base64)
       const shellCommand = `echo -n "${apiKey}:" | base64`;
-      
+
       // They should produce the same result
       expect(`Basic ${typeScriptAuth}`).toBe(`Basic ${typeScriptAuth}`);
-      
+
       // The format should include the colon
       const decoded = Buffer.from(typeScriptAuth, "base64").toString();
       expect(decoded).toBe(`${apiKey}:`);

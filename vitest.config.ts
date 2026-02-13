@@ -10,7 +10,6 @@ export default defineConfig({
       "node_modules/**",
       "dist/**",
       "test/integration/**", // Temporarily disable integration tests
-      "test/unit/webhooks/push.test.ts", // Complex test needs fixing - TODO for future iteration
     ],
     coverage: {
       provider: "v8",

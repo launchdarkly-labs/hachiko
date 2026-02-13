@@ -1,12 +1,19 @@
-import { describe, expect, it, vi, beforeEach } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { Context } from "probot";
-import { handlePush } from "../../../src/webhooks/push.js";
-import { createLogger } from "../../../src/utils/logger.js";
 import * as config from "../../../src/services/config.js";
 import * as issues from "../../../src/services/issues.js";
 import * as plans from "../../../src/services/plans.js";
-import * as gitUtils from "../../../src/utils/git.js";
 import { HachikoError } from "../../../src/utils/errors.js";
+import * as gitUtils from "../../../src/utils/git.js";
+import { createLogger } from "../../../src/utils/logger.js";
+import { handlePush } from "../../../src/webhooks/push.js";
+
+// Mock node:fs
+vi.mock("node:fs", () => ({
+  promises: {
+    writeFile: vi.fn().mockResolvedValue(undefined),
+  },
+}));
 
 // Mock all dependencies
 vi.mock("../../../src/services/config.js", () => ({
@@ -62,13 +69,17 @@ describe("handlePush", () => {
         ],
         ref: "refs/heads/main",
         head_commit: { id: "abc123" },
+        after: "abc123",
         pusher: { name: "testuser" },
       } as any,
       octokit: {
         repos: {
           getContent: vi.fn().mockResolvedValue({
             data: {
-              content: Buffer.from("# Test Plan\n\nThis is a test plan").toString("base64"),
+              type: "file",
+              content: Buffer.from(
+                "---\nid: react-hooks\ntitle: React Hooks\n---\n# Test Plan"
+              ).toString("base64"),
               encoding: "base64",
             },
           }),
@@ -84,7 +95,18 @@ describe("handlePush", () => {
     vi.clearAllMocks();
     vi.mocked(config.loadHachikoConfig).mockResolvedValue(mockConfig);
     vi.mocked(gitUtils.isDefaultBranch).mockReturnValue(true);
-    // Don't set default for extractChangedFiles - let individual tests set it
+    vi.mocked(gitUtils.extractChangedFiles).mockReturnValue([]);
+    vi.mocked(plans.parsePlanFile).mockResolvedValue({
+      isValid: true,
+      plan: {
+        id: "react-hooks",
+        title: "React Hooks Migration",
+        steps: [],
+      },
+      errors: [],
+    });
+    vi.mocked(issues.createMigrationIssue).mockResolvedValue(undefined);
+    vi.mocked(issues.createPlanReviewPR).mockResolvedValue(undefined);
   });
 
   describe("branch filtering", () => {
@@ -120,7 +142,7 @@ describe("handlePush", () => {
 
       await handlePush(mockContext as Context<"push">, logger);
 
-      expect(vi.mocked(plans.parsePlanFile)).not.toHaveBeenCalled();
+      expect(mockContext.octokit!.repos.getContent).not.toHaveBeenCalled();
       expect(vi.mocked(issues.createMigrationIssue)).not.toHaveBeenCalled();
     });
 
@@ -131,62 +153,89 @@ describe("handlePush", () => {
         "migrations/typescript-strict.md",
       ]);
 
-      const mockPlan = { id: "react-hooks", title: "React Hooks Migration" };
-      vi.mocked(plans.parsePlanFile).mockResolvedValue(mockPlan);
-      vi.mocked(issues.createMigrationIssue).mockResolvedValue(undefined);
-
       await handlePush(mockContext as Context<"push">, logger);
 
-      expect(vi.mocked(plans.parsePlanFile)).toHaveBeenCalledTimes(2);
-      expect(vi.mocked(plans.parsePlanFile)).toHaveBeenCalledWith(
-        mockContext,
-        "migrations/react-hooks.md"
-      );
-      expect(vi.mocked(plans.parsePlanFile)).toHaveBeenCalledWith(
-        mockContext,
-        "migrations/typescript-strict.md"
-      );
+      expect(mockContext.octokit!.repos.getContent).toHaveBeenCalledTimes(2);
+      expect(mockContext.octokit!.repos.getContent).toHaveBeenCalledWith({
+        owner: "test-owner",
+        repo: "test-repo",
+        path: "migrations/react-hooks.md",
+        ref: "abc123",
+      });
+      expect(mockContext.octokit!.repos.getContent).toHaveBeenCalledWith({
+        owner: "test-owner",
+        repo: "test-repo",
+        path: "migrations/typescript-strict.md",
+        ref: "abc123",
+      });
     });
   });
 
   describe("plan processing", () => {
-    it("should create migration issue for valid plans", async () => {
+    beforeEach(() => {
       vi.mocked(gitUtils.extractChangedFiles).mockReturnValue(["migrations/react-hooks.md"]);
+    });
 
-      const mockPlan = {
-        id: "react-hooks",
-        title: "React Hooks Migration",
-        description: "Convert class components to hooks",
-      };
-      vi.mocked(plans.parsePlanFile).mockResolvedValue(mockPlan);
-      vi.mocked(issues.createMigrationIssue).mockResolvedValue(undefined);
-
+    it("should create migration issue for new valid plans", async () => {
       await handlePush(mockContext as Context<"push">, logger);
 
       expect(vi.mocked(issues.createMigrationIssue)).toHaveBeenCalledWith(
         mockContext,
-        mockPlan,
+        {
+          id: "react-hooks",
+          title: "React Hooks Migration",
+          steps: [],
+        },
         mockConfig,
         logger
       );
     });
 
-    it("should create plan review PR for valid plans", async () => {
-      vi.mocked(gitUtils.extractChangedFiles).mockReturnValue(["migrations/react-hooks.md"]);
-
-      const mockPlan = { id: "react-hooks", title: "React Hooks Migration" };
-      vi.mocked(plans.parsePlanFile).mockResolvedValue(mockPlan);
-      vi.mocked(issues.createMigrationIssue).mockResolvedValue(undefined);
-      vi.mocked(issues.createPlanReviewPR).mockResolvedValue(undefined);
-
+    it("should create plan review PR when required", async () => {
       await handlePush(mockContext as Context<"push">, logger);
 
       expect(vi.mocked(issues.createPlanReviewPR)).toHaveBeenCalledWith(
         mockContext,
-        mockPlan,
+        {
+          id: "react-hooks",
+          title: "React Hooks Migration",
+          steps: [],
+        },
         mockConfig,
         logger
       );
+    });
+
+    it("should not create plan review PR when not required", async () => {
+      mockConfig.defaults.requirePlanReview = false;
+
+      await handlePush(mockContext as Context<"push">, logger);
+
+      expect(vi.mocked(issues.createMigrationIssue)).toHaveBeenCalled();
+      expect(vi.mocked(issues.createPlanReviewPR)).not.toHaveBeenCalled();
+    });
+
+    it("should not create issue for existing plans", async () => {
+      mockContext.octokit!.issues.listForRepo = vi.fn().mockResolvedValue({
+        data: [{ number: 42, labels: [{ name: "hachiko:plan:react-hooks" }] }],
+      });
+
+      await handlePush(mockContext as Context<"push">, logger);
+
+      expect(vi.mocked(issues.createMigrationIssue)).not.toHaveBeenCalled();
+      expect(vi.mocked(issues.createPlanReviewPR)).not.toHaveBeenCalled();
+    });
+
+    it("should skip invalid plans", async () => {
+      vi.mocked(plans.parsePlanFile).mockResolvedValue({
+        isValid: false,
+        plan: null,
+        errors: ["Missing required field: id"],
+      });
+
+      await handlePush(mockContext as Context<"push">, logger);
+
+      expect(vi.mocked(issues.createMigrationIssue)).not.toHaveBeenCalled();
     });
 
     it("should handle multiple changed plans", async () => {
@@ -194,17 +243,6 @@ describe("handlePush", () => {
         "migrations/react-hooks.md",
         "migrations/typescript-strict.md",
       ]);
-
-      const mockPlan1 = { id: "react-hooks", title: "React Hooks" };
-      const mockPlan2 = { id: "typescript-strict", title: "TypeScript Strict" };
-
-      vi.mocked(plans.parsePlanFile)
-        .mockResolvedValueOnce(mockPlan1)
-        .mockResolvedValueOnce(mockPlan2);
-
-      vi.mocked(issues.createMigrationIssue)
-        .mockResolvedValueOnce(undefined)
-        .mockResolvedValueOnce(undefined);
 
       await handlePush(mockContext as Context<"push">, logger);
 
@@ -214,7 +252,11 @@ describe("handlePush", () => {
   });
 
   describe("error handling", () => {
-    it("should handle config loading errors", async () => {
+    beforeEach(() => {
+      vi.mocked(gitUtils.extractChangedFiles).mockReturnValue(["migrations/test.md"]);
+    });
+
+    it("should throw when config loading fails", async () => {
       vi.mocked(config.loadHachikoConfig).mockRejectedValue(new Error("Config not found"));
 
       await expect(handlePush(mockContext as Context<"push">, logger)).rejects.toThrow(
@@ -222,56 +264,102 @@ describe("handlePush", () => {
       );
     });
 
-    it("should handle plan parsing errors gracefully", async () => {
-      vi.mocked(gitUtils.extractChangedFiles).mockReturnValue(["migrations/invalid.md"]);
-      vi.mocked(plans.parsePlanFile).mockRejectedValue(
-        new HachikoError("Invalid plan format", "PLAN_PARSE_ERROR")
-      );
+    it("should throw when getting file content fails", async () => {
+      mockContext.octokit!.repos.getContent = vi
+        .fn()
+        .mockRejectedValue(new Error("File not found"));
 
       await expect(handlePush(mockContext as Context<"push">, logger)).rejects.toThrow(
-        "Invalid plan format"
+        "File not found"
       );
+    });
 
+    it("should handle HachikoError when content is not a file", async () => {
+      mockContext.octokit!.repos.getContent = vi.fn().mockResolvedValue({
+        data: {
+          type: "dir",
+        },
+      });
+
+      // Should not throw - HachikoErrors are caught and logged
+      await expect(handlePush(mockContext as Context<"push">, logger)).resolves.toBeUndefined();
+
+      // Should not create issue for invalid content
       expect(vi.mocked(issues.createMigrationIssue)).not.toHaveBeenCalled();
     });
 
-    it("should handle issue creation errors gracefully", async () => {
-      vi.mocked(gitUtils.extractChangedFiles).mockReturnValue(["migrations/react-hooks.md"]);
+    it("should handle HachikoError when content is an array", async () => {
+      mockContext.octokit!.repos.getContent = vi.fn().mockResolvedValue({
+        data: [{ type: "file", name: "test.md" }],
+      });
 
-      const mockPlan = { id: "react-hooks", title: "React Hooks" };
-      vi.mocked(plans.parsePlanFile).mockResolvedValue(mockPlan);
+      // Should not throw - HachikoErrors are caught and logged
+      await expect(handlePush(mockContext as Context<"push">, logger)).resolves.toBeUndefined();
+
+      // Should not create issue for invalid content
+      expect(vi.mocked(issues.createMigrationIssue)).not.toHaveBeenCalled();
+    });
+
+    it("should throw when plan parsing fails", async () => {
+      vi.mocked(plans.parsePlanFile).mockRejectedValue(new Error("Parse error"));
+
+      await expect(handlePush(mockContext as Context<"push">, logger)).rejects.toThrow(
+        "Parse error"
+      );
+    });
+
+    it("should throw when issue creation fails", async () => {
       vi.mocked(issues.createMigrationIssue).mockRejectedValue(new Error("GitHub API error"));
 
       await expect(handlePush(mockContext as Context<"push">, logger)).rejects.toThrow(
         "GitHub API error"
       );
-
-      expect(vi.mocked(issues.createPlanReviewPR)).not.toHaveBeenCalled();
     });
 
-    it("should continue processing other plans when one fails", async () => {
+    it("should continue processing other plans when one fails with HachikoError", async () => {
       vi.mocked(gitUtils.extractChangedFiles).mockReturnValue([
-        "migrations/valid.md",
-        "migrations/invalid.md",
+        "migrations/plan1.md",
+        "migrations/plan2.md",
       ]);
 
-      const validPlan = { id: "valid", title: "Valid Plan" };
+      // First plan succeeds, second fails with HachikoError
+      mockContext.octokit!.repos.getContent = vi
+        .fn()
+        .mockResolvedValueOnce({
+          data: {
+            type: "file",
+            content: Buffer.from("---\nid: plan1\n---").toString("base64"),
+          },
+        })
+        .mockResolvedValueOnce({
+          data: { type: "dir" }, // Will cause HachikoError
+        });
 
-      vi.mocked(plans.parsePlanFile)
-        .mockResolvedValueOnce(validPlan)
-        .mockRejectedValueOnce(new Error("Invalid plan"));
+      // Should not throw, should continue
+      await expect(handlePush(mockContext as Context<"push">, logger)).resolves.toBeUndefined();
 
-      vi.mocked(issues.createMigrationIssue).mockResolvedValue(undefined);
+      // Should still process first plan
+      expect(vi.mocked(issues.createMigrationIssue)).toHaveBeenCalledTimes(1);
+    });
 
+    it("should check for existing issues when determining if plan is new", async () => {
       await handlePush(mockContext as Context<"push">, logger);
 
-      // Should still create issue for valid plan
-      expect(vi.mocked(issues.createMigrationIssue)).toHaveBeenCalledWith(
-        mockContext,
-        validPlan,
-        mockConfig,
-        logger
-      );
+      expect(mockContext.octokit!.issues.listForRepo).toHaveBeenCalledWith({
+        owner: "test-owner",
+        repo: "test-repo",
+        labels: "hachiko:plan:react-hooks",
+        state: "all",
+      });
+    });
+
+    it("should assume plan is new when issue list fails", async () => {
+      mockContext.octokit!.issues.listForRepo = vi.fn().mockRejectedValue(new Error("API error"));
+
+      // Should not throw, should assume new plan
+      await expect(handlePush(mockContext as Context<"push">, logger)).resolves.toBeUndefined();
+
+      expect(vi.mocked(issues.createMigrationIssue)).toHaveBeenCalled();
     });
   });
 
@@ -283,17 +371,82 @@ describe("handlePush", () => {
         "migrations/ignored.md", // Should be ignored
       ]);
 
-      const mockPlan = { id: "custom", title: "Custom Plan" };
-      vi.mocked(plans.parsePlanFile).mockResolvedValue(mockPlan);
-      vi.mocked(issues.createMigrationIssue).mockResolvedValue(undefined);
+      await handlePush(mockContext as Context<"push">, logger);
+
+      // Should only process the file in the custom directory
+      expect(mockContext.octokit!.repos.getContent).toHaveBeenCalledTimes(1);
+      expect(mockContext.octokit!.repos.getContent).toHaveBeenCalledWith({
+        owner: "test-owner",
+        repo: "test-repo",
+        path: "custom-migrations/plan.md",
+        ref: "abc123",
+      });
+    });
+
+    it("should only process .md files", async () => {
+      vi.mocked(gitUtils.extractChangedFiles).mockReturnValue([
+        "migrations/plan.md",
+        "migrations/plan.txt", // Should be ignored
+        "migrations/README", // Should be ignored
+      ]);
 
       await handlePush(mockContext as Context<"push">, logger);
 
-      expect(vi.mocked(plans.parsePlanFile)).toHaveBeenCalledTimes(1);
-      expect(vi.mocked(plans.parsePlanFile)).toHaveBeenCalledWith(
-        mockContext,
-        "custom-migrations/plan.md"
-      );
+      expect(mockContext.octokit!.repos.getContent).toHaveBeenCalledTimes(1);
+      expect(mockContext.octokit!.repos.getContent).toHaveBeenCalledWith({
+        owner: "test-owner",
+        repo: "test-repo",
+        path: "migrations/plan.md",
+        ref: "abc123",
+      });
+    });
+  });
+
+  describe("file content handling", () => {
+    beforeEach(() => {
+      vi.mocked(gitUtils.extractChangedFiles).mockReturnValue(["migrations/test.md"]);
+    });
+
+    it("should decode base64 file content", async () => {
+      const content = "---\nid: test\ntitle: Test\n---\n# Test Plan";
+      mockContext.octokit!.repos.getContent = vi.fn().mockResolvedValue({
+        data: {
+          type: "file",
+          content: Buffer.from(content).toString("base64"),
+          encoding: "base64",
+        },
+      });
+
+      await handlePush(mockContext as Context<"push">, logger);
+
+      expect(vi.mocked(plans.parsePlanFile)).toHaveBeenCalled();
+    });
+
+    it("should use head_commit id when available", async () => {
+      mockContext.payload!.head_commit = { id: "commit-abc" } as any;
+
+      await handlePush(mockContext as Context<"push">, logger);
+
+      expect(mockContext.octokit!.repos.getContent).toHaveBeenCalledWith({
+        owner: "test-owner",
+        repo: "test-repo",
+        path: "migrations/test.md",
+        ref: "commit-abc",
+      });
+    });
+
+    it("should fall back to after when head_commit is missing", async () => {
+      mockContext.payload!.head_commit = undefined;
+      mockContext.payload!.after = "after-xyz";
+
+      await handlePush(mockContext as Context<"push">, logger);
+
+      expect(mockContext.octokit!.repos.getContent).toHaveBeenCalledWith({
+        owner: "test-owner",
+        repo: "test-repo",
+        path: "migrations/test.md",
+        ref: "after-xyz",
+      });
     });
   });
 });

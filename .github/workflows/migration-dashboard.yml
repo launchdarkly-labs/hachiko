@@ -514,10 +514,10 @@ jobs:
           echo "$ISSUE_BODY" | gh issue edit "$ISSUE_NUMBER" --body-file -
 
           echo "Migration-dashboard issue updated successfully"
-          
+
           # Output cleanup-needed migrations for next step
           echo "cleanup_needed=$CLEANUP_NEEDED" >> $GITHUB_OUTPUT
-          
+
           # Automatically trigger cleanup for completed migrations
           if [ -n "$CLEANUP_NEEDED" ]; then
             echo "🧹 Automatically triggering cleanup for completed migrations: $CLEANUP_NEEDED"
