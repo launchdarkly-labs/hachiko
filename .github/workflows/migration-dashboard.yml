@@ -630,8 +630,26 @@ jobs:
           ISSUE_BODY=$(echo "$DASHBOARD_OUTPUT" | grep -v "CLEANUP_NEEDED=")
           CLEANUP_NEEDED=$(echo "$DASHBOARD_OUTPUT" | grep "CLEANUP_NEEDED=" | sed 's/CLEANUP_NEEDED=//' || echo "")
 
-          if [ "$VERBOSE" = "true" ]; then
+          # ALWAYS log migration grouping summary (not just in verbose mode)
+          echo "📊 Dashboard Generation Summary"
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          PENDING_COUNT=$(echo "$ISSUE_BODY" | awk '/## 🟡 Pending Migrations/,/## 🔄 In-Progress Migrations/ { if (/^- \[/) count++ } END { print count+0 }')
+          IN_PROGRESS_COUNT=$(echo "$ISSUE_BODY" | awk '/## 🔄 In-Progress Migrations/,/## ⏸️ Paused Migrations/ { if (/^- \[/) count++ } END { print count+0 }')
+          PAUSED_COUNT=$(echo "$ISSUE_BODY" | awk '/## ⏸️ Paused Migrations/,/---/ { if (/^- \[/) count++ } END { print count+0 }')
+          echo "  Pending: $PENDING_COUNT migrations"
+          echo "  In-Progress: $IN_PROGRESS_COUNT migrations"
+          echo "  Paused: $PAUSED_COUNT migrations"
+
+          # Show which migrations are in-progress (critical info)
+          if [ "$IN_PROGRESS_COUNT" -gt 0 ]; then
             echo ""
+            echo "In-Progress migrations:"
+            echo "$ISSUE_BODY" | awk '/## 🔄 In-Progress Migrations/,/## ⏸️ Paused Migrations/ { if (/^- \[/) print "  - " $0 }' | sed 's/- \[ \] `//' | sed 's/`.*//'
+          fi
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo ""
+
+          if [ "$VERBOSE" = "true" ]; then
             echo "🔍 [VERBOSE] Dashboard Content Generated"
             echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
             echo "Content length: $(echo "$ISSUE_BODY" | wc -c) bytes"
@@ -664,38 +682,67 @@ jobs:
           fi
 
           # Update the issue
-          if [ "$VERBOSE" = "true" ]; then
-            echo "🔍 [VERBOSE] Executing: gh issue edit $ISSUE_NUMBER --body-file -"
-          fi
+          echo "Executing: gh issue edit $ISSUE_NUMBER --body-file -"
 
           echo "$ISSUE_BODY" | gh issue edit "$ISSUE_NUMBER" --body-file -
           UPDATE_EXIT_CODE=$?
 
-          if [ "$VERBOSE" = "true" ]; then
-            echo "🔍 [VERBOSE] gh issue edit exit code: $UPDATE_EXIT_CODE"
-          fi
+          echo "gh issue edit exit code: $UPDATE_EXIT_CODE"
 
           if [ $UPDATE_EXIT_CODE -ne 0 ]; then
             echo "❌ ERROR: Failed to update issue (exit code: $UPDATE_EXIT_CODE)"
             exit 1
           fi
 
-          echo "Migration-dashboard issue updated successfully"
+          echo "Migration-dashboard issue updated successfully (exit code: $UPDATE_EXIT_CODE)"
 
-          # Verify the update
+          # ALWAYS verify the update (not just in verbose mode)
+          echo ""
+          echo "🔍 Verifying Update"
+          echo "Waiting 2 seconds for API consistency..."
+          sleep 2
+
+          CURRENT_BODY=$(gh issue view "$ISSUE_NUMBER" --json body --jq '.body')
+          CURRENT_UPDATED_AT=$(gh issue view "$ISSUE_NUMBER" --json updatedAt --jq '.updatedAt')
+
+          echo "Issue last updated at: $CURRENT_UPDATED_AT"
+
+          # ALWAYS check if in-progress migrations persisted
+          ACTUAL_IN_PROGRESS_COUNT=$(echo "$CURRENT_BODY" | awk '/## 🔄 In-Progress Migrations/,/## ⏸️ Paused Migrations/ { if (/^- \[/) count++ } END { print count+0 }')
+
+          echo ""
+          echo "Verification Results:"
+          echo "  Expected in-progress: $IN_PROGRESS_COUNT"
+          echo "  Actual in-progress: $ACTUAL_IN_PROGRESS_COUNT"
+
+          if [ "$IN_PROGRESS_COUNT" -ne "$ACTUAL_IN_PROGRESS_COUNT" ]; then
+            echo ""
+            echo "⚠️  WARNING: Mismatch detected!"
+            echo "    Expected $IN_PROGRESS_COUNT in-progress migrations but found $ACTUAL_IN_PROGRESS_COUNT"
+            echo "    This indicates the update may not have persisted correctly."
+
+            # Show which in-progress migrations we expected vs what's actually there
+            if [ "$IN_PROGRESS_COUNT" -gt 0 ]; then
+              echo ""
+              echo "Expected in-progress migrations:"
+              echo "$ISSUE_BODY" | awk '/## 🔄 In-Progress Migrations/,/## ⏸️ Paused Migrations/ { if (/^- \[/) print "  - " $0 }' | sed 's/- \[ \] `//' | sed 's/`.*//'
+            fi
+
+            if [ "$ACTUAL_IN_PROGRESS_COUNT" -gt 0 ]; then
+              echo ""
+              echo "Actual in-progress migrations in issue:"
+              echo "$CURRENT_BODY" | awk '/## 🔄 In-Progress Migrations/,/## ⏸️ Paused Migrations/ { if (/^- \[/) print "  - " $0 }' | sed 's/- \[ \] `//' | sed 's/`.*//'
+            fi
+          else
+            echo "  ✅ Verification passed - counts match"
+          fi
+          echo ""
+
+          # In verbose mode, show detailed per-migration verification
           if [ "$VERBOSE" = "true" ]; then
-            echo ""
-            echo "🔍 [VERBOSE] Verifying Update"
+            echo "🔍 [VERBOSE] Detailed Verification"
             echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-            echo "Waiting 2 seconds for API consistency..."
-            sleep 2
-
-            CURRENT_BODY=$(gh issue view "$ISSUE_NUMBER" --json body --jq '.body')
-            CURRENT_UPDATED_AT=$(gh issue view "$ISSUE_NUMBER" --json updatedAt --jq '.updatedAt')
-
-            echo "Issue last updated at: $CURRENT_UPDATED_AT"
-            echo ""
-            echo "Verification - Checking for migrations in live issue:"
+            echo "Checking each migration:"
 
             for migration_file in migrations/*.md; do
               if [ -f "$migration_file" ]; then
