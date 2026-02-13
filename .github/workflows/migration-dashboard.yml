@@ -18,6 +18,11 @@ on:
           - "update_issue"
           - "start_migration"
           - "pause_migration"
+      verbose:
+        description: "Enable verbose debugging output"
+        required: false
+        type: boolean
+        default: false
 
 permissions:
   contents: write # To create PRs and update files
@@ -54,6 +59,30 @@ jobs:
         run: |
           pnpm install
           pnpm build
+
+      - name: Setup verbose mode
+        id: setup-verbose
+        run: |
+          # Enable verbose mode if requested or if triggered manually
+          VERBOSE="${{ inputs.verbose }}"
+
+          # Default to false for webhook triggers
+          if [ "${{ github.event_name }}" != "workflow_dispatch" ]; then
+            VERBOSE="false"
+          fi
+
+          echo "verbose=$VERBOSE" >> $GITHUB_OUTPUT
+
+          if [ "$VERBOSE" = "true" ]; then
+            echo "🔍 VERBOSE MODE ENABLED"
+            echo "============================================"
+            echo "Workflow Run ID: ${{ github.run_id }}"
+            echo "Workflow Run Number: ${{ github.run_number }}"
+            echo "Event: ${{ github.event_name }}"
+            echo "Triggered by: ${{ github.actor }}"
+            echo "Timestamp: $(date -u +"%Y-%m-%dT%H:%M:%SZ")"
+            echo "============================================"
+          fi
 
       - name: Identify migration-dashboard issue
         id: find-issue
@@ -339,9 +368,28 @@ jobs:
           PR_BRANCH: ${{ github.event.pull_request.head.ref }}
           PR_TITLE: ${{ github.event.pull_request.title }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
+          VERBOSE: ${{ steps.setup-verbose.outputs.verbose }}
         run: |
           echo "PR ${{ github.event.action }}: $PR_TITLE"
           echo "Branch: $PR_BRANCH"
+
+          if [ "$VERBOSE" = "true" ]; then
+            echo ""
+            echo "🔍 [VERBOSE] PR Detection - Starting"
+            echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+            echo "PR Number: $PR_NUMBER"
+            echo "PR Action: ${{ github.event.action }}"
+            echo "PR Branch: $PR_BRANCH"
+            echo "PR Title: $PR_TITLE"
+            echo "PR Author: ${{ github.event.pull_request.user.login }}"
+            echo ""
+            echo "Will attempt detection via:"
+            echo "  1. Branch name (hachiko/* pattern)"
+            echo "  2. Tracking token in PR body/commits"
+            echo "  3. Agent branch + recent dispatch correlation"
+            echo "  4. Label-based detection"
+            echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          fi
 
           # Check if this is a Hachiko migration PR using multiple detection paths
           IS_HACHIKO_PR=false
@@ -352,6 +400,7 @@ jobs:
             IS_HACHIKO_PR=true
             DETECTED_MIGRATION_ID=$(echo "$PR_BRANCH" | sed 's|hachiko/||' | sed 's/-step-[0-9]*//' | sed 's/-cleanup.*//' | sed 's/-status-update.*//')
             echo "✅ Hachiko migration PR detected by branch name: $PR_BRANCH"
+            [ "$VERBOSE" = "true" ] && echo "🔍 [VERBOSE] Path 1 SUCCESS - Migration ID: $DETECTED_MIGRATION_ID"
 
           # Path 2: Tracking token in commits or PR body
           elif TRACKING_TOKEN=$(gh pr view "$PR_NUMBER" --json body,commits \
@@ -360,26 +409,41 @@ jobs:
             IS_HACHIKO_PR=true
             DETECTED_MIGRATION_ID=$(echo "$TRACKING_TOKEN" | cut -d: -f2)
             echo "✅ Hachiko migration PR detected by tracking token: $TRACKING_TOKEN"
+            [ "$VERBOSE" = "true" ] && echo "🔍 [VERBOSE] Path 2 SUCCESS - Migration ID: $DETECTED_MIGRATION_ID"
 
           # Path 3: Known agent branch pattern + recent dispatch correlation
           elif [[ "$PR_BRANCH" == cursor/* ]] || [[ "$PR_BRANCH" == devin/* ]]; then
+            [ "$VERBOSE" = "true" ] && echo "🔍 [VERBOSE] Path 3 - Agent branch detected, checking recent dispatches..."
+
             RECENT_DISPATCH=$(gh run list --workflow=execute-migration.yml --limit=5 \
               --json name,status,createdAt \
               --jq '[.[] | select(.status == "completed" or .status == "in_progress")]
                     | sort_by(.createdAt) | reverse | .[0].name // empty' 2>/dev/null)
+
+            if [ "$VERBOSE" = "true" ]; then
+              echo "🔍 [VERBOSE] Recent dispatch: ${RECENT_DISPATCH:-<none>}"
+            fi
 
             if [ -n "$RECENT_DISPATCH" ]; then
               DETECTED_MIGRATION_ID=$(echo "$RECENT_DISPATCH" | sed 's/Execute: //' | sed 's/ step .*//')
               if [ -n "$DETECTED_MIGRATION_ID" ]; then
                 IS_HACHIKO_PR=true
                 echo "✅ Hachiko migration PR detected by agent branch + dispatch correlation: $DETECTED_MIGRATION_ID"
+                [ "$VERBOSE" = "true" ] && echo "🔍 [VERBOSE] Path 3 SUCCESS - Migration ID: $DETECTED_MIGRATION_ID"
+              else
+                [ "$VERBOSE" = "true" ] && echo "🔍 [VERBOSE] Path 3 FAILED - Could not extract migration ID from dispatch"
               fi
+            else
+              [ "$VERBOSE" = "true" ] && echo "🔍 [VERBOSE] Path 3 FAILED - No recent dispatches found"
             fi
 
           # Path 4: Label-based detection (existing fallback)
           elif gh pr view "$PR_NUMBER" --json labels --jq '.labels[].name' 2>/dev/null | grep -q "hachiko:migration"; then
             IS_HACHIKO_PR=true
             echo "✅ Hachiko migration PR detected by label"
+            [ "$VERBOSE" = "true" ] && echo "🔍 [VERBOSE] Path 4 SUCCESS - Label-based detection (no migration ID extracted)"
+          else
+            [ "$VERBOSE" = "true" ] && echo "🔍 [VERBOSE] All detection paths FAILED"
           fi
 
           # Validate detected migration ID corresponds to a real migration file
@@ -426,9 +490,27 @@ jobs:
           PR_BRANCH: ${{ github.event.pull_request.head.ref }}
           PR_TITLE: ${{ github.event.pull_request.title }}
           PR_MERGED: ${{ github.event.pull_request.merged }}
+          VERBOSE: ${{ steps.setup-verbose.outputs.verbose }}
         run: |
           echo "PR closed: $PR_TITLE"
           echo "Branch: $PR_BRANCH"
+          echo "Merged: $PR_MERGED"
+
+          if [ "$VERBOSE" = "true" ]; then
+            echo ""
+            echo "🔍 [VERBOSE] PR Closure Detection - Starting"
+            echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+            echo "PR Number: ${{ github.event.pull_request.number }}"
+            echo "PR Branch: $PR_BRANCH"
+            echo "PR Title: $PR_TITLE"
+            echo "PR Merged: $PR_MERGED"
+            echo "PR Closed At: ${{ github.event.pull_request.closed_at }}"
+            echo ""
+            echo "Attempting detection to determine migration action..."
+            echo "  - If merged: advance migration"
+            echo "  - If not merged: pause migration"
+            echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          fi
 
           IS_HACHIKO_PR=false
           MIGRATION_ID=""
@@ -489,13 +571,36 @@ jobs:
 
       - name: Update migration-dashboard issue
         if: |
-          (github.event_name == 'pull_request' && (steps.handle-pr.outputs.is_hachiko_pr == 'true' || steps.handle-pr-closure.outputs.is_hachiko_pr == 'true')) || 
+          (github.event_name == 'pull_request' && (steps.handle-pr.outputs.is_hachiko_pr == 'true' || steps.handle-pr-closure.outputs.is_hachiko_pr == 'true')) ||
           github.event_name == 'workflow_dispatch' ||
           (github.event_name == 'issues' && github.event.issue.number == fromJson(steps.find-issue.outputs.migration_dashboard_issue))
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           ISSUE_NUMBER: ${{ steps.find-issue.outputs.migration_dashboard_issue }}
+          VERBOSE: ${{ steps.setup-verbose.outputs.verbose }}
         run: |
+          if [ "$VERBOSE" = "true" ]; then
+            echo ""
+            echo "🔍 [VERBOSE] Dashboard Update - Starting"
+            echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+            echo "Issue Number: $ISSUE_NUMBER"
+            echo "Event Type: ${{ github.event_name }}"
+            echo "Timestamp: $(date -u +"%Y-%m-%dT%H:%M:%SZ")"
+            echo ""
+            echo "Trigger Reason:"
+            if [ "${{ github.event_name }}" = "pull_request" ]; then
+              echo "  - PR Event (opened/closed)"
+              echo "  - PR #${{ github.event.pull_request.number }}: ${{ github.event.pull_request.title }}"
+            elif [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+              echo "  - Manual Trigger"
+              echo "  - Action: ${{ inputs.action }}"
+            elif [ "${{ github.event_name }}" = "issues" ]; then
+              echo "  - Issue Edited (checkbox clicked)"
+            fi
+            echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+            echo ""
+          fi
+
           echo "Updating migration-dashboard issue #$ISSUE_NUMBER"
 
           # If migrations were triggered, wait a moment for them to start
@@ -504,16 +609,111 @@ jobs:
             sleep 30
           fi
 
+          # Check for concurrent runs
+          if [ "$VERBOSE" = "true" ]; then
+            echo "🔍 [VERBOSE] Checking for concurrent workflow runs..."
+            CONCURRENT_RUNS=$(gh run list --workflow=migration-dashboard.yml --json status,databaseId,createdAt --jq '[.[] | select(.status == "in_progress" or .status == "queued")] | length')
+            echo "🔍 [VERBOSE] Concurrent/queued runs: $CONCURRENT_RUNS"
+            if [ "$CONCURRENT_RUNS" -gt 1 ]; then
+              echo "⚠️ [VERBOSE] WARNING: Multiple runs detected - potential race condition"
+              gh run list --workflow=migration-dashboard.yml --limit=5 --json status,databaseId,createdAt,displayTitle
+            fi
+          fi
+
           # Use the migration CLI script to generate the dashboard content
           # Capture both stdout (dashboard) and stderr (cleanup info)
+          if [ "$VERBOSE" = "true" ]; then
+            echo "🔍 [VERBOSE] Generating dashboard content..."
+          fi
+
           DASHBOARD_OUTPUT=$(pnpm --silent migration generate-migration-dashboard 2>&1)
           ISSUE_BODY=$(echo "$DASHBOARD_OUTPUT" | grep -v "CLEANUP_NEEDED=")
           CLEANUP_NEEDED=$(echo "$DASHBOARD_OUTPUT" | grep "CLEANUP_NEEDED=" | sed 's/CLEANUP_NEEDED=//' || echo "")
 
+          if [ "$VERBOSE" = "true" ]; then
+            echo ""
+            echo "🔍 [VERBOSE] Dashboard Content Generated"
+            echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+            echo "Content length: $(echo "$ISSUE_BODY" | wc -c) bytes"
+            echo "Content lines: $(echo "$ISSUE_BODY" | wc -l) lines"
+            echo ""
+            echo "First 30 lines of generated content:"
+            echo "$ISSUE_BODY" | head -30
+            echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+            echo ""
+
+            # Check for specific migrations
+            echo "🔍 [VERBOSE] Checking for specific migrations in content:"
+            for migration_file in migrations/*.md; do
+              if [ -f "$migration_file" ]; then
+                MIGRATION_ID=$(basename "$migration_file" .md)
+                if echo "$ISSUE_BODY" | grep -q "$MIGRATION_ID"; then
+                  echo "  ✅ Found: $MIGRATION_ID"
+                else
+                  echo "  ❌ Missing: $MIGRATION_ID"
+                fi
+              fi
+            done
+            echo ""
+          fi
+
+          # Save content to temp file for debugging
+          if [ "$VERBOSE" = "true" ]; then
+            echo "$ISSUE_BODY" > /tmp/dashboard-update-${{ github.run_id }}.txt
+            echo "🔍 [VERBOSE] Saved dashboard content to /tmp/dashboard-update-${{ github.run_id }}.txt"
+          fi
+
           # Update the issue
+          if [ "$VERBOSE" = "true" ]; then
+            echo "🔍 [VERBOSE] Executing: gh issue edit $ISSUE_NUMBER --body-file -"
+          fi
+
           echo "$ISSUE_BODY" | gh issue edit "$ISSUE_NUMBER" --body-file -
+          UPDATE_EXIT_CODE=$?
+
+          if [ "$VERBOSE" = "true" ]; then
+            echo "🔍 [VERBOSE] gh issue edit exit code: $UPDATE_EXIT_CODE"
+          fi
+
+          if [ $UPDATE_EXIT_CODE -ne 0 ]; then
+            echo "❌ ERROR: Failed to update issue (exit code: $UPDATE_EXIT_CODE)"
+            exit 1
+          fi
 
           echo "Migration-dashboard issue updated successfully"
+
+          # Verify the update
+          if [ "$VERBOSE" = "true" ]; then
+            echo ""
+            echo "🔍 [VERBOSE] Verifying Update"
+            echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+            echo "Waiting 2 seconds for API consistency..."
+            sleep 2
+
+            CURRENT_BODY=$(gh issue view "$ISSUE_NUMBER" --json body --jq '.body')
+            CURRENT_UPDATED_AT=$(gh issue view "$ISSUE_NUMBER" --json updatedAt --jq '.updatedAt')
+
+            echo "Issue last updated at: $CURRENT_UPDATED_AT"
+            echo ""
+            echo "Verification - Checking for migrations in live issue:"
+
+            for migration_file in migrations/*.md; do
+              if [ -f "$migration_file" ]; then
+                MIGRATION_ID=$(basename "$migration_file" .md)
+                if echo "$CURRENT_BODY" | grep -q "$MIGRATION_ID"; then
+                  echo "  ✅ Verified in issue: $MIGRATION_ID"
+                else
+                  echo "  ❌ NOT in issue: $MIGRATION_ID"
+                  # Compare with what we sent
+                  if echo "$ISSUE_BODY" | grep -q "$MIGRATION_ID"; then
+                    echo "     ⚠️ Was in content we sent but not in issue now!"
+                  fi
+                fi
+              fi
+            done
+            echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+            echo ""
+          fi
           
           # Output cleanup-needed migrations for next step
           echo "cleanup_needed=$CLEANUP_NEEDED" >> $GITHUB_OUTPUT
