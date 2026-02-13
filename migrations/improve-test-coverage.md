@@ -34,10 +34,10 @@ This migration aims to increase test coverage from the current 55.53% to at leas
 
 ### Step 2: Add tests for webhooks
 
-- Add tests for `src/webhooks/issue_comment.ts`
-- Add tests for `src/webhooks/workflow_run.ts`
-- Mock GitHub API responses properly
-- Target: Bring webhooks coverage to 85%
+- [x] Add tests for `src/webhooks/issue_comment.ts`
+- [x] Add tests for `src/webhooks/workflow_run.ts`
+- [x] Mock GitHub API responses properly
+- [x] Target: Bring webhooks coverage to 85% (achieved 96.2%)
 
 ### Step 3: Add tests for utilities
 
@@ -60,7 +60,16 @@ Priority files with low/missing coverage:
 - `src/services/agents.ts`
 - `src/services/policy-engine.ts`
 - `src/services/state.ts`
-- `src/webhooks/issue_comment.ts`
-- `src/webhooks/workflow_run.ts`
+- ~~`src/webhooks/issue_comment.ts`~~ (100% coverage)
+- ~~`src/webhooks/workflow_run.ts`~~ (100% coverage)
 - `src/utils/git.ts`
 - `src/utils/pr.ts`
+
+## Progress Notes
+
+### Step 2 Completion (Webhooks)
+- Created comprehensive test suite for `workflow_run.ts` with 27 test cases covering all scenarios
+- Fixed and enabled previously excluded `push.test.ts` by correcting mock expectations
+- Webhook coverage improved from 73.6% to 96.2%, exceeding 85% target
+- Overall coverage improved from 59.7% to 61.46%
+- All 471 tests passing
