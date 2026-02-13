@@ -238,11 +238,14 @@ export async function getHachikoPRs(
 
     // Method 3: Check commit messages for labeled PRs that didn't match yet
     // This handles cloud agents (Cursor, Devin) that put tracking tokens in commits
+    console.error(`[DEBUG] Checking commits for ${labeledPRs.length} labeled PRs (looking for ${migrationId})`);
     for (const pr of labeledPRs) {
       if (foundPRs.has(pr.number)) {
+        console.error(`[DEBUG] PR #${pr.number} already found, skipping`);
         continue; // Already found via other methods
       }
 
+      console.error(`[DEBUG] Fetching commits for PR #${pr.number} (${pr.head.ref})`);
       try {
         // Fetch commits for this PR to check for tracking tokens
         const commitsResponse = await context.octokit.pulls.listCommits({
@@ -252,10 +255,14 @@ export async function getHachikoPRs(
           per_page: 10, // Only check first 10 commits
         });
 
+        console.error(`[DEBUG] Got ${commitsResponse.data.length} commits for PR #${pr.number}`);
         // Check commit messages for tracking tokens (must be at start of message per agent instructions)
         for (const commit of commitsResponse.data) {
           const commitMessage = commit.commit.message;
+          const firstLine = commitMessage.split('\n')[0];
+          console.error(`[DEBUG] Checking commit ${commit.sha.substring(0, 7)}: "${firstLine}"`);
           const trackingMatch = commitMessage.match(/^hachiko-track:([^:\s]+)/m);
+          console.error(`[DEBUG] Regex match result: ${trackingMatch ? trackingMatch[0] : 'null'}, extracted ID: ${trackingMatch?.[1]}, looking for: ${migrationId}`);
           if (trackingMatch && trackingMatch[1] === migrationId) {
             // Found matching tracking token in commit
             const hachikoPR: HachikoPR = {
