@@ -52,13 +52,33 @@ else
     sed -i "/^branch:/d" "$MIGRATION_FILE"
     
     echo "✅ Migration advanced to step $NEXT_STEP, ready for next execution"
-    
-    # Trigger next step execution automatically
+
+    # Check if there's already an open PR for the next step to avoid duplicates
     if command -v gh >/dev/null 2>&1; then
-        echo "🚀 Triggering next step execution..."
-        gh workflow run execute-migration.yml \
-            -f migration_id="$MIGRATION_ID" \
-            -f step_id="$NEXT_STEP"
+        echo "🔍 Checking for existing open PRs for step $NEXT_STEP..."
+
+        # Get all open PRs with hachiko:migration label
+        EXISTING_PRS=$(gh pr list --state open --label "hachiko:migration" --json number,headRefName,body,title --jq '
+          .[] |
+          select(
+            (.headRefName | test("'"$MIGRATION_ID"'")) or
+            (.headRefName | test("-step-'"$NEXT_STEP"'")) or
+            (.body // "" | test("hachiko-track:'"$MIGRATION_ID"':'"$NEXT_STEP"'")) or
+            (.title | test("hachiko-track:'"$MIGRATION_ID"':'"$NEXT_STEP"'"))
+          ) | .number
+        ' 2>/dev/null || echo "")
+
+        if [ -n "$EXISTING_PRS" ]; then
+            echo "⚠️  Found existing open PR(s) for $MIGRATION_ID step $NEXT_STEP: #$EXISTING_PRS"
+            echo "⏭️  Skipping automatic trigger to avoid duplicate PRs"
+            echo "💡 The existing PR will continue the migration"
+        else
+            echo "✅ No existing open PRs found for step $NEXT_STEP"
+            echo "🚀 Triggering next step execution..."
+            gh workflow run execute-migration.yml \
+                -f migration_id="$MIGRATION_ID" \
+                -f step_id="$NEXT_STEP"
+        fi
     else
         echo "⚠️  GitHub CLI not available, trigger next step manually"
     fi
