@@ -252,10 +252,10 @@ export async function getHachikoPRs(
           per_page: 10, // Only check first 10 commits
         });
 
-        // Check commit messages for tracking tokens
+        // Check commit messages for tracking tokens (must be at start of message per agent instructions)
         for (const commit of commitsResponse.data) {
           const commitMessage = commit.commit.message;
-          const trackingMatch = commitMessage.match(/hachiko-track:([^:\s]+)/);
+          const trackingMatch = commitMessage.match(/^hachiko-track:([^:\s]+)/m);
           if (trackingMatch && trackingMatch[1] === migrationId) {
             // Found matching tracking token in commit
             const hachikoPR: HachikoPR = {
