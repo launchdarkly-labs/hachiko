@@ -154,6 +154,112 @@ All tasks are complete.`;
       expect(result.state).toBe("completed");
       expect(result.allTasksComplete).toBe(true);
     });
+
+    it("should not mark as completed when checkboxes are done but not all steps", async () => {
+      // Simulates a multi-step migration where Step 2 has all checkboxes complete
+      // but Step 3 hasn't been started yet
+      const migrationDoc = `---
+schema_version: 1
+id: test-migration
+title: Test Multi-Step Migration
+agent: cursor
+status: in_progress
+current_step: 2
+total_steps: 3
+created: 2024-01-01T00:00:00Z
+last_updated: 2024-01-02T00:00:00Z
+---
+
+# Test Migration
+
+## Step 1: Setup
+- Task 1
+- Task 2
+
+## Step 2: Implementation
+- [x] Add feature A
+- [x] Add feature B
+- [x] Add tests
+
+## Step 3: Cleanup
+- Remove old code
+- Update docs`;
+
+      // Simulate that Step 2 was just merged
+      const closedPRs = [
+        {
+          number: 123,
+          title: "Step 2",
+          state: "closed" as const,
+          migrationId: "test-migration",
+          branch: "hachiko/test-migration-step-2",
+          labels: [],
+          url: "https://github.com/test/123",
+          merged: true,
+        },
+      ];
+
+      mockGetOpenHachikoPRs.mockResolvedValue([]);
+      mockGetClosedHachikoPRs.mockResolvedValue(closedPRs);
+
+      const result = await getMigrationState(mockContext, "test-migration", migrationDoc);
+
+      // Should be 'active' not 'completed' because currentStep (3) <= total_steps (3)
+      expect(result.state).toBe("active");
+      expect(result.allTasksComplete).toBe(true); // All checkboxes are checked
+      expect(result.currentStep).toBe(3); // Should advance to step 3
+      expect(result.totalTasks).toBe(3); // 3 checkboxes found
+      expect(result.completedTasks).toBe(3); // All 3 checkboxes are checked
+    });
+
+    it("should mark as completed when all tasks done AND all steps complete", async () => {
+      const migrationDoc = `---
+schema_version: 1
+id: test-migration
+title: Test Multi-Step Migration
+agent: cursor
+status: in_progress
+current_step: 3
+total_steps: 3
+created: 2024-01-01T00:00:00Z
+last_updated: 2024-01-03T00:00:00Z
+---
+
+# Test Migration
+
+## Step 1: Setup
+- [x] Task 1
+
+## Step 2: Implementation
+- [x] Task 2
+
+## Step 3: Cleanup
+- [x] Task 3`;
+
+      // All steps merged
+      const closedPRs = [
+        {
+          number: 123,
+          title: "Step 3",
+          state: "closed" as const,
+          migrationId: "test-migration",
+          branch: "hachiko/test-migration-step-3",
+          labels: [],
+          url: "https://github.com/test/123",
+          merged: true,
+        },
+      ];
+
+      mockGetOpenHachikoPRs.mockResolvedValue([]);
+      mockGetClosedHachikoPRs.mockResolvedValue(closedPRs);
+
+      const result = await getMigrationState(mockContext, "test-migration", migrationDoc);
+
+      // Should be 'completed' because all checkboxes AND currentStep (4) > total_steps (3)
+      expect(result.state).toBe("completed");
+      expect(result.allTasksComplete).toBe(true);
+      expect(result.currentStep).toBe(4); // Advanced past last step
+    });
   });
 
   describe("getTaskCompletionInfo", () => {

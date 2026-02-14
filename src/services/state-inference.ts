@@ -9,6 +9,7 @@ import { createLogger } from "../utils/logger.js";
 import { getOpenHachikoPRs, getClosedHachikoPRs, type HachikoPR } from "./pr-detection.js";
 import type { MigrationState } from "../config/migration-schema.js";
 import { parseMigrationBranchName } from "../utils/git.js";
+import { parseMigrationDocumentContent } from "../utils/migration-document.js";
 
 export interface MigrationStateInfo {
   state: MigrationState;
@@ -49,12 +50,23 @@ export async function getMigrationState(
     let allTasksComplete = false;
     let totalTasks = 0;
     let completedTasks = 0;
+    let totalSteps: number | undefined;
 
     if (migrationDocContent) {
       const taskInfo = getTaskCompletionInfo(migrationDocContent);
       allTasksComplete = taskInfo.allTasksComplete;
       totalTasks = taskInfo.totalTasks;
       completedTasks = taskInfo.completedTasks;
+
+      // Parse frontmatter to get total_steps for schema v1
+      try {
+        const parsed = parseMigrationDocumentContent(migrationDocContent);
+        if (parsed.frontmatter.schema_version === 1) {
+          totalSteps = parsed.frontmatter.total_steps;
+        }
+      } catch (error) {
+        log.warn({ error }, "Failed to parse migration document frontmatter");
+      }
     }
 
     // Calculate current step from PR activity
@@ -63,7 +75,27 @@ export async function getMigrationState(
     // Apply state inference rules
     let state: MigrationState;
     if (allTasksComplete && totalTasks > 0) {
-      state = "completed";
+      // Additional check: if we have total_steps from frontmatter, verify currentStep > total_steps
+      // This prevents marking as complete when only some step checkboxes are checked
+      if (totalSteps !== undefined && currentStep <= totalSteps) {
+        // Not all steps are done yet, so not truly complete
+        log.info(
+          { currentStep, totalSteps, allTasksComplete, totalTasks },
+          "All checkboxes complete but not all steps done - treating as active"
+        );
+        // Apply normal state logic based on PR activity
+        if (openPRs.length > 0) {
+          state = "active";
+        } else if (closedPRs.length > 0) {
+          const sortedClosedPRs = [...closedPRs].sort((a, b) => b.number - a.number);
+          const mostRecentPR = sortedClosedPRs[0];
+          state = mostRecentPR?.merged ? "active" : "paused";
+        } else {
+          state = "pending";
+        }
+      } else {
+        state = "completed";
+      }
     } else if (openPRs.length > 0) {
       state = "active";
     } else if (closedPRs.length > 0) {

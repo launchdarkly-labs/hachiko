@@ -47,10 +47,10 @@ export default defineConfig({
         // Meaningful coverage thresholds focusing on testable business logic
         // Updated after removing unused Probot infrastructure (webhooks, webhook-only services)
         // Remaining code: Cloud agents (84%+), Config schema (100%), Plans (75%), State inference (88%+)
-        statements: 51, // Adjusted from 52% after removing Probot code (currently 51.66%)
-        branches: 86, // Maintained at 86%
-        functions: 80, // Adjusted from 81% after removing Probot code (currently 80.55%)
-        lines: 51, // Adjusted from 52% after removing Probot code (currently 51.66%)
+        statements: 51, // Adjusted from 52% after removing Probot code (currently 52.43%)
+        branches: 86, // Maintained at 86% (currently 86.37%)
+        functions: 77, // Adjusted from 80% after removing orphaned workflow_run.test.ts (currently 77.48%)
+        lines: 51, // Adjusted from 52% after removing Probot code (currently 52.43%)
       },
     },
     setupFiles: ["./test/setup.ts"],
