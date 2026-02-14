@@ -180,8 +180,10 @@ export async function executeMigrationStep(
     prompt,
     timeout: config.policy.stepTimeoutMinutes * 60, // Convert to seconds
     metadata: {
-      repository: context.payload.repository.full_name,
-      actor: context.payload.sender?.login,
+      repository:
+        context.payload.repository.full_name ||
+        `${context.payload.repository.owner.login}/${context.payload.repository.name}`,
+      actor: context.payload.sender?.login || "unknown",
     },
   };
 

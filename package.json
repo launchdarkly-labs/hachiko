@@ -8,11 +8,8 @@
     "url": "https://github.com/launchdarkly/hachiko"
   },
   "type": "module",
-  "main": "dist/index.js",
   "scripts": {
     "build": "tsc -b",
-    "dev": "probot run ./dist/index.js",
-    "dev:probot:test": "cross-env PROBOT_WEBHOOK_PROXY_URL=$SMEE probot run ./dist/index.js",
     "lint": "oxlint .",
     "format": "oxfmt --write .",
     "typecheck": "tsc --noEmit",
@@ -27,10 +24,6 @@
     "test:e2e": "node scripts/test-e2e-local.js",
     "test:agents": "node scripts/test-agent-connectivity.js",
     "test:apis": "node scripts/test-api-endpoints.js",
-    "scripts:fire-webhook": "ts-node scripts/send-webhook.ts",
-    "scripts:assert-state": "ts-node scripts/assert-state.ts",
-    "scripts:simulate-merge": "ts-node scripts/sim-merge.ts",
-    "test:webhooks": "node scripts/test-webhooks-local.js",
     "test:workflows": "pnpm test test/unit/workflows/",
     "test:pr-dashboard": "node scripts/test-pr-driven-dashboard.js"
   },
@@ -46,13 +39,11 @@
     "js-yaml": "^4.1.0",
     "minimatch": "^10.0.3",
     "pino": "^9.5.0",
-    "probot": "^13.3.8",
     "tsx": "^4.20.4",
     "yaml": "^2.6.1",
     "zod": "^3.23.8"
   },
   "devDependencies": {
-    "@octokit/webhooks-types": "^7.6.1",
     "@types/js-yaml": "^4.0.9",
     "@types/node": "^22.10.2",
     "@types/pino": "^7.0.5",

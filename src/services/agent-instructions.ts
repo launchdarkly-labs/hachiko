@@ -100,7 +100,9 @@ export async function generateAgentInstructionsFromRepo(
     const repositoryContext: RepositoryContext = {
       owner: context.payload.repository.owner.login,
       name: context.payload.repository.name,
-      url: context.payload.repository.html_url,
+      url:
+        context.payload.repository.html_url ||
+        `https://github.com/${context.payload.repository.owner.login}/${context.payload.repository.name}`,
     };
 
     return await generateAgentInstructions(migrationContext, repositoryContext, log);

@@ -133,8 +133,9 @@ export async function executeMigrationStep(context, planId, stepId, config, file
         prompt,
         timeout: config.policy.stepTimeoutMinutes * 60, // Convert to seconds
         metadata: {
-            repository: context.payload.repository.full_name,
-            actor: context.payload.sender?.login,
+            repository: context.payload.repository.full_name ||
+                `${context.payload.repository.owner.login}/${context.payload.repository.name}`,
+            actor: context.payload.sender?.login || "unknown",
         },
     };
     return agentService.executeAgent(agentName, agentInput);

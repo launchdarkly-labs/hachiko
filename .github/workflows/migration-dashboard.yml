@@ -768,10 +768,10 @@ jobs:
             echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
             echo ""
           fi
-          
+
           # Output cleanup-needed migrations for next step
           echo "cleanup_needed=$CLEANUP_NEEDED" >> $GITHUB_OUTPUT
-          
+
           # Automatically trigger cleanup for completed migrations
           if [ -n "$CLEANUP_NEEDED" ]; then
             echo "🧹 Automatically triggering cleanup for completed migrations: $CLEANUP_NEEDED"

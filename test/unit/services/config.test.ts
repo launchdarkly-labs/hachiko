@@ -19,28 +19,23 @@ vi.mock("../../../src/utils/logger.js", () => ({
 import { loadHachikoConfig, validateConfig } from "../../../src/services/config.js";
 import { ConfigurationError } from "../../../src/utils/errors.js";
 import { loadFixture } from "../../helpers/test-utils.js";
-import { createMockContext, mockGitHubResponses } from "../../mocks/github.js";
+import { createMockOctokit, mockGitHubResponses } from "../../mocks/github.js";
 
 describe("loadHachikoConfig", () => {
   let mockContext: any;
   let mockOctokit: any;
 
   beforeEach(() => {
-    mockOctokit = {
-      repos: {
-        getContent: vi.fn(),
-      },
-    };
-    mockContext = createMockContext(
-      "push",
-      {
+    mockOctokit = createMockOctokit();
+    mockContext = {
+      octokit: mockOctokit,
+      payload: {
         repository: {
           owner: { login: "test-owner" },
           name: "test-repo",
         },
       },
-      mockOctokit
-    );
+    };
   });
 
   it("should load and validate a valid configuration file", async () => {

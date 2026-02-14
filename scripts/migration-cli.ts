@@ -236,13 +236,14 @@ program
       
       // Create context object for services
       const context = {
-        repo: {
-          owner,
-          repo: repoName,
-        },
         octokit,
-        // Add minimal payload for ContextWithRepository compatibility
-        payload: { repository: { name: repoName, owner: { login: owner } } }
+        payload: {
+          repository: {
+            name: repoName,
+            owner: { login: owner },
+            full_name: repo
+          }
+        }
       };
       
       // Discover migration files
