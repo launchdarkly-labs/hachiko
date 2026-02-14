@@ -174,8 +174,7 @@ This issue tracks all active migrations in the repository. Use the checkboxes be
       sender: { login: "test-user" },
     };
 
-    // Test context creation (validates payload structure)
-    createMockContext("issues", payload, mockOctokit);
+    // Validate payload structure (previously tested via createMockContext)
 
     // Mock finding the migration dashboard issue
     mockOctokit.issues.listForRepo.mockResolvedValue({

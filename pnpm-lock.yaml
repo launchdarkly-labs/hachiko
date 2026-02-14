@@ -41,9 +41,6 @@ importers:
       pino:
         specifier: ^9.5.0
         version: 9.9.0
-      probot:
-        specifier: ^13.3.8
-        version: 13.4.7
       tsx:
         specifier: ^4.20.4
         version: 4.20.4
@@ -54,9 +51,6 @@ importers:
         specifier: ^3.23.8
         version: 3.25.76
     devDependencies:
-      '@octokit/webhooks-types':
-        specifier: ^7.6.1
-        version: 7.6.1
       '@types/js-yaml':
         specifier: ^4.0.9
         version: 4.0.9

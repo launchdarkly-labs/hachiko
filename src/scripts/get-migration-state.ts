@@ -49,7 +49,7 @@ async function main() {
     };
 
     const stateInfo = await getMigrationStateWithDocument(
-      context as any,
+      context,
       migrationId,
       "main",
       logger

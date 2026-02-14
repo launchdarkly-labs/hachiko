@@ -1,4 +1,3 @@
-import type { Context } from "probot";
 import { vi } from "vitest";
 
 /**
@@ -10,6 +9,7 @@ export function createMockOctokit() {
       getContent: vi.fn(),
       getBranch: vi.fn(),
       createDispatchEvent: vi.fn(),
+      listCommits: vi.fn(),
     },
     issues: {
       create: vi.fn(),
@@ -21,6 +21,7 @@ export function createMockOctokit() {
     pulls: {
       create: vi.fn(),
       list: vi.fn(),
+      listCommits: vi.fn(),
     },
     checks: {
       create: vi.fn(),
@@ -29,51 +30,6 @@ export function createMockOctokit() {
       listJobsForWorkflowRun: vi.fn(),
     },
   };
-}
-
-/**
- * Create a mock Probot context for testing
- */
-export function createMockContext<T extends string>(
-  eventName: T,
-  payload: any,
-  octokit = createMockOctokit()
-): Context<T> {
-  return {
-    id: "test-request-id",
-    name: eventName,
-    payload,
-    octokit: octokit as any,
-    log: {
-      info: vi.fn(),
-      warn: vi.fn(),
-      error: vi.fn(),
-      debug: vi.fn(),
-      child: vi.fn(() => ({
-        info: vi.fn(),
-        warn: vi.fn(),
-        error: vi.fn(),
-        debug: vi.fn(),
-      })),
-    } as any,
-    repo: vi.fn((params: any) => ({
-      owner: payload.repository?.owner?.login || "test-owner",
-      repo: payload.repository?.name || "test-repo",
-      ...params,
-    })),
-    issue: vi.fn((params: any) => ({
-      owner: payload.repository?.owner?.login || "test-owner",
-      repo: payload.repository?.name || "test-repo",
-      issue_number: payload.issue?.number || payload.pull_request?.number || 1,
-      ...params,
-    })),
-    pullRequest: vi.fn((params: any) => ({
-      owner: payload.repository?.owner?.login || "test-owner",
-      repo: payload.repository?.name || "test-repo",
-      pull_number: payload.pull_request?.number || 1,
-      ...params,
-    })),
-  } as any;
 }
 
 /**

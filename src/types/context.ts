@@ -1,21 +1,23 @@
-import type { Context } from "probot";
+import type { Octokit } from "@octokit/rest";
 
 /**
- * Context types that have a repository property in their payload
+ * Context object containing GitHub API client and repository information
+ * Used by services to interact with GitHub API without depending on Probot
  */
-export type ContextWithRepository =
-  | Context<"push">
-  | Context<"pull_request">
-  | Context<"pull_request.closed">
-  | Context<"pull_request.opened">
-  | Context<"pull_request.synchronize">
-  | Context<"issue_comment">
-  | Context<"issue_comment.created">
-  | Context<"issue_comment.edited">
-  | Context<"issue_comment.deleted">
-  | Context<"workflow_run">
-  | Context<"workflow_run.completed">
-  | Context<"workflow_run.requested">;
+export interface ContextWithRepository {
+  octokit: Octokit;
+  payload: {
+    repository: {
+      owner: { login: string };
+      name: string;
+      full_name?: string;
+      html_url?: string;
+    };
+    sender?: {
+      login: string;
+    };
+  };
+}
 
 /**
  * Repository information extracted from context
@@ -30,9 +32,10 @@ export interface RepositoryInfo {
  * Extract repository information from a context with repository
  */
 export function extractRepositoryInfo(context: ContextWithRepository): RepositoryInfo {
+  const { owner, name, full_name } = context.payload.repository;
   return {
-    owner: context.payload.repository.owner.login,
-    repo: context.payload.repository.name,
-    fullName: context.payload.repository.full_name,
+    owner: owner.login,
+    repo: name,
+    fullName: full_name || `${owner.login}/${name}`,
   };
 }
