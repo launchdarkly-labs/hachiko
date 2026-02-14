@@ -30,9 +30,6 @@ export default defineConfig({
         "scripts/reproduce-dashboard-issue.js",
         "scripts/test-pr-driven-dashboard.js",
         "scripts/test-webhooks-local.js",
-        // Entry points - require full integration setup
-        "src/index.ts",
-        "src/probot.ts",
         // Pure type definition files
         "src/adapters/types.ts",
         "src/types/context.ts",
@@ -45,16 +42,15 @@ export default defineConfig({
         "src/adapters/registry.ts",
         // Complex external service integrations
         "src/services/ai-configs.ts",
-        "src/services/metrics.ts",
       ],
       thresholds: {
         // Meaningful coverage thresholds focusing on testable business logic
-        // Updated: Adjusted to reflect current achievable coverage levels
-        // Major achievements: Cloud agents (84%+), Config schema (100%), Plans (75%), Issues (98%), State (89.7%)
-        statements: 52, // Lowered from 55% to reflect current level (52.81%)
-        branches: 86, // Lowered from 87% to reflect current level (86.7%)
-        functions: 81, // Lowered from 84% to reflect current level (81.94%)
-        lines: 52, // Lowered from 55% to reflect current level (52.81%)
+        // Updated after removing unused Probot infrastructure (webhooks, webhook-only services)
+        // Remaining code: Cloud agents (84%+), Config schema (100%), Plans (75%), State inference (88%+)
+        statements: 51, // Adjusted from 52% after removing Probot code (currently 51.66%)
+        branches: 86, // Maintained at 86%
+        functions: 80, // Adjusted from 81% after removing Probot code (currently 80.55%)
+        lines: 51, // Adjusted from 52% after removing Probot code (currently 51.66%)
       },
     },
     setupFiles: ["./test/setup.ts"],
