@@ -275,9 +275,10 @@ export class CursorCloudAdapter extends BaseAgentAdapter {
    * Build comprehensive task description for Cursor
    */
   private buildTask(input: AgentInput): string {
-    const targetFiles = input.files.length > 0 
-      ? `\n\n## Target Files\n${input.files.map((f) => `- ${this.getRelativePath(f, input.repoPath)}`).join("\n")}`
-      : "";
+    const targetFiles =
+      input.files.length > 0
+        ? `\n\n## Target Files\n${input.files.map((f) => `- ${this.getRelativePath(f, input.repoPath)}`).join("\n")}`
+        : "";
 
     const chunkInfo = input.chunk ? `\n**Chunk**: ${input.chunk}` : "";
 
