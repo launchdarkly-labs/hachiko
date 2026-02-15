@@ -150,6 +150,41 @@ export async function getMigrationState(
 }
 
 /**
+ * Extract step number from a PR's branch name
+ * Handles both new format (hachiko/{id}-step-{N}) and legacy format (hachi/{id}/step-{N})
+ */
+export function getStepNumberFromPR(pr: HachikoPR): number | null {
+  // Handle hachiko/{migration-id}-step-{N} format
+  const stepMatch = pr.branch.match(/-step-(\d+)(?:-|$)/);
+  if (stepMatch && stepMatch[1]) {
+    return parseInt(stepMatch[1], 10);
+  }
+
+  // Fallback to old hachi/{migration-id}/{step-id} format
+  const parsed = parseMigrationBranchName(pr.branch);
+  if (parsed?.stepId) {
+    const legacyStepMatch = parsed.stepId.match(/(\d+)/);
+    return legacyStepMatch?.[1] ? parseInt(legacyStepMatch[1], 10) : null;
+  }
+
+  return null;
+}
+
+/**
+ * Get the highest step number from a list of merged PRs
+ * Returns 0 if no merged PRs or no step numbers can be parsed
+ */
+export function getHighestMergedStep(mergedPRs: HachikoPR[]): number {
+  if (mergedPRs.length === 0) return 0;
+
+  const stepNumbers = mergedPRs
+    .map(getStepNumberFromPR)
+    .filter((step): step is number => step !== null);
+
+  return stepNumbers.length > 0 ? Math.max(...stepNumbers) : 0;
+}
+
+/**
  * Calculate current migration step from PR activity
  *
  * Rules (in priority order):

@@ -16,7 +16,7 @@ import {
 } from "../src/utils/migration-document.js";
 import { createMigrationFrontmatter } from "../src/config/migration-schema.js";
 import { Octokit } from "@octokit/rest";
-import { getMigrationState } from "../src/services/state-inference.js";
+import { getMigrationState, getHighestMergedStep } from "../src/services/state-inference.js";
 import { getOpenHachikoPRs, getClosedHachikoPRs } from "../src/services/pr-detection.js";
 import { createLogger } from "../src/utils/logger.js";
 
@@ -283,24 +283,25 @@ program
               // Get both open and closed PRs for active migrations
               const openPRs = await getOpenHachikoPRs(context, frontmatter.id, logger);
               const closedPRs = await getClosedHachikoPRs(context, frontmatter.id, logger);
-              
+
               const mergedPRs = closedPRs.filter(pr => pr.merged);
               const totalSteps = frontmatter.total_steps || 1;
-              
+
               // Start with migration title
               inProgressMigrations += `- [ ] \`${frontmatter.id}\` - ${frontmatter.title}\n`;
-              
+
               // Add current open PRs first with "Current step:" prefix
               for (const pr of openPRs) {
                 inProgressMigrations += `  - Current step: [${pr.title}](${pr.url})\n`;
               }
-              
+
               // Add progress summary as sub-bullet after PR links
-              const completedSteps = mergedPRs.length;
+              // Use highest merged step number, not count of merged PRs
+              const completedSteps = getHighestMergedStep(mergedPRs);
               if (completedSteps > 0) {
                 inProgressMigrations += `  - ${completedSteps} of ${totalSteps} steps completed\n`;
               }
-              
+
               // If no open PRs but has merged PRs, check if migration is complete
               if (openPRs.length === 0 && mergedPRs.length > 0) {
                 if (completedSteps >= totalSteps) {
@@ -327,7 +328,8 @@ program
                     inProgressMigrations += `  - Cleanup PR already exists\n`;
                   }
                 } else {
-                  const nextStep = completedSteps + 1;
+                  // Use stateInfo.currentStep which correctly handles skipped/failed steps
+                  const nextStep = stateInfo.currentStep;
                   inProgressMigrations += `  - Step ${nextStep} should automatically kick off soon\n`;
                 }
               }
