@@ -26,10 +26,11 @@ export default defineConfig({
         "self-test/**",
         // CLI scripts - require integration testing
         "src/scripts/**",
-        // Test scripts - not production code
-        "scripts/reproduce-dashboard-issue.js",
-        "scripts/test-pr-driven-dashboard.js",
-        "scripts/test-webhooks-local.js",
+        "scripts/**", // Exclude all root-level scripts (CLI tools)
+        // Test scripts - not production code (kept for reference, already covered by scripts/**)
+        // "scripts/reproduce-dashboard-issue.js",
+        // "scripts/test-pr-driven-dashboard.js",
+        // "scripts/test-webhooks-local.js",
         // Pure type definition files
         "src/adapters/types.ts",
         "src/types/context.ts",
