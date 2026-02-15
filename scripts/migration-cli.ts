@@ -260,7 +260,7 @@ program
         try {
           const parsed = await parseMigrationDocument(filePath);
           const { frontmatter } = parsed;
-          
+
           // Create logger with silenced output to prevent pollution in issue descriptions
           const logger = createLogger("migration-cli");
           logger.info = () => {};
@@ -268,7 +268,9 @@ program
           logger.error = () => {};
 
           // Use state inference instead of frontmatter status
-          const stateInfo = await getMigrationState(context, frontmatter.id, parsed.content, logger);
+          // IMPORTANT: Reconstruct full document content with frontmatter for parsing in state inference
+          const fullContent = `---\n${parsed.rawFrontmatter}\n---\n${parsed.content}`;
+          const stateInfo = await getMigrationState(context, frontmatter.id, fullContent, logger);
           const state = stateInfo.state;
           
           const checkboxLine = `- [ ] \`${frontmatter.id}\` - ${frontmatter.title}`;
