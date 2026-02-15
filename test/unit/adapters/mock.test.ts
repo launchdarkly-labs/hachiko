@@ -1,4 +1,25 @@
-import { beforeEach, describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import { promises as fs } from "node:fs";
+
+// Mock fs
+vi.mock("node:fs", () => ({
+  promises: {
+    readFile: vi.fn(),
+    writeFile: vi.fn(),
+    stat: vi.fn(),
+  },
+}));
+
+// Mock logger
+vi.mock("../../../src/utils/logger.js", () => ({
+  createLogger: () => ({
+    info: vi.fn(),
+    warn: vi.fn(),
+    error: vi.fn(),
+    debug: vi.fn(),
+  }),
+}));
+
 import { MockAgentAdapter } from "../../../src/adapters/agents/mock.js";
 import type { AgentInput, PolicyConfig } from "../../../src/adapters/types.js";
 
@@ -128,6 +149,202 @@ describe("MockAgentAdapter", () => {
 
       expect(result.success).toBe(false);
       expect(result.error).toContain("Policy violation");
+    });
+  });
+
+  describe("file modification", () => {
+    beforeEach(() => {
+      vi.clearAllMocks();
+    });
+
+    it("should modify existing files when modifyFiles is true", async () => {
+      const modifyAdapter = new MockAgentAdapter(mockPolicyConfig, {
+        successRate: 1.0,
+        executionTime: 0,
+        modifyFiles: true,
+      });
+
+      const existingContent = "// Existing file content\nconst x = 1;";
+      vi.mocked(fs.readFile).mockResolvedValue(existingContent);
+      vi.mocked(fs.writeFile).mockResolvedValue(undefined);
+
+      const input: AgentInput = {
+        planId: "test-plan",
+        stepId: "modify-step",
+        repoPath: "/tmp/test-repo",
+        files: ["/tmp/test-repo/src/existing.ts"],
+        prompt: "Modify file",
+      };
+
+      const result = await modifyAdapter.execute(input);
+
+      expect(result.success).toBe(true);
+      expect(fs.readFile).toHaveBeenCalledWith("/tmp/test-repo/src/existing.ts", "utf-8");
+      expect(fs.writeFile).toHaveBeenCalled();
+      expect(result.modifiedFiles).toContain("src/existing.ts");
+      expect(result.createdFiles).toEqual([]);
+    });
+
+    it("should create new files when file doesn't exist and modifyFiles is true", async () => {
+      const createAdapter = new MockAgentAdapter(mockPolicyConfig, {
+        successRate: 1.0,
+        executionTime: 0,
+        modifyFiles: true,
+      });
+
+      vi.mocked(fs.readFile).mockRejectedValue(new Error("File not found"));
+      vi.mocked(fs.writeFile).mockResolvedValue(undefined);
+
+      const input: AgentInput = {
+        planId: "test-plan",
+        stepId: "create-step",
+        repoPath: "/tmp/test-repo",
+        files: ["/tmp/test-repo/src/new.ts"],
+        prompt: "Create new file",
+      };
+
+      const result = await createAdapter.execute(input);
+
+      expect(result.success).toBe(true);
+      expect(fs.writeFile).toHaveBeenCalled();
+      const writeCall = vi.mocked(fs.writeFile).mock.calls[0];
+      expect(writeCall[1]).toContain("Created by Hachiko Mock Agent");
+      expect(result.createdFiles).toContain("src/new.ts");
+      expect(result.modifiedFiles).toEqual([]);
+    });
+
+    it("should not modify files when modifyFiles is false", async () => {
+      const noModifyAdapter = new MockAgentAdapter(mockPolicyConfig, {
+        successRate: 1.0,
+        executionTime: 0,
+        modifyFiles: false,
+      });
+
+      const input: AgentInput = {
+        planId: "test-plan",
+        stepId: "no-modify-step",
+        repoPath: "/tmp/test-repo",
+        files: ["/tmp/test-repo/src/file.ts"],
+        prompt: "Don't modify",
+      };
+
+      const result = await noModifyAdapter.execute(input);
+
+      expect(result.success).toBe(true);
+      expect(fs.readFile).not.toHaveBeenCalled();
+      expect(fs.writeFile).not.toHaveBeenCalled();
+      expect(result.modifiedFiles).toEqual([]);
+      expect(result.createdFiles).toEqual([]);
+    });
+
+    it("should not modify files when execution fails", async () => {
+      const failAdapter = new MockAgentAdapter(mockPolicyConfig, {
+        successRate: 0.0, // Always fail
+        executionTime: 0,
+        modifyFiles: true,
+      });
+
+      const input: AgentInput = {
+        planId: "test-plan",
+        stepId: "fail-step",
+        repoPath: "/tmp/test-repo",
+        files: ["/tmp/test-repo/src/file.ts"],
+        prompt: "This will fail",
+      };
+
+      const result = await failAdapter.execute(input);
+
+      expect(result.success).toBe(false);
+      expect(fs.readFile).not.toHaveBeenCalled();
+      expect(fs.writeFile).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("error handling", () => {
+    beforeEach(() => {
+      vi.clearAllMocks();
+    });
+
+    it("should handle errors during execution gracefully", async () => {
+      // Create an adapter that will throw an error during enforceFilePolicy
+      const errorAdapter = new MockAgentAdapter(
+        {
+          ...mockPolicyConfig,
+          blockedPaths: ["**/*"], // Block everything to potentially cause issues
+        },
+        {
+          successRate: 1.0,
+          executionTime: 0,
+        }
+      );
+
+      const input: AgentInput = {
+        planId: "test-plan",
+        stepId: "error-step",
+        repoPath: "/tmp/test-repo",
+        files: ["/tmp/test-repo/src/file.ts"],
+        prompt: "Test error handling",
+      };
+
+      const result = await errorAdapter.execute(input);
+
+      // Should fail due to policy violation
+      expect(result.success).toBe(false);
+      expect(result.exitCode).toBe(1);
+      expect(result.error).toBeDefined();
+    });
+
+    it("should catch and report unexpected errors with exit code -1", async () => {
+      const errorAdapter = new MockAgentAdapter(mockPolicyConfig, {
+        successRate: 1.0,
+        executionTime: 0,
+        modifyFiles: true,
+      });
+
+      // Mock enforceFilePolicy to throw an unexpected error
+      vi.spyOn(errorAdapter as any, "enforceFilePolicy").mockRejectedValue(
+        new Error("Unexpected error")
+      );
+
+      const input: AgentInput = {
+        planId: "test-plan",
+        stepId: "error-step",
+        repoPath: "/tmp/test-repo",
+        files: ["/tmp/test-repo/src/file.ts"],
+        prompt: "Test unexpected error",
+      };
+
+      const result = await errorAdapter.execute(input);
+
+      expect(result.success).toBe(false);
+      expect(result.exitCode).toBe(-1);
+      expect(result.error).toBe("Unexpected error");
+    });
+
+    it("should handle non-Error exceptions", async () => {
+      const errorAdapter = new MockAgentAdapter(mockPolicyConfig, {
+        successRate: 1.0,
+        executionTime: 0,
+      });
+
+      // Mock to throw a non-Error object
+      vi.spyOn(errorAdapter as any, "enforceFilePolicy").mockRejectedValue(
+        "String error message"
+      );
+
+      const input: AgentInput = {
+        planId: "test-plan",
+        stepId: "error-step",
+        repoPath: "/tmp/test-repo",
+        files: ["/tmp/test-repo/src/file.ts"],
+        prompt: "Test non-Error exception",
+      };
+
+      const result = await errorAdapter.execute(input);
+
+      expect(result.success).toBe(false);
+      expect(result.exitCode).toBe(-1);
+      expect(result.error).toBe("String error message");
     });
   });
 });
