@@ -414,9 +414,12 @@ ${pausedSection}
 
 **How to use:**
 - ✅ Check a box next to a pending migration to start it
-- ✅ Check a box next to a paused migration to resume it  
+- ✅ Check a box next to a paused migration to resume it
 - ❌ Closing a Hachiko PR will pause the migration
 - 🔄 This dashboard updates automatically as migrations progress
+
+**Debug & Manual Control:**
+- [ ] **Force dashboard regeneration** - Manually trigger a full dashboard refresh
 
 🤖 *Managed by Hachiko - Do not edit the sections above manually*`;
 
