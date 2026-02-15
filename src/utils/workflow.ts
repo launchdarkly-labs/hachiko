@@ -1,3 +1,5 @@
+import { parseMigrationBranchName } from "./git.js";
+
 /**
  * Check if a workflow run is a Hachiko agent workflow
  */
@@ -33,7 +35,6 @@ export function extractHachikoWorkflowData(workflowRun: {
 
   // Fall back to branch name parsing
   if (workflowRun.head_branch) {
-    const { parseMigrationBranchName } = require("./git.js");
     return parseMigrationBranchName(workflowRun.head_branch);
   }
 
