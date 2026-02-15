@@ -30,12 +30,14 @@ vi.mock("glob", () => ({
 import {
   parsePlanFile,
   discoverPlans,
+  loadAllPlans,
   generateNormalizedFrontmatter,
   serializeFrontmatter,
   validatePlanDependencies,
   type MigrationPlan,
 } from "../../../src/services/plans.js";
 import { glob } from "glob";
+import { ConfigurationError } from "../../../src/utils/errors.js";
 
 describe("parsePlanFile", () => {
   const mockReadFile = vi.mocked(readFile);
@@ -257,6 +259,168 @@ describe("discoverPlans", () => {
     mockGlob.mockResolvedValue([]);
 
     const result = await discoverPlans("/repo", mockConfig as any);
+
+    expect(result).toEqual([]);
+  });
+
+  it("should throw ConfigurationError when glob fails", async () => {
+    mockGlob.mockRejectedValue(new Error("Permission denied"));
+
+    await expect(discoverPlans("/repo", mockConfig as any)).rejects.toThrow(ConfigurationError);
+    await expect(discoverPlans("/repo", mockConfig as any)).rejects.toThrow(
+      "Failed to discover migration plans in /repo/migrations/"
+    );
+  });
+});
+
+describe("loadAllPlans", () => {
+  const mockGlob = vi.mocked(glob);
+  const mockReadFile = vi.mocked(readFile);
+  const mockConfig = {
+    plans: {
+      directory: "migrations/",
+      filenamePattern: "*.md",
+    },
+  };
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("should load all valid plan files", async () => {
+    const planFiles = ["/repo/migrations/plan1.md", "/repo/migrations/plan2.md"];
+    const planContent = `---
+id: test-plan
+title: "Test Plan"
+owner: "@team"
+status: draft
+strategy:
+  chunkBy: module
+  maxOpenPRs: 1
+steps:
+  - id: step1
+    description: "Test step"
+dependsOn: []
+touches: []
+attempts: 0
+---
+
+# Test Plan Content`;
+
+    mockGlob.mockResolvedValue(planFiles);
+    mockReadFile.mockResolvedValue(planContent);
+
+    const result = await loadAllPlans("/repo", mockConfig as any);
+
+    expect(result).toHaveLength(2);
+    expect(result[0].isValid).toBe(true);
+    expect(result[1].isValid).toBe(true);
+  });
+
+  it("should skip non-markdown files", async () => {
+    const planFiles = ["/repo/migrations/plan1.md", "/repo/migrations/data.json"];
+    const planContent = `---
+id: test-plan
+title: "Test Plan"
+owner: "@team"
+status: draft
+strategy:
+  chunkBy: module
+  maxOpenPRs: 1
+steps:
+  - id: step1
+    description: "Test step"
+dependsOn: []
+touches: []
+attempts: 0
+---
+
+# Test Plan Content`;
+
+    mockGlob.mockResolvedValue(planFiles);
+    mockReadFile.mockResolvedValue(planContent);
+
+    const result = await loadAllPlans("/repo", mockConfig as any);
+
+    expect(result).toHaveLength(1); // Only .md file should be loaded
+    expect(result[0].plan.id).toBe("test-plan");
+  });
+
+  it("should handle invalid plan files gracefully", async () => {
+    const planFiles = ["/repo/migrations/valid.md", "/repo/migrations/invalid.md"];
+    const validContent = `---
+id: valid-plan
+title: "Valid Plan"
+owner: "@team"
+status: draft
+strategy:
+  chunkBy: module
+  maxOpenPRs: 1
+steps:
+  - id: step1
+    description: "Test step"
+dependsOn: []
+touches: []
+attempts: 0
+---
+
+# Valid Content`;
+
+    const invalidContent = `---
+invalid yaml: [unclosed
+---
+
+Invalid content`;
+
+    mockGlob.mockResolvedValue(planFiles);
+    mockReadFile
+      .mockResolvedValueOnce(validContent)
+      .mockResolvedValueOnce(invalidContent);
+
+    const result = await loadAllPlans("/repo", mockConfig as any);
+
+    expect(result).toHaveLength(2);
+    expect(result[0].isValid).toBe(true);
+    expect(result[1].isValid).toBe(false);
+    expect(result[1].errors.length).toBeGreaterThan(0);
+  });
+
+  it("should handle file read errors for individual files", async () => {
+    const planFiles = ["/repo/migrations/plan1.md", "/repo/migrations/plan2.md"];
+
+    mockGlob.mockResolvedValue(planFiles);
+    mockReadFile
+      .mockResolvedValueOnce(`---
+id: valid-plan
+title: "Valid Plan"
+owner: "@team"
+status: draft
+strategy:
+  chunkBy: module
+  maxOpenPRs: 1
+steps:
+  - id: step1
+    description: "Test step"
+dependsOn: []
+touches: []
+attempts: 0
+---
+
+Content`)
+      .mockRejectedValueOnce(new Error("File not found"));
+
+    const result = await loadAllPlans("/repo", mockConfig as any);
+
+    expect(result).toHaveLength(2);
+    expect(result[0].isValid).toBe(true);
+    expect(result[1].isValid).toBe(false);
+    expect(result[1].errors[0]).toContain("Failed to read plan file:");
+  });
+
+  it("should return empty array when no plan files found", async () => {
+    mockGlob.mockResolvedValue([]);
+
+    const result = await loadAllPlans("/repo", mockConfig as any);
 
     expect(result).toEqual([]);
   });
