@@ -292,24 +292,26 @@ jobs:
             fi
           done
 
-          # Process checked migrations from In-Progress section (advance to next step)
+          # Process checked migrations from In-Progress section (force next step to execute)
           for MIGRATION_ID in $CHECKED_IN_PROGRESS; do
             if [ -n "$MIGRATION_ID" ] && [ "$MIGRATION_ID" != "✨" ]; then
-              echo "Advancing in-progress migration: $MIGRATION_ID"
-              
+              echo "Forcing execution for in-progress migration: $MIGRATION_ID"
+
               # Check if migration is already running
               if check_migration_running "$MIGRATION_ID"; then
                 continue
               fi
-              
+
               # Get current step from calculated state (preferred) or fallback to migration file
+              # IMPORTANT: currentStep from state inference already means "the step to execute next"
               echo "🔍 Calculating current step for $MIGRATION_ID from PR activity..."
               STATE_OUTPUT=$(GITHUB_TOKEN="${GITHUB_TOKEN}" GITHUB_REPOSITORY="${GITHUB_REPOSITORY}" node dist/scripts/get-migration-state.js "$MIGRATION_ID" 2>/dev/null || echo "")
-              
+
               if [ -n "$STATE_OUTPUT" ]; then
                 CURRENT_STEP=$(echo "$STATE_OUTPUT" | grep "^current_step=" | cut -d'=' -f2)
-                NEXT_STEP=$((CURRENT_STEP + 1))
-                echo "Migration $MIGRATION_ID advancing from step $CURRENT_STEP to step $NEXT_STEP (calculated from PR activity)"
+                # Don't add 1 - currentStep already represents the next step to execute
+                STEP_TO_EXECUTE="$CURRENT_STEP"
+                echo "Migration $MIGRATION_ID will execute step $STEP_TO_EXECUTE (calculated from PR activity)"
               else
                 echo "⚠️ Could not calculate step from PR activity, falling back to migration file"
                 MIGRATION_FILE="migrations/${MIGRATION_ID}.md"
@@ -319,18 +321,19 @@ jobs:
                   if ! [[ "$CURRENT_STEP" =~ ^[0-9]+$ ]] || [ "$CURRENT_STEP" -lt 1 ]; then
                     CURRENT_STEP=1
                   fi
-                  NEXT_STEP=$((CURRENT_STEP + 1))
-                  echo "Migration $MIGRATION_ID advancing from step $CURRENT_STEP to step $NEXT_STEP (from frontmatter)"
+                  # Frontmatter currentStep also represents the next step to execute
+                  STEP_TO_EXECUTE="$CURRENT_STEP"
+                  echo "Migration $MIGRATION_ID will execute step $STEP_TO_EXECUTE (from frontmatter)"
                 else
-                  echo "Warning: Migration file not found, defaulting to next step as step 2"
-                  NEXT_STEP=2
+                  echo "Warning: Migration file not found, defaulting to step 1"
+                  STEP_TO_EXECUTE=1
                 fi
               fi
-              
-              # Trigger migration execution with next step
+
+              # Trigger migration execution
               gh workflow run execute-migration.yml \
                 -f migration_id="$MIGRATION_ID" \
-                -f step_id="$NEXT_STEP"
+                -f step_id="$STEP_TO_EXECUTE"
               
               MIGRATIONS_TRIGGERED=true
             fi
