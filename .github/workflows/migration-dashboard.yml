@@ -122,6 +122,9 @@ jobs:
           - ❌ Closing a Hachiko PR will pause the migration
           - 🔄 This dashboard updates automatically as migrations progress
 
+          **Debug & Manual Control:**
+          - [ ] **Force dashboard regeneration** - Manually trigger a full dashboard refresh
+
           🤖 *Managed by Hachiko - Do not edit the sections above manually*
           EOF
           )")
@@ -160,7 +163,7 @@ jobs:
                 gsub(/.*Start step /, "")
                 gsub(/[^0-9].*/, "")
                 step = $0
-                
+
                 # Find the migration ID from the previous lines
                 for (i = NR-10; i < NR; i++) {
                   if (lines[i] ~ /^- `[^`]+` - /) {
@@ -174,6 +177,13 @@ jobs:
               lines[NR] = $0
             }
           ')
+
+          # Check if the "Force dashboard regeneration" checkbox is checked
+          FORCE_REGENERATION=$(echo "$ISSUE_BODY" | grep -c "^\- \[x\] \*\*Force dashboard regeneration\*\*" || echo "0")
+
+          if [ "$FORCE_REGENERATION" -gt 0 ]; then
+            echo "🔄 Force dashboard regeneration checkbox detected - will regenerate after processing other actions"
+          fi
 
           # Helper function to check if migration is already running
           check_migration_running() {
@@ -605,6 +615,15 @@ jobs:
           fi
 
           echo "Updating migration-dashboard issue #$ISSUE_NUMBER"
+
+          # Check if this update was triggered by the force regeneration checkbox
+          if [ "${{ github.event_name }}" = "issues" ]; then
+            ISSUE_BODY=$(gh issue view "$ISSUE_NUMBER" --json body --jq '.body')
+            FORCE_REGENERATION=$(echo "$ISSUE_BODY" | grep -c "^\- \[x\] \*\*Force dashboard regeneration\*\*" || echo "0")
+            if [ "$FORCE_REGENERATION" -gt 0 ]; then
+              echo "🔄 Dashboard regeneration triggered by force regeneration checkbox"
+            fi
+          fi
 
           # If migrations were triggered, wait a moment for them to start
           if [ "${{ github.event_name }}" = "issues" ] && [ "${{ steps.handle-edit.outputs.migrations_triggered }}" = "true" ]; then
