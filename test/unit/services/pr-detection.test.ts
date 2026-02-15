@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 // Mock the logger
 vi.mock("../../../src/utils/logger.js", () => ({
@@ -20,6 +20,10 @@ import {
   detectHachikoPR,
   extractMigrationId,
   validateHachikoPR,
+  getOpenHachikoPRs,
+  getClosedHachikoPRs,
+  getHachikoPRs,
+  getAllOpenHachikoPRs,
   type PullRequest,
 } from "../../../src/services/pr-detection.js";
 
@@ -381,6 +385,368 @@ describe("PR Detection Service", () => {
       expect(result).toBeTruthy();
       expect(result?.state).toBe("closed");
       expect(result?.merged).toBe(true);
+    });
+  });
+
+  describe("async GitHub API functions", () => {
+    let mockContext: any;
+    let mockOctokit: any;
+
+    beforeEach(() => {
+      mockOctokit = {
+        pulls: {
+          list: vi.fn(),
+          listCommits: vi.fn(),
+        },
+      };
+
+      mockContext = {
+        octokit: mockOctokit,
+        payload: {
+          repository: {
+            owner: { login: "test-owner" },
+            name: "test-repo",
+          },
+        },
+      };
+    });
+
+    describe("getOpenHachikoPRs", () => {
+      it("should get all open PRs for a migration", async () => {
+        const mockPRs = [
+          {
+            number: 1,
+            title: "Test PR 1",
+            body: null,
+            state: "open",
+            head: { ref: "hachiko/test-migration-step-1" },
+            labels: [{ name: "hachiko:migration" }],
+            html_url: "https://github.com/test/repo/pull/1",
+            merged_at: null,
+          },
+          {
+            number: 2,
+            title: "Test PR 2",
+            body: null,
+            state: "open",
+            head: { ref: "hachiko/test-migration-step-2" },
+            labels: [{ name: "hachiko:migration" }],
+            html_url: "https://github.com/test/repo/pull/2",
+            merged_at: null,
+          },
+          {
+            number: 3,
+            title: "Other PR",
+            body: null,
+            state: "open",
+            head: { ref: "feature/other" },
+            labels: [],
+            html_url: "https://github.com/test/repo/pull/3",
+            merged_at: null,
+          },
+        ];
+
+        mockOctokit.pulls.list.mockResolvedValue({ data: mockPRs });
+
+        const result = await getOpenHachikoPRs(mockContext, "test-migration");
+
+        expect(mockOctokit.pulls.list).toHaveBeenCalledWith({
+          owner: "test-owner",
+          repo: "test-repo",
+          state: "open",
+          per_page: 100,
+        });
+
+        expect(result).toHaveLength(2);
+        expect(result[0].number).toBe(1);
+        expect(result[1].number).toBe(2);
+        expect(result[0].migrationId).toBe("test-migration");
+      });
+
+      it("should return empty array when no matching PRs found", async () => {
+        mockOctokit.pulls.list.mockResolvedValue({ data: [] });
+
+        const result = await getOpenHachikoPRs(mockContext, "nonexistent-migration");
+
+        expect(result).toHaveLength(0);
+      });
+
+      it("should throw error when API call fails", async () => {
+        mockOctokit.pulls.list.mockRejectedValue(new Error("API Error"));
+
+        await expect(getOpenHachikoPRs(mockContext, "test-migration")).rejects.toThrow(
+          "API Error"
+        );
+      });
+    });
+
+    describe("getClosedHachikoPRs", () => {
+      it("should get all closed PRs for a migration", async () => {
+        const mockPRs = [
+          {
+            number: 1,
+            title: "Test PR 1",
+            body: null,
+            state: "closed",
+            head: { ref: "hachiko/test-migration-step-1" },
+            labels: [{ name: "hachiko:migration" }],
+            html_url: "https://github.com/test/repo/pull/1",
+            merged_at: "2024-01-01T00:00:00Z",
+          },
+        ];
+
+        mockOctokit.pulls.list.mockResolvedValue({ data: mockPRs });
+
+        const result = await getClosedHachikoPRs(mockContext, "test-migration");
+
+        expect(mockOctokit.pulls.list).toHaveBeenCalledWith({
+          owner: "test-owner",
+          repo: "test-repo",
+          state: "closed",
+          per_page: 100,
+        });
+
+        expect(result).toHaveLength(1);
+        expect(result[0].state).toBe("closed");
+        expect(result[0].merged).toBe(true);
+      });
+    });
+
+    describe("getHachikoPRs", () => {
+      it("should get PRs with matching branch prefix", async () => {
+        const mockPRs = [
+          {
+            number: 1,
+            title: "Test PR",
+            body: null,
+            state: "open",
+            head: { ref: "hachiko/test-migration-step-1" },
+            labels: [],
+            html_url: "https://github.com/test/repo/pull/1",
+            merged_at: null,
+          },
+        ];
+
+        mockOctokit.pulls.list.mockResolvedValue({ data: mockPRs });
+
+        const result = await getHachikoPRs(mockContext, "test-migration", "open");
+
+        expect(result).toHaveLength(1);
+        expect(result[0].migrationId).toBe("test-migration");
+      });
+
+      it("should detect PRs with hachiko:migration label", async () => {
+        const mockPRs = [
+          {
+            number: 1,
+            title: "[test-migration] Test PR",
+            body: null,
+            state: "open",
+            head: { ref: "feature/some-branch" },
+            labels: [{ name: "hachiko:migration" }],
+            html_url: "https://github.com/test/repo/pull/1",
+            merged_at: null,
+          },
+        ];
+
+        mockOctokit.pulls.list.mockResolvedValue({ data: mockPRs });
+
+        const result = await getHachikoPRs(mockContext, "test-migration", "open");
+
+        expect(result).toHaveLength(1);
+        expect(result[0].migrationId).toBe("test-migration");
+      });
+
+      it("should detect PRs via commit tracking tokens", async () => {
+        const mockPRs = [
+          {
+            number: 1,
+            title: "Test PR",
+            body: null,
+            state: "open",
+            head: { ref: "cursor/random-branch-abc123" },
+            labels: [{ name: "hachiko:migration" }],
+            html_url: "https://github.com/test/repo/pull/1",
+            merged_at: null,
+          },
+        ];
+
+        const mockCommits = [
+          {
+            sha: "abc123def456",
+            commit: {
+              message: "hachiko-track:test-migration:1\nfeat: implement changes",
+            },
+          },
+        ];
+
+        mockOctokit.pulls.list.mockResolvedValue({ data: mockPRs });
+        mockOctokit.pulls.listCommits.mockResolvedValue({ data: mockCommits });
+
+        const result = await getHachikoPRs(mockContext, "test-migration", "open");
+
+        expect(mockOctokit.pulls.listCommits).toHaveBeenCalledWith({
+          owner: "test-owner",
+          repo: "test-repo",
+          pull_number: 1,
+          per_page: 10,
+        });
+
+        expect(result).toHaveLength(1);
+        expect(result[0].migrationId).toBe("test-migration");
+        expect(result[0].number).toBe(1);
+      });
+
+      it("should handle commit fetch failures gracefully", async () => {
+        const mockPRs = [
+          {
+            number: 1,
+            title: "Test PR",
+            body: null,
+            state: "open",
+            head: { ref: "feature/branch" },
+            labels: [{ name: "hachiko:migration" }],
+            html_url: "https://github.com/test/repo/pull/1",
+            merged_at: null,
+          },
+        ];
+
+        mockOctokit.pulls.list.mockResolvedValue({ data: mockPRs });
+        mockOctokit.pulls.listCommits.mockRejectedValue(new Error("Commits fetch failed"));
+
+        // Should not throw, just skip commit-based detection
+        const result = await getHachikoPRs(mockContext, "test-migration", "open");
+
+        expect(result).toHaveLength(0); // No match without commit detection
+      });
+
+      it("should handle 'all' state parameter", async () => {
+        const mockPRs = [
+          {
+            number: 1,
+            title: "Test PR",
+            body: null,
+            state: "open",
+            head: { ref: "hachiko/test-migration" },
+            labels: [],
+            html_url: "https://github.com/test/repo/pull/1",
+            merged_at: null,
+          },
+        ];
+
+        mockOctokit.pulls.list.mockResolvedValue({ data: mockPRs });
+
+        await getHachikoPRs(mockContext, "test-migration", "all");
+
+        expect(mockOctokit.pulls.list).toHaveBeenCalledWith({
+          owner: "test-owner",
+          repo: "test-repo",
+          state: "all",
+          per_page: 100,
+        });
+      });
+
+      it("should deduplicate PRs found by multiple methods", async () => {
+        const mockPRs = [
+          {
+            number: 1,
+            title: "[test-migration] Test PR",
+            body: null,
+            state: "open",
+            head: { ref: "hachiko/test-migration" },
+            labels: [{ name: "hachiko:migration" }],
+            html_url: "https://github.com/test/repo/pull/1",
+            merged_at: null,
+          },
+        ];
+
+        mockOctokit.pulls.list.mockResolvedValue({ data: mockPRs });
+
+        const result = await getHachikoPRs(mockContext, "test-migration", "open");
+
+        // Should only return 1 PR even though it matches branch, label, and title
+        expect(result).toHaveLength(1);
+        expect(result[0].number).toBe(1);
+      });
+    });
+
+    describe("getAllOpenHachikoPRs", () => {
+      it("should get all open Hachiko PRs across all migrations", async () => {
+        const mockPRs = [
+          {
+            number: 1,
+            title: "Migration A",
+            body: null,
+            state: "open",
+            head: { ref: "hachiko/migration-a" },
+            labels: [{ name: "hachiko:migration" }],
+            html_url: "https://github.com/test/repo/pull/1",
+            merged_at: null,
+          },
+          {
+            number: 2,
+            title: "Migration B",
+            body: null,
+            state: "open",
+            head: { ref: "hachiko/migration-b" },
+            labels: [{ name: "hachiko:migration" }],
+            html_url: "https://github.com/test/repo/pull/2",
+            merged_at: null,
+          },
+          {
+            number: 3,
+            title: "Regular PR",
+            body: null,
+            state: "open",
+            head: { ref: "feature/other" },
+            labels: [],
+            html_url: "https://github.com/test/repo/pull/3",
+            merged_at: null,
+          },
+        ];
+
+        mockOctokit.pulls.list.mockResolvedValue({ data: mockPRs });
+
+        const result = await getAllOpenHachikoPRs(mockContext);
+
+        expect(mockOctokit.pulls.list).toHaveBeenCalledWith({
+          owner: "test-owner",
+          repo: "test-repo",
+          state: "open",
+          per_page: 100,
+        });
+
+        expect(result).toHaveLength(2);
+        expect(result[0].migrationId).toBe("migration-a");
+        expect(result[1].migrationId).toBe("migration-b");
+      });
+
+      it("should return empty array when no Hachiko PRs found", async () => {
+        const mockPRs = [
+          {
+            number: 1,
+            title: "Regular PR",
+            body: null,
+            state: "open",
+            head: { ref: "feature/other" },
+            labels: [],
+            html_url: "https://github.com/test/repo/pull/1",
+            merged_at: null,
+          },
+        ];
+
+        mockOctokit.pulls.list.mockResolvedValue({ data: mockPRs });
+
+        const result = await getAllOpenHachikoPRs(mockContext);
+
+        expect(result).toHaveLength(0);
+      });
+
+      it("should throw error when API call fails", async () => {
+        mockOctokit.pulls.list.mockRejectedValue(new Error("API Error"));
+
+        await expect(getAllOpenHachikoPRs(mockContext)).rejects.toThrow("API Error");
+      });
     });
   });
 });
