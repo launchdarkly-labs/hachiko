@@ -27,6 +27,16 @@ export interface MigrationStateInfo {
  */
 export declare function getMigrationState(context: ContextWithRepository, migrationId: string, migrationDocContent?: string, logger?: Logger): Promise<MigrationStateInfo>;
 /**
+ * Extract step number from a PR's branch name
+ * Handles both new format (hachiko/{id}-step-{N}) and legacy format (hachi/{id}/step-{N})
+ */
+export declare function getStepNumberFromPR(pr: HachikoPR): number | null;
+/**
+ * Get the highest step number from a list of merged PRs
+ * Returns 0 if no merged PRs or no step numbers can be parsed
+ */
+export declare function getHighestMergedStep(mergedPRs: HachikoPR[]): number;
+/**
  * Get task completion information from migration document content
  * Analyzes markdown checkboxes to determine completion status
  */
