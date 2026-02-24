@@ -43,10 +43,12 @@ This migration aims to increase test coverage from the current 55.53% to at leas
 
 ### Step 3: Add tests for utilities
 
-- Add comprehensive tests for `src/utils/git.ts`
-- Add tests for `src/utils/pr.ts`
-- Add tests for `src/utils/workflow.ts`
-- Target: Bring utils coverage to 95%
+- [x] Add comprehensive tests for `src/utils/git.ts`
+- [x] Add tests for `src/utils/pr.ts`
+- [x] Add tests for `src/utils/workflow.ts`
+- [ ] Target: Bring utils coverage to 95%
+
+**Completed**: Removed ESM-incompatible dynamic `require` usage from utility fallback paths and added direct tests for branch-based fallback parsing in PR/workflow utilities, resulting in 100% coverage for `git.ts`, `pr.ts`, and `workflow.ts` (overall `src/utils` remains below 95% because of unrelated low-coverage utility modules).
 
 ## Success Criteria
 
@@ -66,3 +68,7 @@ Priority files with low/missing coverage:
 - `src/webhooks/workflow_run.ts`
 - `src/utils/git.ts`
 - `src/utils/pr.ts`
+
+## Critical Learnings
+
+- ESM utility modules should avoid dynamic `require` in fallback branches; static imports made the fallback paths runtime-safe and fully testable.
