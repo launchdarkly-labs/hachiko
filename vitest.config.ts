@@ -9,7 +9,7 @@ export default defineConfig({
     exclude: [
       "node_modules/**",
       "dist/**",
-      "test/integration/**", // Temporarily disable integration tests
+      "test/integration/github-api/**", // Real GitHub API tests need credentials
       "test/unit/webhooks/push.test.ts", // Complex test needs fixing - TODO for future iteration
     ],
     coverage: {

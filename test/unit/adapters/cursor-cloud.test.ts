@@ -475,7 +475,7 @@ describe("CursorCloudAdapter", () => {
 
       await adapter.execute(mockInput);
 
-      const [url, payload] = createCall.mock.calls[0];
+      const [_url, payload] = createCall.mock.calls[0];
 
       // These assertions will fail if the adapter uses the old format
       expect(payload).not.toHaveProperty("task");
@@ -518,7 +518,7 @@ describe("CursorCloudAdapter", () => {
 
       await adapter.execute(mockInput);
 
-      const [url, actualPayload] = createCall.mock.calls[0];
+      const [_url, actualPayload] = createCall.mock.calls[0];
 
       // Verify structure uses official API format
       expect(actualPayload.source.repository).toBe(cursorConfig.repositoryUrl!);
@@ -567,7 +567,7 @@ describe("CursorCloudAdapter", () => {
 
       await webhookAdapter.execute(mockInput);
 
-      const [url, actualPayload] = createCall.mock.calls[0];
+      const [_url, actualPayload] = createCall.mock.calls[0];
 
       // Verify webhook is included when configured
       expect(actualPayload.webhook).toEqual({

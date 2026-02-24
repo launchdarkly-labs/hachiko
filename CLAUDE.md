@@ -4,72 +4,83 @@ This file provides guidance to Claude Code when working with code in this reposi
 
 ## Project Overview
 
-Hachiko is a GitHub App that orchestrates technical migrations in large legacy codebases using configurable LLM coding agents.
+Hachiko is a GitHub App that orchestrates technical migrations in large legacy codebases using configurable LLM coding agents. It supports cloud-based AI agents (Cursor, Devin, Codex) and can run as either a GitHub App or via GitHub Actions workflows.
 
-**Current Architecture**: TypeScript monorepo with pnpm workspaces
-
-- `packages/app/` - Main Probot GitHub App
-- `packages/runner-scripts/` - CLI scripts for GitHub Actions
-- **Note**: Planning to flatten to single package structure for better developer experience
+**Architecture**: Single-package TypeScript project (ESM, strict mode) with pnpm.
 
 ## Commands
 
 ```bash
 # Setup
 pnpm install
-pnpm build
+pnpm build                         # tsc -b
 
 # Development
-pnpm dev                           # Run GitHub App locally
-pnpm test                          # Run tests (delegates to app package)
-pnpm lint && pnpm format           # Lint and format check
-pnpm typecheck                     # TypeScript validation
-
-# Package-specific (current workaround)
-pnpm --filter @hachiko/app test:run               # Unit tests
-pnpm --filter @hachiko/app test:coverage          # Tests with coverage
+pnpm test                          # vitest run (all tests)
+pnpm coverage                      # vitest run --coverage
+pnpm lint                          # oxlint
+pnpm format                        # oxfmt --write
+pnpm typecheck                     # tsc --noEmit
 ```
 
 ## Key Directories
 
-- `packages/app/src/` - Main application code
-  - `webhooks/` - GitHub event handlers (push, PR, comments, workflow runs)
-  - `services/` - Business logic (migrations, plans, state, agents, commands)
-  - `adapters/` - Agent implementations (Claude CLI, Cursor CLI, etc.)
-  - `config/` - Configuration schema and validation
-- `packages/app/test/` - Vitest unit tests with GitHub API mocks
-- `examples/` - Migration plans and fixtures
-- `.projects/` - Project status and planning documents
+- `src/` - Application source (`rootDir`, compiles to `dist/`)
+  - `adapters/agents/` - Cloud agent adapters (Cursor, Devin, Codex, mock)
+  - `services/` - Core business logic:
+    - `state-inference.ts` - Infers migration state from PR activity
+    - `pr-detection.ts` - Multi-path PR detection (branch, label, body/title tokens, commits)
+    - `workflow-orchestration.ts` - Dashboard parsing, step calculation, frontmatter mutation
+  - `scripts/handle-dashboard-event.ts` - CLI entry point for GitHub Actions workflows
+  - `testing/github-simulator.ts` - In-memory GitHub API fake for integration tests
+  - `config/` - Configuration and migration schema validation
+  - `utils/` - Shared utilities (logger, git, errors, etc.)
+- `test/` - Vitest tests (excluded from `tsconfig.json`)
+  - `unit/` - Unit tests with `vi.mock()` / `vi.fn()`
+  - `integration/scenarios/` - Integration tests using `GitHubSimulator`
+  - `integration/github-api/` - Live GitHub API tests (excluded from `vitest.config.ts`)
+- `migrations/` - Migration document files (frontmatter + markdown)
+- `.projects/` - Planning and architecture documents
 
-## Key Files
+## Testing
 
-- `.hachiko.yml` - Configuration file expected in target repositories
-- `examples/migrations/react-class-to-hooks.md` - Example migration plan
-- `.projects/project-status.md` - Current project status and roadmap
+**Test framework**: Vitest with ESM. ~500 tests across 38 files.
 
-## Development Context
+**Two testing patterns**:
 
-**Current Issues**:
+1. **Unit tests** (`test/unit/`) — Traditional `vi.mock()` mocks for isolated function testing
+2. **Integration tests** (`test/integration/scenarios/`) — Use `GitHubSimulator`, a stateful in-memory fake that implements the Octokit API surface Hachiko uses. Services run against it unchanged.
 
-- Monorepo complexity causing scope confusion with commands
-- Low test coverage (7.4%) due to excluded integration tests
-- CI pipeline works but requires package-specific commands
+**GitHubSimulator** (`src/testing/github-simulator.ts`):
 
-**Next Steps**:
+- Agent-specific PR factories: `createHachikoPR()`, `createCursorPR()`, `createDevinPR()`
+- Each factory encodes real PR shape conventions (branch naming, tracking token placement)
+- Provides `context()` returning `ContextWithRepository` compatible with all services
+- Tracks `workflowDispatches`, `workflowRuns`, `files`, `issues`, `pullRequests`
 
-- Flatten monorepo to single package structure
-- Fix integration test fixtures and improve coverage
-- Simplify development workflow
+**PR detection paths** (important for understanding tests):
+
+- Path 1: `hachiko/{id}-step-{N}` branch naming (hachiko-native)
+- Path 2: `<!-- hachiko-track:{id}:{step} -->` in PR body (Cursor) or title
+- Path 3: `hachiko-track:{id}:{step}` in commit messages (Devin)
+
+**Known gotcha**: `extractMigrationIdFromBranch` has a `descriptionWords` list that trims suffixes. Migration IDs containing words like "hooks", "tests", "cleanup", "final", "step" etc. will be truncated.
+
+## Key Types
+
+- `ContextWithRepository` (`src/types/context.ts`) — `{ octokit: Octokit, payload: { repository: { owner: { login }, name } } }`
+- `HachikoPR` (`src/services/pr-detection.ts`) — Detected PR with `migrationId`, `stepNumber?`, `merged`, etc.
+- `MigrationStateInfo` (`src/services/state-inference.ts`) — Inferred state with `currentStep`, `openPRs`, `closedPRs`
+- `MigrationFrontmatterV1` / `V2` (`src/config/migration-schema.ts`) — Schema versions for migration documents
 
 ## Git Workflow
-
-**Branch Protection**: The `main` branch is protected and requires pull requests. Never push directly to main.
 
 - Create feature branches for all changes: `git checkout -b fix/your-fix-name`
 - Push branches and create PRs: `git push -u origin your-branch-name`
 - Use descriptive branch names (fix/, feat/, docs/, etc.)
+- Never commit to main directly
 
 ## Committing
 
-- When creating commits, use standard commit messages without any "Generated with Claude Code" lines. Co-author attributions are acceptable. Keep commit messages concise and focused on the changes made.
-- Never commit to main; check the current branch before committing
+- Use standard commit messages. Co-author attributions are acceptable.
+- Keep commit messages concise and focused on the changes made.

@@ -19,20 +19,20 @@ function generateCursorPayload(
   webhookUrl?: string
 ): object {
   // This simulates the shell script logic from execute-migration.yml
-  const webhookField = webhookUrl ? `,\"webhook\": {\"url\": ${simulateJqRs(webhookUrl)}}` : "";
+  const webhookField = webhookUrl ? `,"webhook": {"url": ${simulateJqRs(webhookUrl)}}` : "";
 
   // Simulate the REQUEST_PAYLOAD construction
   const payloadJson = `{
-    \"prompt\": {
-      \"text\": ${simulateJqRs(agentInstructions)}
+    "prompt": {
+      "text": ${simulateJqRs(agentInstructions)}
     },
-    \"source\": {
-      \"repository\": \"https://github.com/${repository}\",
-      \"ref\": \"main\"
+    "source": {
+      "repository": "https://github.com/${repository}",
+      "ref": "main"
     },
-    \"target\": {
-      \"autoCreatePr\": true,
-      \"autoBranch\": true
+    "target": {
+      "autoCreatePr": true,
+      "autoBranch": true
     }${webhookField}
   }`;
 
@@ -140,8 +140,6 @@ Step 3: Ensure 100% test coverage`;
     it("maps GitHub Actions variables correctly", () => {
       // Simulate GitHub Actions environment
       const githubRepo = "launchdarkly-labs/hachiko";
-      const migrationId = "improve-test-coverage";
-      const stepId = "1";
       const agentInstructions = "Add tests for policy engine";
 
       const payload = generateCursorPayload(agentInstructions, githubRepo);

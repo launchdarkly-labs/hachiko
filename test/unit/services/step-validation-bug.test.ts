@@ -22,10 +22,7 @@ vi.mock("../../../src/services/pr-detection.js", () => ({
   getClosedHachikoPRs: vi.fn(),
 }));
 
-import {
-  getMigrationState,
-  type MigrationStateInfo,
-} from "../../../src/services/state-inference.js";
+import { getMigrationState } from "../../../src/services/state-inference.js";
 import {
   getOpenHachikoPRs,
   getClosedHachikoPRs,
@@ -110,10 +107,6 @@ describe("Step Validation Bug", () => {
       // - Migration is "active"
       // - Requested step (4) != current step (4) AND != next step (5)
       // - This logic error causes the validation to fail
-
-      console.log("Migration state:", result.state);
-      console.log("Current step:", result.currentStep);
-      console.log("This should allow executing step 4, but validation currently rejects it");
     });
 
     it("should reproduce the In-Progress checkbox bug", async () => {
@@ -161,51 +154,28 @@ describe("Step Validation Bug", () => {
 
       // First call - Dashboard workflow calculating step
       const dashboardResult = await getMigrationState(mockContext, "test-migration");
-      console.log("Dashboard workflow calculation:", dashboardResult);
 
       // Dashboard workflow logic for In-Progress section:
       const DASHBOARD_CURRENT_STEP = dashboardResult.currentStep;
       const REQUESTED_STEP = DASHBOARD_CURRENT_STEP + 1; // Dashboard sends NEXT step for In-Progress
-      console.log("Dashboard triggers execution with REQUESTED_STEP:", REQUESTED_STEP);
 
       // Second call - Execute workflow validating step
       const executeResult = await getMigrationState(mockContext, "test-migration");
-      console.log("Execute workflow calculation:", executeResult);
 
       // Execute workflow validation:
       const EXECUTE_CURRENT_STEP = executeResult.currentStep;
       const MIGRATION_STATUS = executeResult.state;
       const NEXT_STEP = EXECUTE_CURRENT_STEP + 1;
 
-      console.log("Execute workflow validation:");
-      console.log("- MIGRATION_STATUS:", MIGRATION_STATUS);
-      console.log("- EXECUTE_CURRENT_STEP:", EXECUTE_CURRENT_STEP);
-      console.log("- REQUESTED_STEP:", REQUESTED_STEP);
-      console.log("- NEXT_STEP:", NEXT_STEP);
-
       // This is where the bug might be:
       // If dashboard and execute workflows calculate different current steps
-      if (DASHBOARD_CURRENT_STEP !== EXECUTE_CURRENT_STEP) {
-        console.log(
-          "🐛 BUG FOUND: Dashboard and Execute workflows calculated different current steps!"
-        );
-        console.log("Dashboard calculated:", DASHBOARD_CURRENT_STEP);
-        console.log("Execute calculated:", EXECUTE_CURRENT_STEP);
-      }
+      expect(DASHBOARD_CURRENT_STEP).toBe(EXECUTE_CURRENT_STEP);
 
       // Simulate the validation
       if (MIGRATION_STATUS === "active" || MIGRATION_STATUS === "paused") {
         const shouldReject =
           REQUESTED_STEP !== EXECUTE_CURRENT_STEP && REQUESTED_STEP !== NEXT_STEP;
-
-        if (shouldReject) {
-          console.log(
-            `❌ Migration ${MIGRATION_STATUS}. Can only re-execute current step (${EXECUTE_CURRENT_STEP}) or advance to next step (${NEXT_STEP}). Use force=true to override.`
-          );
-          console.log("This would cause the error you saw!");
-        } else {
-          console.log("✅ Validation would pass");
-        }
+        expect(shouldReject).toBe(false);
       }
     });
 
@@ -253,10 +223,6 @@ describe("Step Validation Bug", () => {
       const call1 = await getMigrationState(mockContext, "test-migration");
       const call2 = await getMigrationState(mockContext, "test-migration");
       const call3 = await getMigrationState(mockContext, "test-migration");
-
-      console.log("Call 1 - currentStep:", call1.currentStep, "state:", call1.state);
-      console.log("Call 2 - currentStep:", call2.currentStep, "state:", call2.state);
-      console.log("Call 3 - currentStep:", call3.currentStep, "state:", call3.state);
 
       // These should all be the same
       expect(call1.currentStep).toBe(call2.currentStep);
