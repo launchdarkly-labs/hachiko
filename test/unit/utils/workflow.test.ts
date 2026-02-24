@@ -78,12 +78,24 @@ describe("Workflow utilities", () => {
       });
     });
 
-    it.skip("should return null when branch parsing fails", () => {
+    it("should extract data from branch when commit message is unavailable", () => {
       const workflowRun = {
-        head_branch: "hachi/upgrade-junit/update-deps",
+        head_branch: "hachiko/upgrade-junit/update-deps",
       };
 
-      // This will fail to require git.js in our test environment
+      const result = extractHachikoWorkflowData(workflowRun);
+      expect(result).toEqual({
+        planId: "upgrade-junit",
+        stepId: "update-deps",
+        chunk: undefined,
+      });
+    });
+
+    it("should return null when branch fallback is not a migration branch", () => {
+      const workflowRun = {
+        head_branch: "feature/upgrade-junit",
+      };
+
       const result = extractHachikoWorkflowData(workflowRun);
       expect(result).toBeNull();
     });
