@@ -154,6 +154,11 @@ export async function getMigrationState(
  * Handles both new format (hachiko/{id}-step-{N}) and legacy format (hachi/{id}/step-{N})
  */
 export function getStepNumberFromPR(pr: HachikoPR): number | null {
+  // Check if step number was already extracted from tracking token (cloud agents)
+  if (pr.stepNumber !== undefined) {
+    return pr.stepNumber;
+  }
+
   // Handle hachiko/{migration-id}-step-{N} format
   const stepMatch = pr.branch.match(/-step-(\d+)(?:-|$)/);
   if (stepMatch && stepMatch[1]) {
@@ -200,8 +205,17 @@ function calculateCurrentStep(
 ): number {
   const log = logger || createLogger("step-calculation");
 
-  // Helper to extract step number from branch name
+  // Helper to extract step number from branch name or tracking token
   function getStepNumber(pr: HachikoPR): number | null {
+    // Check if step number was already extracted from tracking token (cloud agents)
+    if (pr.stepNumber !== undefined) {
+      log.debug(
+        { branch: pr.branch, stepNumber: pr.stepNumber, prNumber: pr.number },
+        "Using step number from tracking token"
+      );
+      return pr.stepNumber;
+    }
+
     // Handle hachiko/{migration-id}-step-{N} format
     const stepMatch = pr.branch.match(/-step-(\d+)(?:-|$)/);
     if (stepMatch && stepMatch[1]) {

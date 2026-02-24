@@ -294,7 +294,7 @@ Hachiko uses a **cloud-native architecture** with the following key characterist
 - **🏗️ Single Package Structure**: Simplified from monorepo to single package for better developer experience
 - **☁️ Cloud Agent Integration**: Direct API integration with Devin, Cursor, and Codex (no Docker containers)
 - **🚫 No Local Dependencies**: Eliminated Docker daemon and CLI tool requirements
-- **⚡ High Performance**: 63.72% test coverage with 262 comprehensive tests
+- **⚡ Comprehensive Testing**: 500+ tests across unit and integration suites, including a `GitHubSimulator` for realistic end-to-end scenario testing
 - **🛡️ Production Ready**: Zero TypeScript errors, comprehensive linting, and CI stability
 
 ### Setup
@@ -320,7 +320,7 @@ pnpm dev
 ### Testing
 
 ```bash
-# Run all tests
+# Run all tests (~500 tests)
 pnpm test
 
 # Run with coverage
@@ -333,6 +333,13 @@ pnpm format
 # Type check
 pnpm typecheck
 ```
+
+Hachiko uses two testing patterns:
+
+- **Unit tests** (`test/unit/`): Traditional mocks for isolated function testing
+- **Integration tests** (`test/integration/scenarios/`): Use `GitHubSimulator`, a stateful in-memory GitHub API fake with agent-specific PR factories (`createHachikoPR`, `createCursorPR`, `createDevinPR`). Services run against it with no mocking required.
+
+See [TESTING-GUIDE.md](TESTING-GUIDE.md) for details.
 
 ### Dogfooding
 

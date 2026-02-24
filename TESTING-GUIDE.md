@@ -17,8 +17,89 @@ Hachiko uses a **cloud-native architecture**:
 
 - **No Docker**: Direct API integration with cloud agents
 - **Single Package**: Simplified structure for better developer experience
-- **High Test Coverage**: 63.72% with 262 comprehensive tests
+- **Comprehensive Testing**: 500+ tests across unit and integration suites
 - **Production Ready**: Zero TypeScript errors, comprehensive CI
+
+## 🧪 Local Integration Testing (GitHubSimulator)
+
+Hachiko includes a **GitHubSimulator** (`src/testing/github-simulator.ts`) — a stateful in-memory fake that implements the subset of GitHub APIs Hachiko uses. This lets you write realistic integration tests that exercise real service code without mocking.
+
+### Quick Example
+
+```typescript
+import { GitHubSimulator } from "../../../src/testing/github-simulator.js";
+import { getMigrationState } from "../../../src/services/state-inference.js";
+
+const sim = new GitHubSimulator();
+
+// Set up migration file
+sim.setFile("migrations/my-migration.md", `---
+schema_version: 1
+id: my-migration
+title: My Migration
+agent: cursor
+status: pending
+current_step: 1
+total_steps: 3
+created: 2024-01-01T00:00:00Z
+last_updated: 2024-01-01T00:00:00Z
+---
+# My Migration
+`);
+
+// Create PRs using agent-specific factories
+const pr = sim.createCursorPR({ migrationId: "my-migration", step: 1 });
+sim.mergePR(pr.number);
+
+// Services work unchanged against the simulator
+const ctx = sim.context();
+const state = await getMigrationState(ctx, "my-migration");
+// state.currentStep === 2, state.state === "active"
+```
+
+### Agent-Specific PR Factories
+
+Each factory creates PRs matching the real conventions of that agent:
+
+- **`createHachikoPR({ migrationId, step, description? })`**
+  Branch: `hachiko/{id}-step-{N}`, title: `[{id}] Step {N}: {desc}`, label: `hachiko:migration`
+
+- **`createCursorPR({ migrationId, step, description?, hash? })`**
+  Branch: `cursor/{slug}-{hash}`, body: `<!-- hachiko-track:{id}:{step} -->`, label: `hachiko:migration`
+
+- **`createDevinPR({ migrationId, step, description?, hash? })`**
+  Branch: `devin/{slug}-{hash}`, commit: `hachiko-track:{id}:{step} ...`, label: `hachiko:migration`
+
+### What the Simulator Supports
+
+- Issues: create, get, update, listForRepo, addLabels, createComment
+- PRs: list, get, listCommits
+- Repos: getContent, listCommits, createOrUpdateFileContents
+- Actions: createWorkflowDispatch, listWorkflowRuns
+- State tracking: `sim.workflowDispatches`, `sim.getFile()`, `sim.workflowRuns`
+
+### Integration Test Suites
+
+Tests live in `test/integration/scenarios/`:
+
+- **`smoke-e2e.test.ts`** — Full orchestration chain (dashboard edit → dispatch → PR merge → advance → cleanup)
+- **`agent-pr-shapes.test.ts`** — Each agent type detected correctly through full detection → state → step chain
+- **`bug-fixes-and-edges.test.ts`** — Cloud agent PR closure, totalSteps cleanup, concurrent PRs, edge cases
+- **`migration-lifecycle.test.ts`** — Multi-step lifecycles, pause/resume, frontmatter mutation
+- **`pr-detection-scenarios.test.ts`** — PR detection across all three paths
+
+### Running Tests
+
+```bash
+# All tests (unit + integration)
+pnpm test
+
+# Just the integration scenarios
+npx vitest run test/integration/scenarios/
+
+# A specific test file
+npx vitest run test/integration/scenarios/smoke-e2e.test.ts
+```
 
 ## 🧪 Phase 1: Local Testing Setup
 

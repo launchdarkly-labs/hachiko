@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, vi } from "vitest";
+import { describe, it, expect, beforeEach } from "vitest";
 import { spawn } from "child_process";
 import { promises as fs } from "fs";
 
@@ -155,17 +155,6 @@ exit $CURL_EXIT_CODE
         },
       };
 
-      // TypeScript adapter uses this format:
-      const typeScriptPayload = {
-        task: "Some instructions",
-        repository_url: "https://github.com/launchdarkly-labs/hachiko",
-        branch: "main",
-        files: ["src/file.ts"],
-        metadata: {
-          plan_id: "test-plan",
-          step_id: "test-step",
-        },
-      };
 
       // Now they have the same structure (except files array)
       expect(workflowPayload).toHaveProperty("task");
@@ -192,7 +181,6 @@ exit $CURL_EXIT_CODE
 
       // This is what the shell script does:
       // CURSOR_AUTH=$(echo -n "$CURSOR_API_KEY:" | base64)
-      const shellCommand = `echo -n "${apiKey}:" | base64`;
 
       // They should produce the same result
       expect(`Basic ${typeScriptAuth}`).toBe(`Basic ${typeScriptAuth}`);

@@ -28,7 +28,7 @@ describe("Dashboard Step Calculation", () => {
         },
       ];
 
-      const closedNonMergedPRs: HachikoPR[] = [
+      const _closedNonMergedPRs: HachikoPR[] = [
         {
           number: 141,
           title: "Test coverage step 1",
@@ -135,7 +135,7 @@ describe("Dashboard Step Calculation", () => {
         ],
       };
 
-      const mergedPRs = stateInfo.closedPRs!.filter(pr => pr.merged);
+      const mergedPRs = stateInfo.closedPRs!.filter((pr) => pr.merged);
 
       const incorrectNextStep = mergedPRs.length + 1; // 2 - WRONG
       const correctNextStep = stateInfo.currentStep; // 3 - CORRECT

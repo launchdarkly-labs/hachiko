@@ -13,6 +13,8 @@ export interface HachikoPR {
     labels: string[];
     url: string;
     merged: boolean;
+    /** Step number extracted from tracking token or branch name (if available) */
+    stepNumber?: number;
 }
 export interface PullRequest {
     number: number;
@@ -66,5 +68,21 @@ export interface PRValidationResult {
     identificationMethods: string[];
     recommendations: string[];
 }
+/**
+ * Correlate a PR branch with recent workflow dispatches (path 3 detection).
+ * Used for cloud agent branches (cursor/*, devin/*) that don't follow hachiko/* naming.
+ *
+ * Returns the migration ID if a recent dispatch correlates, or null.
+ */
+export declare function correlateWithRecentDispatch(branch: string, recentDispatches: Array<{
+    name: string;
+    status: string;
+    createdAt: string;
+}>): string | null;
+/**
+ * Validate that a detected migration ID corresponds to a real migration file.
+ * Returns true if the file exists in the provided set.
+ */
+export declare function validateMigrationFileExists(migrationId: string, migrationFiles: Set<string> | string[]): boolean;
 export declare function validateHachikoPR(pr: PullRequest): PRValidationResult;
 //# sourceMappingURL=pr-detection.d.ts.map

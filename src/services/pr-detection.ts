@@ -16,6 +16,8 @@ export interface HachikoPR {
   labels: string[];
   url: string;
   merged: boolean;
+  /** Step number extracted from tracking token or branch name (if available) */
+  stepNumber?: number;
 }
 
 export interface PullRequest {
@@ -39,6 +41,9 @@ export function detectHachikoPR(pr: PullRequest): HachikoPR | null {
     return null;
   }
 
+  // Try to extract step number from tracking tokens in body or title
+  const stepNumber = extractStepNumberFromPR(pr);
+
   return {
     number: pr.number,
     title: pr.title,
@@ -48,6 +53,7 @@ export function detectHachikoPR(pr: PullRequest): HachikoPR | null {
     labels: pr.labels.map((l) => l.name),
     url: pr.html_url,
     merged: pr.merged_at !== null,
+    ...(stepNumber !== null && { stepNumber }),
   };
 }
 
@@ -117,6 +123,34 @@ function extractMigrationIdFromBranch(branchRef: string): string | null {
     }
 
     return fullId;
+  }
+
+  return null;
+}
+
+/**
+ * Extract step number from tracking tokens in a PR body or title.
+ * Looks for patterns like hachiko-track:{id}:{step} where step is numeric.
+ */
+function extractStepNumberFromPR(pr: PullRequest): number | null {
+  // Check body tracking token: <!-- hachiko-track:{id}:{step} -->
+  if (pr.body) {
+    const bodyMatch = pr.body.match(/<!--\s*hachiko-track:[^:\s]+:(\d+)/);
+    if (bodyMatch && bodyMatch[1]) {
+      return parseInt(bodyMatch[1], 10);
+    }
+  }
+
+  // Check title tracking token: hachiko-track:{id}:{step}
+  const titleMatch = pr.title.match(/hachiko-track:[^:\s]+:(\d+)/);
+  if (titleMatch && titleMatch[1]) {
+    return parseInt(titleMatch[1], 10);
+  }
+
+  // Check branch name: hachiko/{id}-step-{N}
+  const branchMatch = pr.head.ref.match(/-step-(\d+)(?:-|$)/);
+  if (branchMatch && branchMatch[1]) {
+    return parseInt(branchMatch[1], 10);
   }
 
   return null;
@@ -255,9 +289,10 @@ export async function getHachikoPRs(
         // Check commit messages for tracking tokens (must be at start of message per agent instructions)
         for (const commit of commitsResponse.data) {
           const commitMessage = commit.commit.message;
-          const trackingMatch = commitMessage.match(/^hachiko-track:([^:\s]+)/m);
+          const trackingMatch = commitMessage.match(/^hachiko-track:([^:\s]+)(?::(\d+))?/m);
           if (trackingMatch && trackingMatch[1] === migrationId) {
             // Found matching tracking token in commit
+            const stepNumber = trackingMatch[2] ? parseInt(trackingMatch[2], 10) : null;
             const hachikoPR: HachikoPR = {
               number: pr.number,
               title: pr.title,
@@ -267,6 +302,7 @@ export async function getHachikoPRs(
               labels: pr.labels.map((l) => (typeof l === "object" ? l.name : l)),
               url: pr.html_url,
               merged: pr.merged_at !== null,
+              ...(stepNumber !== null && { stepNumber }),
             };
             foundPRs.set(pr.number, hachikoPR);
             log.debug(
@@ -342,6 +378,50 @@ export interface PRValidationResult {
   migrationId: string | null;
   identificationMethods: string[];
   recommendations: string[];
+}
+
+/**
+ * Correlate a PR branch with recent workflow dispatches (path 3 detection).
+ * Used for cloud agent branches (cursor/*, devin/*) that don't follow hachiko/* naming.
+ *
+ * Returns the migration ID if a recent dispatch correlates, or null.
+ */
+export function correlateWithRecentDispatch(
+  branch: string,
+  recentDispatches: Array<{ name: string; status: string; createdAt: string }>
+): string | null {
+  // Only applies to known agent branch patterns
+  if (!branch.startsWith("cursor/") && !branch.startsWith("devin/")) {
+    return null;
+  }
+
+  // Sort by most recent first
+  const sorted = [...recentDispatches]
+    .filter((d) => d.status === "completed" || d.status === "in_progress")
+    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+
+  if (sorted.length === 0) return null;
+
+  const mostRecent = sorted[0]!;
+  // Dispatch names follow pattern: "Execute: {migration-id} step {N}"
+  const match = mostRecent.name.match(/^Execute:\s+(\S+)\s+step/);
+  return match?.[1] ?? null;
+}
+
+/**
+ * Validate that a detected migration ID corresponds to a real migration file.
+ * Returns true if the file exists in the provided set.
+ */
+export function validateMigrationFileExists(
+  migrationId: string,
+  migrationFiles: Set<string> | string[]
+): boolean {
+  const fileSet = migrationFiles instanceof Set ? migrationFiles : new Set(migrationFiles);
+  return (
+    fileSet.has(`migrations/${migrationId}.md`) ||
+    fileSet.has(`${migrationId}.md`) ||
+    fileSet.has(migrationId)
+  );
 }
 
 export function validateHachikoPR(pr: PullRequest): PRValidationResult {

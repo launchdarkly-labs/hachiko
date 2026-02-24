@@ -2,7 +2,6 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { readFileSync, writeFileSync, mkdirSync, existsSync } from "fs";
 import { join } from "path";
 import { createTestLogger } from "../../helpers/test-utils.js";
-import { createMockContext } from "../../mocks/github.js";
 
 /**
  * Integration test for the issue checkbox workflow
@@ -163,18 +162,7 @@ This issue tracks all active migrations in the repository. Use the checkboxes be
       body: createDashboardIssueBody({ pending: ["react-hooks-conversion"] }),
     };
 
-    const payload = {
-      action: "edited",
-      issue: dashboardIssue,
-      repository: {
-        name: "test-repo",
-        owner: { login: "test-owner" },
-        default_branch: "main",
-      },
-      sender: { login: "test-user" },
-    };
-
-    // Validate payload structure (previously tested via createMockContext)
+    // Validate payload structure (simulating webhook)
 
     // Mock finding the migration dashboard issue
     mockOctokit.issues.listForRepo.mockResolvedValue({
