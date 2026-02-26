@@ -31,7 +31,7 @@ import {
   getMigrationState,
 } from "../../../src/services/state-inference.js";
 import { getOpenHachikoPRs } from "../../../src/services/pr-detection.js";
-import { simulateIssueEditHandler, simulatePRClosedHandler, extractTotalSteps } from "../../helpers/scenario-helpers.js";
+import { simulateIssueEditHandler, simulatePRClosedHandler } from "../../helpers/scenario-helpers.js";
 
 // ============================================================================
 // THE ACTUAL TESTS
