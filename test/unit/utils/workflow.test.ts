@@ -39,11 +39,9 @@ describe("Workflow utilities", () => {
       };
 
       const result = extractHachikoWorkflowData(workflowRun);
-      // The regex ([^-]+) matches everything before the first dash
-      // So "upgrade-junit" becomes planId="upgrade", stepId="junit - update-dependencies"
       expect(result).toEqual({
-        planId: "upgrade",
-        stepId: "junit - update-dependencies",
+        planId: "upgrade-junit",
+        stepId: "update-dependencies",
         chunk: undefined,
       });
     });
@@ -57,8 +55,8 @@ describe("Workflow utilities", () => {
 
       const result = extractHachikoWorkflowData(workflowRun);
       expect(result).toEqual({
-        planId: "upgrade",
-        stepId: "junit - update-tests",
+        planId: "upgrade-junit",
+        stepId: "update-tests",
         chunk: "src/test/java",
       });
     });
@@ -72,20 +70,36 @@ describe("Workflow utilities", () => {
 
       const result = extractHachikoWorkflowData(workflowRun);
       expect(result).toEqual({
-        planId: "upgrade",
-        stepId: "junit   -   update-dependencies",
+        planId: "upgrade-junit",
+        stepId: "update-dependencies",
         chunk: undefined,
       });
     });
 
-    it.skip("should return null when branch parsing fails", () => {
+    it("should fall back to branch parsing when commit message is absent", () => {
       const workflowRun = {
-        head_branch: "hachi/upgrade-junit/update-deps",
+        head_branch: "hachi/upgrade-junit/update-deps/src",
       };
 
-      // This will fail to require git.js in our test environment
       const result = extractHachikoWorkflowData(workflowRun);
-      expect(result).toBeNull();
+      expect(result).toEqual({
+        planId: "upgrade-junit",
+        stepId: "update-deps",
+        chunk: "src",
+      });
+    });
+
+    it("should parse hachiko-prefixed branch names on fallback", () => {
+      const workflowRun = {
+        head_branch: "hachiko/improve-test-coverage/step-3",
+      };
+
+      const result = extractHachikoWorkflowData(workflowRun);
+      expect(result).toEqual({
+        planId: "improve-test-coverage",
+        stepId: "step-3",
+        chunk: undefined,
+      });
     });
 
     it("should return null for non-Hachiko commit messages", () => {
@@ -101,6 +115,15 @@ describe("Workflow utilities", () => {
 
     it("should return null when no data available", () => {
       const workflowRun = {};
+      const result = extractHachikoWorkflowData(workflowRun);
+      expect(result).toBeNull();
+    });
+
+    it("should return null when fallback branch is not a migration branch", () => {
+      const workflowRun = {
+        head_branch: "feature/improve-tests",
+      };
+
       const result = extractHachikoWorkflowData(workflowRun);
       expect(result).toBeNull();
     });

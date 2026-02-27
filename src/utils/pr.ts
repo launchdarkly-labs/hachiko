@@ -1,3 +1,5 @@
+import { parseMigrationBranchName } from "./git.js";
+
 /**
  * Checks if a pull request is managed by the Hachiko migration system.
  *
@@ -108,10 +110,11 @@ export function extractMigrationMetadata(pr: {
     if (label.startsWith("hachiko:step:")) {
       const parts = label.replace("hachiko:step:", "").split(":");
       if (parts.length >= 2 && parts[0] && parts[1]) {
+        const chunk = parts.slice(2).join(":");
         return {
           planId: parts[0],
           stepId: parts[1],
-          chunk: parts[2] || undefined,
+          chunk: chunk || undefined,
         };
       }
     }
@@ -119,7 +122,6 @@ export function extractMigrationMetadata(pr: {
 
   // Fall back to parsing branch name
   if (pr.head?.ref) {
-    const { parseMigrationBranchName } = require("./git.js");
     return parseMigrationBranchName(pr.head.ref);
   }
 

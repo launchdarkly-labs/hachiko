@@ -132,18 +132,20 @@ export function parseMigrationBranchName(branchName: string): {
 /**
  * Checks if a branch name follows the Hachiko migration branch naming convention.
  *
- * Hachiko migration branches are identified by the "hachi/" prefix, which
- * distinguishes them from regular feature or development branches.
+ * Hachiko migration branches are identified by either the "hachi/" or
+ * "hachiko/" prefix, which distinguishes them from regular feature or
+ * development branches.
  *
  * @param branchName - The branch name to check
- * @returns True if the branch name starts with "hachi/", false otherwise
+ * @returns True if the branch name starts with "hachi/" or "hachiko/", false otherwise
  * @example
  * ```typescript
  * isMigrationBranch('hachi/add-jsdoc/step-1'); // Returns: true
+ * isMigrationBranch('hachiko/add-jsdoc/step-1'); // Returns: true
  * isMigrationBranch('feature/my-feature'); // Returns: false
  * isMigrationBranch('main'); // Returns: false
  * ```
  */
 export function isMigrationBranch(branchName: string): boolean {
-  return branchName.startsWith("hachi/");
+  return branchName.startsWith("hachi/") || branchName.startsWith("hachiko/");
 }
