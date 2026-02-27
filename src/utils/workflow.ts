@@ -21,7 +21,7 @@ export function extractHachikoWorkflowData(workflowRun: {
   // Try to extract from commit message first
   if (workflowRun.head_commit?.message) {
     const match = workflowRun.head_commit.message.match(
-      /Hachiko:\s*(.+?)\s*-\s*([^(]+?)(?:\s*\(([^)]+)\))?\s*$/
+      /Hachiko:\s*(.+?)\s+-\s+([^(]+?)(?:\s*\(([^)]+)\))?\s*$/
     );
 
     if (match?.[1] && match[2]) {
