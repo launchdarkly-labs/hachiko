@@ -1,3 +1,5 @@
+import { parseMigrationBranchName } from "./git.js";
+
 /**
  * Check if a workflow run is a Hachiko agent workflow
  */
@@ -19,7 +21,7 @@ export function extractHachikoWorkflowData(workflowRun: {
   // Try to extract from commit message first
   if (workflowRun.head_commit?.message) {
     const match = workflowRun.head_commit.message.match(
-      /Hachiko:\s*([^-]+)\s*-\s*([^(]+)(?:\s*\(([^)]+)\))?/
+      /Hachiko:\s*(.+?)\s+-\s+([^(]+?)(?:\s*\(([^)]+)\))?\s*$/
     );
 
     if (match?.[1] && match[2]) {
@@ -33,7 +35,6 @@ export function extractHachikoWorkflowData(workflowRun: {
 
   // Fall back to branch name parsing
   if (workflowRun.head_branch) {
-    const { parseMigrationBranchName } = require("./git.js");
     return parseMigrationBranchName(workflowRun.head_branch);
   }
 

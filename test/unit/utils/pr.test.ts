@@ -92,20 +92,75 @@ describe("PR utilities", () => {
       });
     });
 
-    it.skip("should return null when fallback to branch parsing fails", () => {
+    it("should preserve chunk values containing additional colons", () => {
       const pr = {
-        labels: [{ name: "hachiko" }],
-        head: { ref: "hachi/upgrade-junit/update-deps" },
+        labels: [{ name: "hachiko:step:upgrade-junit:update-deps:src:main:test" }],
       };
-      // This will fail to require git.js in our test environment, which is expected
+
       const result = extractMigrationMetadata(pr);
-      expect(result).toBeNull();
+      expect(result).toEqual({
+        planId: "upgrade-junit",
+        stepId: "update-deps",
+        chunk: "src:main:test",
+      });
     });
 
     it("should return null when no metadata available", () => {
       const pr = { labels: [{ name: "bug" }] };
       const result = extractMigrationMetadata(pr);
       expect(result).toBeNull();
+    });
+
+    it("should fall back to branch parsing when no step label is present", () => {
+      const pr = {
+        labels: [{ name: "hachiko:migration" }],
+        head: { ref: "hachi/upgrade-junit/update-deps/src" },
+      };
+
+      const result = extractMigrationMetadata(pr);
+      expect(result).toEqual({
+        planId: "upgrade-junit",
+        stepId: "update-deps",
+        chunk: "src",
+      });
+    });
+
+    it("should fall back to branch parsing for hachiko-prefixed branches", () => {
+      const pr = {
+        labels: [{ name: "migration:coverage" }],
+        head: { ref: "hachiko/improve-test-coverage/step-3" },
+      };
+
+      const result = extractMigrationMetadata(pr);
+      expect(result).toEqual({
+        planId: "improve-test-coverage",
+        stepId: "step-3",
+        chunk: undefined,
+      });
+    });
+
+    it("should return null when branch fallback does not match migration format", () => {
+      const pr = {
+        labels: [{ name: "migration:coverage" }],
+        head: { ref: "feature/improve-tests" },
+      };
+
+      const result = extractMigrationMetadata(pr);
+      expect(result).toBeNull();
+    });
+
+    it("should fall back to branch parsing when step label format is invalid", () => {
+      const pr = {
+        labels: [{ name: "hachiko:step:invalid-format" }],
+        head: { ref: "hachi/upgrade-junit/update-deps" },
+      };
+
+      const result = extractMigrationMetadata(pr);
+      expect(result).toEqual({
+        planId: "upgrade-junit",
+        stepId: "update-deps",
+        chunk: undefined,
+      });
     });
 
     it("should return null for invalid step label format", () => {
