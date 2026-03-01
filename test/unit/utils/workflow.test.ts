@@ -78,12 +78,37 @@ describe("Workflow utilities", () => {
       });
     });
 
-    it.skip("should return null when branch parsing fails", () => {
+    it("should fall back to branch name parsing", () => {
       const workflowRun = {
         head_branch: "hachi/upgrade-junit/update-deps",
       };
 
-      // This will fail to require git.js in our test environment
+      const result = extractHachikoWorkflowData(workflowRun);
+      expect(result).toEqual({
+        planId: "upgrade-junit",
+        stepId: "update-deps",
+        chunk: undefined,
+      });
+    });
+
+    it("should fall back to branch name parsing with chunk", () => {
+      const workflowRun = {
+        head_branch: "hachi/upgrade-junit/update-deps/src/test",
+      };
+
+      const result = extractHachikoWorkflowData(workflowRun);
+      expect(result).toEqual({
+        planId: "upgrade-junit",
+        stepId: "update-deps",
+        chunk: "src/test",
+      });
+    });
+
+    it("should return null when branch name parsing fails", () => {
+      const workflowRun = {
+        head_branch: "feature/not-a-migration",
+      };
+
       const result = extractHachikoWorkflowData(workflowRun);
       expect(result).toBeNull();
     });
