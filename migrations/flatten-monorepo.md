@@ -22,9 +22,9 @@ The current monorepo structure with `packages/app/` and `packages/runner-scripts
 
 ### Step 1: Move source files
 
-- Move `packages/app/src/*` to `src/`
-- Move `packages/app/test/*` to `test/`
-- Move `packages/app/dist/*` to `dist/`
+- [x] Move `packages/app/src/*` to `src/`
+- [x] Move `packages/app/test/*` to `test/`
+- [x] Move `packages/app/dist/*` to `dist/`
 
 ### Step 2: Update package.json
 
@@ -55,3 +55,8 @@ The current monorepo structure with `packages/app/` and `packages/runner-scripts
 - Potential import path breakage
 - CI/CD workflow adjustments needed
 - Documentation updates required
+
+## Critical Learnings
+
+- Repository layout already matches Step 1 outcomes (`src/`, `test/`, and `dist/` at root, with no `packages/` directory present).
+- `pnpm-lock.yaml` still includes historical `packages/app` and `packages/runner-scripts` entries that can be validated/cleaned when package/workspace changes are finalized in later steps.
