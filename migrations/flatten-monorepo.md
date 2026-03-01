@@ -28,9 +28,9 @@ The current monorepo structure with `packages/app/` and `packages/runner-scripts
 
 ### Step 2: Update package.json
 
-- Merge `packages/app/package.json` into root `package.json`
-- Update scripts and dependencies
-- Remove workspace configuration
+- [x] Merge `packages/app/package.json` into root `package.json`
+- [x] Update scripts and dependencies
+- [x] Remove workspace configuration
 
 ### Step 3: Update configuration files
 
@@ -59,4 +59,5 @@ The current monorepo structure with `packages/app/` and `packages/runner-scripts
 ## Critical Learnings
 
 - Repository layout already matches Step 1 outcomes (`src/`, `test/`, and `dist/` at root, with no `packages/` directory present).
-- `pnpm-lock.yaml` still includes historical `packages/app` and `packages/runner-scripts` entries that can be validated/cleaned when package/workspace changes are finalized in later steps.
+- `pnpm-lock.yaml` retained stale `packages/app` and `packages/runner-scripts` importers until it was regenerated from scratch; this cleanup is required to fully remove monorepo workspace artifacts.
+- Deprecated type-only stubs (`@types/minimatch`, `@types/pino`) were removed from the root manifest during dependency cleanup.

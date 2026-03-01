@@ -17,9 +17,6 @@ importers:
       '@octokit/rest':
         specifier: ^21.0.2
         version: 21.1.1
-      '@types/minimatch':
-        specifier: ^6.0.0
-        version: 6.0.0
       commander:
         specifier: ^12.1.0
         version: 12.1.0
@@ -57,9 +54,6 @@ importers:
       '@types/node':
         specifier: ^22.10.2
         version: 22.17.2
-      '@types/pino':
-        specifier: ^7.0.5
-        version: 7.0.5
       '@vitest/coverage-v8':
         specifier: ^2.1.8
         version: 2.1.9(vitest@2.1.9)
@@ -91,100 +85,6 @@ importers:
         specifier: ^2.1.8
         version: 2.1.9(@types/node@22.17.2)(@vitest/ui@2.1.9)
 
-  packages/app:
-    dependencies:
-      '@launchdarkly/node-server-sdk':
-        specifier: ^9.6.3
-        version: 9.10.1
-      '@octokit/core':
-        specifier: ^6.1.2
-        version: 6.1.6
-      '@octokit/rest':
-        specifier: ^21.0.2
-        version: 21.1.1
-      '@types/minimatch':
-        specifier: ^6.0.0
-        version: 6.0.0
-      glob:
-        specifier: ^11.0.3
-        version: 11.0.3
-      gray-matter:
-        specifier: ^4.0.3
-        version: 4.0.3
-      js-yaml:
-        specifier: ^4.1.0
-        version: 4.1.0
-      minimatch:
-        specifier: ^10.0.3
-        version: 10.0.3
-      pino:
-        specifier: ^9.5.0
-        version: 9.9.0
-      probot:
-        specifier: ^13.3.8
-        version: 13.4.7
-      zod:
-        specifier: ^3.23.8
-        version: 3.25.76
-    devDependencies:
-      '@octokit/webhooks-types':
-        specifier: ^7.6.1
-        version: 7.6.1
-      '@types/js-yaml':
-        specifier: ^4.0.9
-        version: 4.0.9
-      '@types/node':
-        specifier: ^22.10.2
-        version: 22.17.2
-      '@types/pino':
-        specifier: ^7.0.5
-        version: 7.0.5
-      '@vitest/ui':
-        specifier: ^2.1.9
-        version: 2.1.9(vitest@2.1.9)
-      tslib:
-        specifier: ^2.8.1
-        version: 2.8.1
-      typescript:
-        specifier: ^5.7.2
-        version: 5.9.2
-      vitest:
-        specifier: ^2.1.9
-        version: 2.1.9(@types/node@22.17.2)(@vitest/ui@2.1.9)
-
-  packages/runner-scripts:
-    dependencies:
-      '@launchdarkly/node-server-sdk':
-        specifier: ^9.6.3
-        version: 9.10.1
-      '@octokit/core':
-        specifier: ^6.1.2
-        version: 6.1.6
-      '@octokit/rest':
-        specifier: ^21.0.2
-        version: 21.1.1
-      execa:
-        specifier: ^9.5.1
-        version: 9.6.0
-      gray-matter:
-        specifier: ^4.0.3
-        version: 4.0.3
-      pino:
-        specifier: ^9.5.0
-        version: 9.9.0
-      tsx:
-        specifier: ^4.20.4
-        version: 4.20.4
-      zod:
-        specifier: ^3.23.8
-        version: 3.25.76
-    devDependencies:
-      '@types/node':
-        specifier: ^22.10.2
-        version: 22.17.2
-      typescript:
-        specifier: ^5.7.2
-        version: 5.9.2
 
 packages:
 

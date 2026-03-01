@@ -31,7 +31,6 @@
     "@launchdarkly/node-server-sdk": "^9.6.3",
     "@octokit/core": "^6.1.2",
     "@octokit/rest": "^21.0.2",
-    "@types/minimatch": "^6.0.0",
     "commander": "^12.1.0",
     "execa": "^9.5.1",
     "glob": "^11.0.3",
@@ -46,7 +45,6 @@
   "devDependencies": {
     "@types/js-yaml": "^4.0.9",
     "@types/node": "^22.10.2",
-    "@types/pino": "^7.0.5",
     "@vitest/coverage-v8": "^2.1.8",
     "@vitest/ui": "^2.1.9",
     "c8": "^10.1.2",
