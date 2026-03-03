@@ -92,12 +92,26 @@ describe("PR utilities", () => {
       });
     });
 
-    it.skip("should return null when fallback to branch parsing fails", () => {
+    it("should extract metadata from branch when no step label is present", () => {
       const pr = {
         labels: [{ name: "hachiko" }],
-        head: { ref: "hachi/upgrade-junit/update-deps" },
+        head: { ref: "hachiko/upgrade-junit/update-deps" },
       };
-      // This will fail to require git.js in our test environment, which is expected
+
+      const result = extractMigrationMetadata(pr);
+      expect(result).toEqual({
+        planId: "upgrade-junit",
+        stepId: "update-deps",
+        chunk: undefined,
+      });
+    });
+
+    it("should return null when branch fallback is not a migration branch", () => {
+      const pr = {
+        labels: [{ name: "hachiko" }],
+        head: { ref: "feature/upgrade-junit" },
+      };
+
       const result = extractMigrationMetadata(pr);
       expect(result).toBeNull();
     });
